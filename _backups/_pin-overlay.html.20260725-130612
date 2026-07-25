@@ -1,0 +1,52 @@
+<!-- PIN curtain (public share only). NOT real security — the page source is still readable.
+     Change the PIN by editing var PIN below. Colors are hardcoded (dashboard CSS vars load later). -->
+<style>
+  #pinGate{position:fixed;inset:0;z-index:99999;background:#0c0e13;
+    display:flex;align-items:center;justify-content:center;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  #pinGate.hidden{display:none}
+  .pg-card{display:flex;flex-direction:column;align-items:center;gap:16px;
+    background:linear-gradient(180deg,#1c212d,#161a24);border:1px solid #333a4d;
+    border-radius:18px;padding:34px 30px;box-shadow:0 18px 50px -20px rgba(0,0,0,.85);width:min(90vw,320px)}
+  .pg-lock{font-size:34px;line-height:1}
+  .pg-title{color:#f4f1ea;font-size:16px;font-weight:640;letter-spacing:.01em}
+  .pg-sub{color:#767d90;font-family:ui-monospace,"Cascadia Code",Consolas,monospace;font-size:11px;margin-top:-8px}
+  .pg-input{width:100%;text-align:center;background:#0c0e13;border:1px solid #333a4d;border-radius:10px;
+    color:#f4f1ea;font-family:ui-monospace,"Cascadia Code",Consolas,monospace;font-size:30px;
+    letter-spacing:.5em;padding:12px 10px;outline:none}
+  .pg-input:focus{border-color:#c99a3a}
+  .pg-btn{width:100%;cursor:pointer;border:1px solid #c99a3a;border-radius:10px;padding:11px;
+    background:linear-gradient(180deg,#e8c46a,#c99a3a);color:#1a1305;font-weight:700;font-size:14px;
+    font-family:inherit}
+  .pg-btn:active{transform:translateY(1px)}
+  .pg-err{color:#f2686f;font-family:ui-monospace,Consolas,monospace;font-size:11.5px;min-height:14px}
+</style>
+<div id="pinGate">
+  <div class="pg-card">
+    <div class="pg-lock">🔒</div>
+    <div class="pg-title">Gold Flip Dashboard</div>
+    <div class="pg-sub">enter PIN to view</div>
+    <input id="pgInput" class="pg-input" type="password" inputmode="numeric" maxlength="4"
+           autocomplete="off" aria-label="PIN" placeholder="••••">
+    <button id="pgBtn" class="pg-btn">Unlock</button>
+    <div id="pgErr" class="pg-err"></div>
+  </div>
+</div>
+<script>
+(function(){
+  var PIN = "7391";                       // <-- change to your 4 digits
+  var gate=document.getElementById('pinGate'),
+      inp=document.getElementById('pgInput'),
+      btn=document.getElementById('pgBtn'),
+      err=document.getElementById('pgErr');
+  document.documentElement.style.overflow='hidden';   // no scrolling the board behind the curtain
+  function unlock(){
+    if(inp.value===PIN){ gate.classList.add('hidden'); document.documentElement.style.overflow=''; }
+    else { err.textContent='Wrong PIN — try again'; inp.value=''; inp.focus(); }
+  }
+  btn.addEventListener('click',unlock);
+  inp.addEventListener('keydown',function(e){ if(e.key==='Enter') unlock(); });
+  inp.addEventListener('input',function(){ err.textContent=''; if(inp.value.length===4) unlock(); });
+  inp.focus();
+})();
+</script>
