@@ -170,9 +170,6 @@
   .tfbtn:hover{border-color:var(--gold-deep)}
   .tfbtn.active{background:linear-gradient(180deg,var(--gold),var(--gold-deep));color:#1a1305;border-color:var(--gold-deep)}
   .tf-src{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--ink-mute)}
-  .tf-src.sample{color:var(--closed)}                 /* amber = illustrative, NOT a live price */
-  .tf-src.live{color:var(--good)}
-  .tf-src.stale{color:var(--bad);font-weight:600}     /* red = live feed stopped delivering new bars */
   .chartwrap{position:relative;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:6px}
   #chartSvg{width:100%;height:auto;display:block}
   .chart-tip{position:absolute;pointer-events:none;background:var(--panel);border:1px solid var(--line2);
@@ -371,7 +368,7 @@
         <button class="tfbtn" data-tf="6H" role="tab" aria-selected="false">6H</button>
         <button class="tfbtn active" data-tf="1D" role="tab" aria-selected="true">1D</button>
         <button class="tfbtn" data-tf="1W" role="tab" aria-selected="false">1W</button>
-        <span class="tf-src sample" id="chartSrc">sample data · not live · shown for shape only</span>
+        <span class="tf-src" id="chartSrc">sample data · connect feed for live candles</span>
       </div>
       <div class="chartwrap">
         <svg id="chartSvg" viewBox="0 0 1000 360" preserveAspectRatio="xMidYMid meet"
@@ -876,24 +873,15 @@
     $("spot").classList.toggle("closed",!s.open);
     if(s.open){ n.style.display="none"; n.textContent=""; }
     else { n.textContent=s.note; n.style.display="block"; }
-    // At a closed→open flip (e.g. Sun 3pm PT reopen) give the feed a grace window before the
-    // stale-guard can fire, so we never flash red in the ~5 min before the first live bar lands.
-    if(s.open && _mktOpenPrev===false){ _lastCandleAdvanceAt=Date.now(); _candleStale=false; }
-    _mktOpenPrev=s.open;
-    if(typeof setCandleSrc==="function") setCandleSrc();   // keep the chart pill honest as the market opens/closes
   }
 
   // ===== GOLD PRICE CHART (candlesticks) =====
   // Data source: Yahoo Finance chart API for GC=F (COMEX gold futures), pulled server-side by the
   // engine sheet's Apps Script into a tiny candles sheet, read here via the same Drive connector.
   // Until that sheet exists (CANDLES_ID empty) the chart shows a labelled SAMPLE so it always renders.
-  const CANDLES_ID = "13lMjJpgE41kaArQ2ooi7M992gdu54kwgtbMVuM4wRsk"; // Gold Flip — Candles sheet (wc@adibs), Yahoo GC=F 5-min feed
+  const CANDLES_ID = "";                 // <-- fill with the candles sheet fileId when built
   let CANDLES = {intraday:[], weekly:[]};// each row {t:unixSec, o,h,l,c}
   let _chartTF = "1D", _chartDrawn=false, _chartLive=false, _cg=null;
-  // CANDLE STALE-GUARD (council follow-up) — market-aware so it NEVER false-alarms on the
-  // weekend. We only warn if the market is OPEN and the newest candle stops advancing.
-  const CANDLE_STALE_MS=1800000;         // 30 min of no new bar while OPEN = feed is down
-  let _candleStale=false, _lastCandleMaxT=0, _lastCandleAdvanceAt=0, _mktOpenPrev=null;
 
   // SAMPLE candles — a smooth pseudo-random walk near the current spot (placeholder until live).
   function sampleCandles(){
@@ -999,9 +987,7 @@
     const rng=$("chartRange"); if(rng) rng.innerHTML=
       `<span style="color:${chg>=0?good:bad}">${chg>=0?"▲":"▼"} ${money(Math.abs(chg))} (${(pctChg>=0?"+":"")}${pctChg.toFixed(2)}%)</span> · ${tf} window`;
     const st=$("chartStamp"); if(st){ const lt=data[data.length-1].t;
-      st.textContent = _chartLive
-        ? `Updated ${fmtDT(lt*1000)}${_candleStale?" · ⚠ stale feed":" · live GC=F"}`
-        : "⚠ Sample data — not a live price"; }
+      st.textContent=`Updated ${fmtDT(lt*1000)}${_chartLive?" · live GC=F":" · sample"}`; }
     _chartDrawn=true;
   }
 
@@ -1036,31 +1022,11 @@
     });
     return {intraday:intr, weekly:wk};
   }
-  // Chart-source pill — single source of truth for the "sample / live / stale / last-session" label.
-  function setCandleSrc(){
-    const sc=$("chartSrc"); if(!sc) return;
-    if(!_chartLive){ sc.textContent="sample data · not live · shown for shape only"; sc.className="tf-src sample"; return; }
-    const open=marketStatus().open;
-    if(_candleStale && open){ sc.textContent="⚠ candle feed stale · no new bars"; sc.className="tf-src stale"; }
-    else if(open){ sc.textContent="live · Yahoo GC=F · refreshes ~5 min"; sc.className="tf-src live"; }
-    else { sc.textContent="live · Yahoo GC=F · last session (market closed)"; sc.className="tf-src"; }
-  }
-  // Heartbeat: only flags stale while the market is OPEN and the newest candle hasn't advanced.
-  function checkCandleStale(){
-    if(!_chartLive) return;
-    const open=marketStatus().open;
-    const stale = open && _lastCandleAdvanceAt>0 && (Date.now()-_lastCandleAdvanceAt > CANDLE_STALE_MS);
-    if(stale!==_candleStale){ _candleStale=stale; setCandleSrc(); if(_chartDrawn) drawChart(_chartTF); }
-  }
   function applyCandles(text){
     const cd=parseCandles(text);
     if(cd.intraday.length || cd.weekly.length){
       CANDLES=cd; _chartLive=true;
-      // freshness: only a NEW newest-candle timestamp proves the feed delivered fresh data.
-      // (A dead trigger that keeps serving the SAME frozen CSV won't advance maxT → stale fires.)
-      let mt=0; cd.intraday.forEach(d=>{ if(d.t>mt) mt=d.t; }); cd.weekly.forEach(d=>{ if(d.t>mt) mt=d.t; });
-      if(mt>_lastCandleMaxT){ _lastCandleMaxT=mt; _lastCandleAdvanceAt=Date.now(); _candleStale=false; }
-      setCandleSrc();
+      const sc=$("chartSrc"); if(sc) sc.textContent="live · Yahoo GC=F · refreshes ~5 min";
       drawChart(_chartTF);                             // refresh whether open or closed (keeps header live)
     }
   }
@@ -1073,8 +1039,7 @@
   $("builtStamp").textContent="built "+nowStr();
   applyMarket(); setInterval(applyMarket,60000);
   setInterval(checkStale,30000);   // heartbeat: flips the pill red if the live feed stops advancing
-  setInterval(checkCandleStale,30000);   // candle heartbeat: red ONLY if market OPEN + no new bar in 30 min
-  sampleCandles(); drawChart(_chartTF); setCandleSrc();   // render sample immediately + honest "not live" label
+  sampleCandles(); drawChart(_chartTF);   // render the chart (sample) immediately so the header previews
   renderCFG(); compute(); initLive();
 })();
 </script>
