@@ -10,6 +10,11 @@
        • the confidence badge (auto · HH:MM  vs  ✅ confirmed by Medi)
        • the "request a pull" button (logs to Supabase + refetches)
      ============================================================================ -->
+<style>
+  /* pulse-on-change: any number the live update moves gets a 1s gold flash (public page only) */
+  @keyframes gfhPulse{ 0%{ background:rgba(230,179,37,.40); box-shadow:0 0 0 6px rgba(230,179,37,.18); } 100%{ background:transparent; box-shadow:none; } }
+  .gfh-pulse{ animation:gfhPulse 1.1s ease-out; border-radius:6px; }
+</style>
 <script>
 (function(){
   var SB_URL = "https://cuubqcxzvyiryxcygadh.supabase.co";
@@ -42,6 +47,26 @@
     var ds = el("dataSrc"); if(ds) ds.textContent = "data: LIVE from shared cloud feed (Supabase)";
   }
 
+  // ---- pulse-on-change: flash every displayed number the update actually moved ----
+  var WATCH = ["spotStamp","junePriceV","juneTimeV","onlinePriceV","onlineTimeV","inStockV",
+               "deltaV","deltaStamp","gaugeVal","verdict","heroStamp","mBuy","mSell","mLoss",
+               "bpCredit","bpBars","bpDeployed","bpProfit","bpUnused","matrixStamp","chartLast"];
+  var firstPaint = true;                       // first fill after PIN: no flash-fest
+  function snapNums(){
+    var s = {};
+    WATCH.forEach(function(id){ var e = el(id); if(e) s[id] = e.textContent; });
+    var sp = el("spot"); if(sp) s.__spot = sp.value;      // #spot is an <input>
+    return s;
+  }
+  function flash(e){ e.classList.remove("gfh-pulse"); void e.offsetWidth; e.classList.add("gfh-pulse"); }
+  function pulseDiff(before){
+    if(firstPaint){ firstPaint = false; return; }
+    WATCH.forEach(function(id){
+      var e = el(id); if(e && before[id] !== undefined && e.textContent !== before[id]) flash(e);
+    });
+    var sp = el("spot"); if(sp && before.__spot !== undefined && sp.value !== before.__spot) flash(sp);
+  }
+
   function apply(rows){
     var spot = null, online = null, june = null;
     rows.forEach(function(r){ if(r.id === "spot") spot = r; else if(r.id === "online") online = r; else if(r.id === "june") june = r; });
@@ -55,7 +80,9 @@
       if(online.premium != null) map.online_premium = { v: String(online.premium), t: "" };
       if(online.in_stock != null) map.online_instock = { v: online.in_stock ? "yes" : "no", t: "" };
     }
+    var before = snapNums();                          // snapshot every displayed number
     if(window.__gfhIngest) window.__gfhIngest(map);   // recompute via the dashboard's own tested path
+    pulseDiff(before);                                // flash whatever the update moved
     badge(spot, online);                              // then stamp the confidence badge (applySheet already ran)
   }
 
