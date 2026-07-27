@@ -1127,9 +1127,11 @@
   }
 
   function apply(rows){
-    var spot = null, online = null;
-    rows.forEach(function(r){ if(r.id === "spot") spot = r; else if(r.id === "online") online = r; });
+    var spot = null, online = null, june = null;
+    rows.forEach(function(r){ if(r.id === "spot") spot = r; else if(r.id === "online") online = r; else if(r.id === "june") june = r; });
     var map = {};
+    if(june && june.price != null)
+      map.june_price = { v: String(june.price), t: june.fetched_at ? fmtT(june.fetched_at) : "" };
     if(spot && spot.price != null)
       map.gold_spot = { v: String(spot.price), t: spot.fetched_at ? fmtT(spot.fetched_at) : "" };
     if(online){
