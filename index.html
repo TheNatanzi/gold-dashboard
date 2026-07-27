@@ -1170,7 +1170,24 @@
     badge(spot, online);                              // then stamp the confidence badge (applySheet already ran)
   }
 
+  // ---- refresh countdown: tiny "↻ 42s" chip next to the LIVE badge ----
+  var nextAt = 0;
+  function mountTimer(){
+    var s = el("spotStatus"); if(!s || el("gfhTimer")) return;
+    var t = document.createElement("span");
+    t.id = "gfhTimer";
+    t.title = "seconds until the next auto-refresh";
+    t.style.cssText = "margin-left:8px;font-size:.72em;opacity:.65;white-space:nowrap;";
+    s.parentNode.insertBefore(t, s.nextSibling);
+  }
+  function tickTimer(){
+    var t = el("gfhTimer"); if(!t) return;
+    var sLeft = Math.max(0, Math.round((nextAt - Date.now()) / 1000));
+    t.textContent = sLeft > 0 ? "↻ " + sLeft + "s" : "↻ now…";
+  }
+
   function load(){
+    nextAt = Date.now() + 60000;
     fetch(SB_URL + "/rest/v1/gold_prices?select=*", { headers: H })
       .then(function(r){ return r.json(); })
       .then(function(rows){ if(Array.isArray(rows)) apply(rows); })
@@ -1207,7 +1224,7 @@
 
   function start(){
     var s = el("spotStatus"); if(s){ s.textContent = "● connecting…"; s.className = "spot-status"; }
-    wirePull(); load(); setInterval(load, 60000);
+    wirePull(); mountTimer(); load(); setInterval(load, 60000); setInterval(tickTimer, 1000);
   }
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
 })();
