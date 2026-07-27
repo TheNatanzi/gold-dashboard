@@ -54,6 +54,10 @@
 })();
 </script>
 <meta charset="utf-8">
+<!-- Without this a phone lays the page out at 980px and every max-width media query below
+     silently never fires — which is why "375px" could only ever be checked by reading the
+     CSS before. June's call sheet has always had it; this page did not. -->
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Gold Flip — Profit Dashboard</title>
 <style>
   /* ============ TOKENS ============ */
@@ -66,6 +70,9 @@
     --bad:#f2686f; --bad-bg:rgba(242,104,111,.12);
     --warn:#eab54c; --warn-bg:rgba(234,181,76,.12);
     --closed:#ef8b3c;
+    /* DAY-OLD yellow — the exact tokens June's call sheet uses, so 24–48h data
+       looks identical on both screens. Loud on purpose. */
+    --day:#f5d44e; --day-bg:rgba(245,212,78,.15); --day-line:#c9a52c;
     --shadow:0 1px 0 rgba(255,255,255,.03) inset, 0 18px 40px -24px rgba(0,0,0,.8);
     --r:16px; --r-sm:10px;
     --mono:"SF Mono",ui-monospace,"Cascadia Code","Consolas",monospace;
@@ -80,6 +87,7 @@
     --bad:#d23b45; --bad-bg:rgba(210,59,69,.10);
     --warn:#b07d17; --warn-bg:rgba(176,125,23,.12);
     --closed:#c05a12;
+    --day:#8a6a00; --day-bg:#fdf3c9; --day-line:#e8c73f;
     --shadow:0 1px 0 rgba(255,255,255,.6) inset, 0 16px 34px -26px rgba(0,0,0,.35);
   }
   /* Dark by default (Medi: "dark like my lesson artifact"). Light is opt-in via the toggle. */
@@ -191,6 +199,162 @@
   .deltacard{border-left:3px solid #c3a4ff}
   .deltacard .dv{font-family:var(--mono);font-size:clamp(28px,3.6vw,38px);font-weight:680;color:var(--gold);line-height:1}
   .deltacard .cap-sub{font-family:var(--mono);font-size:10px;color:var(--ink-mute)}
+  /* Same caption treatment the delta card uses, now shared by the June card's source line. */
+  .capcard .cap-sub{font-family:var(--mono);font-size:10px;color:var(--ink-mute)}
+
+  /* ============ COVERAGE BAND — June's round, promoted out of the accordion ============
+     Medi has to see, without clicking anything: how much of the map is covered, where the
+     bars are, how far away they are, and whether he can afford them. */
+  #cbRingTxt{font-family:var(--mono)}
+  .covband{margin-bottom:12px;background:linear-gradient(180deg,var(--panel2),var(--panel));
+    border:1px solid var(--line2);border-radius:var(--r);box-shadow:var(--shadow);
+    padding:14px 18px;display:flex;flex-direction:column;gap:12px}
+  .cb-top{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .cb-ring{flex:none}
+  .cb-stats{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start;flex:1 1 auto}
+  .cb-s{display:flex;flex-direction:column;gap:2px;min-width:96px}
+  .cb-s .k{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink-mute);white-space:nowrap}
+  .cb-s .v{font-family:var(--mono);font-size:20px;font-weight:680;color:var(--ink);line-height:1.15}
+  .cb-s .v.gold{color:var(--gold)} .cb-s .v.day{color:var(--day)} .cb-s .v.mute{color:var(--ink-mute)}
+  .cb-s .sub{font-family:var(--mono);font-size:9.5px;color:var(--ink-mute)}
+  .cb-title{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--ink-mute);font-weight:700}
+  .cb-near{display:flex;flex-direction:column;gap:6px}
+  .cb-chips{display:flex;gap:7px;flex-wrap:wrap}
+  .cb-chip{display:inline-flex;align-items:baseline;gap:6px;background:var(--gold-glow);
+    border:1px solid var(--gold-deep);border-radius:999px;padding:4px 11px;
+    font-family:var(--mono);font-size:11px;color:var(--ink);white-space:nowrap}
+  .cb-chip b{font-weight:700;color:var(--gold)}
+  .cb-chip .mi{color:var(--ink-mute);font-size:10px}
+  .cb-chip.day{background:var(--day-bg);border-color:var(--day-line)}
+  .cb-chip.day b{color:var(--day)}
+  .cb-chip.none{background:transparent;border-color:var(--line2);color:var(--ink-mute)}
+  .cb-afford{font-family:var(--mono);font-size:12px;color:var(--ink-soft);
+    border-top:1px solid var(--line);padding-top:10px;line-height:1.5}
+  .cb-afford b{color:var(--gold);font-weight:700}
+  .cb-afford.short b{color:var(--day)}
+  .cb-warn{font-family:var(--mono);font-size:11px;color:var(--closed)}
+
+  /* ---- price agreement: June's register price vs the online lookup ---- */
+  .pxagree{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:10px}
+  .px-row{display:flex;gap:22px;flex-wrap:wrap}
+  .px-f{display:flex;flex-direction:column;gap:2px;min-width:118px}
+  .px-f .k{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink-mute);white-space:nowrap}
+  .px-f .v{font-family:var(--mono);font-size:15px;font-weight:680;color:var(--ink)}
+  .px-f .v.mute{color:var(--ink-mute);font-weight:600}
+  .px-verdict{font-family:var(--mono);font-size:11.5px;line-height:1.5;border-radius:9px;
+    padding:8px 11px;border:1px solid var(--line2);color:var(--ink-soft)}
+  .px-verdict.ok{border-color:var(--good);background:var(--good-bg);color:var(--ink)}
+  .px-verdict.gap{border-color:var(--day-line);background:var(--day-bg);color:var(--ink)}
+  .px-verdict b{font-weight:700}
+
+  /* ---- price-went-up alert: survives reload until dismissed ---- */
+  .pxalert{display:none;align-items:center;gap:12px;margin-bottom:12px;padding:12px 16px;
+    border-radius:var(--r);border:1px solid var(--closed);background:var(--warn-bg);
+    box-shadow:var(--shadow)}
+  .pxalert.show{display:flex}
+  .pxalert .ic{font-size:20px;line-height:1;flex:none}
+  .pxalert .txt{font-family:var(--mono);font-size:12px;color:var(--ink);line-height:1.5;flex:1 1 auto}
+  .pxalert .txt b{color:var(--closed);font-weight:700}
+  .pxalert button{flex:none;background:transparent;border:1px solid var(--line2);color:var(--ink-mute);
+    border-radius:8px;padding:6px 12px;font-family:var(--mono);font-size:10px;letter-spacing:.08em;
+    text-transform:uppercase;cursor:pointer}
+  .pxalert button:hover{color:var(--ink);border-color:var(--ink-mute)}
+
+  /* ============ JUNE'S ROUND (accordion — feeds BUY) ============ */
+  .junebox{margin-bottom:12px;background:linear-gradient(180deg,var(--panel2),var(--panel));
+    border:1px solid var(--line2);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+  .jb-sum{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;
+    gap:12px;padding:12px 18px;user-select:none}
+  .jb-sum::-webkit-details-marker{display:none}
+  .jb-sum:focus-visible{outline:2px solid var(--gold);outline-offset:-2px;border-radius:8px}
+  .jb-l{display:flex;align-items:center;gap:9px;font-weight:640;font-size:14px;flex-wrap:wrap}
+  .jb-sub{font-family:var(--mono);font-size:10px;color:var(--ink-mute);font-weight:400;letter-spacing:.02em}
+  .jb-r{display:flex;align-items:center;gap:12px}
+  .jb-cov{font-family:var(--mono);font-size:12px;font-weight:660;color:var(--gold);white-space:nowrap}
+  .jb-live{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;border:1px solid var(--line2);
+    border-radius:999px;padding:3px 9px;color:var(--ink-mute);white-space:nowrap}
+  .jb-live.on{color:var(--good);border-color:var(--good)}
+  .jb-live.off{color:var(--closed);border-color:var(--closed)}
+  .jb-self{background:var(--bg2);border:1px solid var(--line2);border-radius:12px;padding:13px 14px;
+    display:flex;flex-direction:column;gap:11px}
+  .jbs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  @media (max-width:760px){.jbs-grid{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:480px){.jbs-grid{grid-template-columns:1fr}}
+  .jbs-f{display:flex;flex-direction:column;gap:4px}
+  .jbs-f.wide{grid-column:1/-1}
+  .jbs-lab{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink-mute)}
+  .jbs-f input,.jbs-f select{background:var(--panel);border:1px solid var(--line2);color:var(--ink);
+    border-radius:9px;padding:9px 11px;font-family:var(--mono);font-size:13px;font-weight:600;width:100%}
+  .jb-chev{font-size:19px;line-height:1;color:var(--gold);transition:transform .25s}
+  details[open] .jb-chev{transform:rotate(180deg)}
+  @media (prefers-reduced-motion:reduce){.jb-chev{transition:none}}
+  .jb-body{padding:0 16px 16px;display:flex;flex-direction:column;gap:12px}
+  .jb-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .jb-open{text-decoration:none}
+  .jb-paste{width:100%;min-height:64px;background:var(--bg2);border:1px solid var(--line2);
+    color:var(--ink);border-radius:10px;padding:10px 12px;font-family:var(--mono);font-size:11.5px;
+    resize:vertical}
+  .jb-paste::placeholder{color:var(--ink-mute)}
+  .jb-msg{font-family:var(--mono);font-size:11px;color:var(--ink-mute)}
+  .jb-msg.ok{color:var(--good)} .jb-msg.err{color:var(--bad)}
+  .jb-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11.5px}
+  .jb-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+  .jb-table th{text-align:left;font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink-mute);font-weight:600;padding:8px 10px;background:var(--bg2);white-space:nowrap}
+  .jb-table td{padding:8px 10px;border-top:1px solid var(--line);color:var(--ink-soft);white-space:nowrap}
+  .jb-table td.r,.jb-table th.r{text-align:right}
+  /* Freshness, loudest first. Order in the stylesheet mirrors the class precedence in
+     renderJune(): stale beats day beats best beats todo. A 30-hour-old row must NEVER
+     be able to render in the gold "best pick" tint — that was the Session-8 bug. */
+  .jb-table tr.todo td{color:var(--ink-mute);background:transparent}
+  .jb-table tr.best td{color:var(--ink);background:var(--gold-glow)}
+  .jb-table tr.best  td:first-child{box-shadow:inset 4px 0 0 var(--gold-deep)}
+  .jb-table tr.day  td{background:var(--day-bg);color:var(--ink)}
+  .jb-table tr.day  td:first-child{box-shadow:inset 4px 0 0 var(--day-line)}
+  .jb-table tr.stale td{background:var(--warn-bg);color:var(--ink-soft)}
+  .jb-table tr.stale td:first-child{box-shadow:inset 4px 0 0 var(--closed)}
+  .jb-table tr.unknown td{background:var(--bad-bg);color:var(--ink-soft)}
+  .jb-table tr.unknown td:first-child{box-shadow:inset 4px 0 0 var(--bad)}
+  .jb-table tr.grouphead td{background:var(--bg2);color:var(--ink-mute);font-size:9px;
+    letter-spacing:.11em;text-transform:uppercase;font-weight:700;padding:6px 10px}
+  .jb-tag{font-size:8.5px;letter-spacing:.09em;text-transform:uppercase;border-radius:4px;
+    padding:1px 5px;border:1px solid var(--gold-deep);color:var(--gold);margin-left:6px}
+  .jb-tag.old{border-color:var(--day-line);color:var(--day);background:var(--day-bg);font-weight:700}
+  .jb-tag.veryold{border-color:var(--closed);color:var(--closed)}
+  .jb-tag.bc{border-color:var(--line2);color:var(--ink-mute)}
+  .jb-tag.warnid{border-color:var(--bad);color:var(--bad)}
+  .jb-mi{color:var(--ink-mute);font-size:10px;margin-left:6px}
+
+  /* ---- sort bar (ported from June's call sheet so both pages sort identically) ---- */
+  .jb-sortbar{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .jb-sortlab{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink-mute)}
+  .jb-sortbar select{background:var(--panel);border:1px solid var(--line2);color:var(--ink);
+    border-radius:9px;padding:7px 10px;font-family:var(--mono);font-size:12px;font-weight:600;
+    max-width:100%}
+  .jb-sortnote{font-family:var(--mono);font-size:10px;color:var(--ink-mute)}
+
+  /* ---- phone (real 375px, now that the viewport meta lets the queries fire) ----
+     Three things pushed the page sideways once the layout viewport was honest: the
+     accordion's coverage pill, the sort dropdown's long option text, and the matrix
+     divider caption. All three were nowrap. */
+  @media (max-width:560px){
+    .jb-sum{flex-wrap:wrap;row-gap:6px}
+    .jb-r{flex-wrap:wrap;row-gap:6px;width:100%;justify-content:flex-start}
+    .jb-cov{white-space:normal}
+    .jb-sortbar select{flex:1 1 100%;min-width:0}
+    .matrix .divider .lbl{white-space:normal;line-height:1.45}
+    .cb-stats{gap:16px}
+    .cb-s{min-width:0;flex:1 1 44%}
+    /* iOS auto-zooms the whole page when a focused field is under 16px. June's sheet already
+       uses 16px for exactly this reason; these were 11.5–13px. */
+    .jbs-f input,.jbs-f select,.jb-paste,.jb-sortbar select{font-size:16px}
+  }
+
   /* ============ GAUGE BAR (full-width) ============ */
   .gaugebar{display:flex;flex-wrap:wrap;align-items:center;gap:14px 24px;
     background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line2);
@@ -395,6 +559,7 @@
         <div class="cap-f"><span class="k">1oz price</span><span class="val" id="junePriceV">—</span></div>
         <div class="cap-f"><span class="k">Captured · form submit</span><span class="val time" id="juneTimeV">—</span></div>
       </div>
+      <div class="cap-sub" id="juneSrc">seed value · no call round imported yet</div>
     </div>
     <div class="capcard online">
       <div class="cap-t">
@@ -417,6 +582,159 @@
       <div class="stamp" id="deltaStamp">—</div>
     </div>
   </div>
+
+  <!-- PRICE WENT UP — fires when June's newly saved price is HIGHER than the one before it.
+       Costco raising the shelf price is the single event that can kill a flip, so it gets its
+       own banner and stays put until Medi dismisses it. -->
+  <div class="pxalert" id="pxAlert" role="status">
+    <span class="ic" aria-hidden="true">⚠️</span>
+    <span class="txt" id="pxAlertTxt"></span>
+    <button type="button" id="pxAlertX">Dismiss</button>
+  </div>
+
+  <!-- COVERAGE — June's round, promoted out of the accordion into the headline -->
+  <section class="covband" id="covBand" aria-label="Warehouse coverage from June's calling round">
+    <div class="cb-top">
+      <svg class="cb-ring" width="62" height="62" viewBox="0 0 62 62" aria-hidden="true">
+        <circle cx="31" cy="31" r="26" fill="none" stroke="var(--line2)" stroke-width="7"></circle>
+        <circle id="cbRingFill" cx="31" cy="31" r="26" fill="none" stroke="var(--gold)" stroke-width="7"
+                stroke-linecap="round" stroke-dasharray="0 163.4"
+                transform="rotate(-90 31 31)"></circle>
+        <!-- font set in CSS: var() is not valid in an SVG presentation attribute and the
+             number silently fell back to the default serif. -->
+        <text id="cbRingTxt" x="31" y="35.5" text-anchor="middle"
+              font-size="15" font-weight="700" fill="var(--gold)">0%</text>
+      </svg>
+      <div class="cb-stats">
+        <div class="cb-s">
+          <span class="k">Warehouses called</span>
+          <span class="v gold" id="cbCalled">0 of 45</span>
+          <span class="sub" id="cbCalledSub">nobody has been phoned yet</span>
+        </div>
+        <div class="cb-s">
+          <span class="k">Bars found</span>
+          <span class="v" id="cbBars">0</span>
+          <span class="sub" id="cbBarsSub">0 Pamp / 0 Generic</span>
+        </div>
+        <div class="cb-s">
+          <span class="k">Needs re-calling</span>
+          <span class="v mute" id="cbStale">0</span>
+          <span class="sub" id="cbStaleSub">nothing over a day old</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cb-near">
+      <span class="cb-title">Where the bars are</span>
+      <div class="cb-chips" id="cbNear"><span class="cb-chip none">No warehouse has confirmed bars yet</span></div>
+    </div>
+
+    <div class="cb-afford" id="cbAfford">Waiting on June's first call.</div>
+
+    <!-- June's register price vs the online lookup: do they agree? -->
+    <div class="pxagree">
+      <span class="cb-title">Price check — June's register vs the online listing</span>
+      <div class="px-row">
+        <div class="px-f"><span class="k">June · in store</span><span class="v" id="pxJune">—</span></div>
+        <div class="px-f"><span class="k">Costco.com · listed</span><span class="v mute" id="pxOnline">—</span></div>
+        <div class="px-f"><span class="k">Online implies in store</span><span class="v mute" id="pxImplied">—</span></div>
+        <div class="px-f"><span class="k">Gap</span><span class="v" id="pxGap">—</span></div>
+      </div>
+      <div class="px-verdict" id="pxVerdict">No price recorded yet — nothing to compare.</div>
+    </div>
+  </section>
+
+  <!-- JUNE'S COSTCO ROUND — the live call sheet that produces the BUY price -->
+  <details class="junebox" id="juneBox">
+    <summary class="jb-sum">
+      <div class="jb-l">
+        <span>📞 June's Costco round</span>
+        <span class="jb-sub" id="jbSub">45 warehouses within 100 miles · nearest to Walnut Creek first</span>
+      </div>
+      <div class="jb-r">
+        <span class="jb-live" id="jbLive">◉ connecting</span>
+        <span class="jb-cov" id="jbCov">no calls yet</span>
+        <span class="jb-chev" aria-hidden="true">⌄</span>
+      </div>
+    </summary>
+    <div class="jb-body">
+      <div class="jb-actions">
+        <button class="pull sm" id="jbRefresh" type="button"><span class="dot"></span> REFRESH NOW</button>
+        <button class="pull sm" id="jbSelf" type="button"><span class="dot"></span> I CALLED ONE MYSELF</button>
+        <button class="pull sm" id="jbPasteToggle" type="button" style="filter:saturate(.25)"><span class="dot"></span> PASTE A ROUND</button>
+        <button class="pull sm" id="jbDropPaste" type="button" style="display:none;filter:saturate(.25)"><span class="dot"></span> DROP PASTED ROUND</button>
+        <span class="jb-msg" id="jbMsg">Nothing recorded yet — BUY is still the seed price.</span>
+      </div>
+
+      <!-- Log a call without June: same shared table, marked as yours -->
+      <div class="jb-self" id="jbSelfForm" style="display:none">
+        <div class="jbs-grid">
+          <div class="jbs-f">
+            <label class="jbs-lab" for="jsStore">Warehouse</label>
+            <select id="jsStore"></select>
+          </div>
+          <div class="jbs-f">
+            <label class="jbs-lab" for="jsStock">Stock</label>
+            <select id="jsStock">
+              <option value="yes">Has bars</option>
+              <option value="no">Sold out</option>
+            </select>
+          </div>
+          <div class="jbs-f">
+            <label class="jbs-lab" for="jsPamp">Pamp bars</label>
+            <input id="jsPamp" type="number" min="0" step="1" placeholder="0">
+          </div>
+          <div class="jbs-f">
+            <label class="jbs-lab" for="jsGen">Generic bars</label>
+            <input id="jsGen" type="number" min="0" step="1" placeholder="0">
+          </div>
+          <div class="jbs-f wide">
+            <label class="jbs-lab" for="jsNote">Notes</label>
+            <input id="jsNote" type="text" placeholder="limit per member, restock day, who you spoke to">
+          </div>
+          <div class="jbs-f">
+            <label class="jbs-lab" for="jsPrice">Shelf price (optional)</label>
+            <input id="jsPrice" type="number" min="0" step="0.01" placeholder="leave blank to keep">
+          </div>
+        </div>
+        <div class="jb-actions">
+          <button class="pull sm" id="jsSave" type="button"><span class="dot"></span> SAVE MY CALL</button>
+          <span class="jb-msg" id="jsMsg">Saves to the same list June's phone writes to.</span>
+        </div>
+      </div>
+
+      <div id="jbPasteWrap" style="display:none">
+        <textarea class="jb-paste" id="jbPaste" spellcheck="false"
+          placeholder="Backup route — paste what June copied from the call sheet, then press IMPORT."></textarea>
+        <div class="jb-actions" style="margin-top:8px">
+          <button class="pull sm" id="jbImport" type="button"><span class="dot"></span> IMPORT PASTED ROUND</button>
+        </div>
+      </div>
+
+      <div class="jb-sortbar">
+        <label class="jb-sortlab" for="jbSort">Sort</label>
+        <select id="jbSort">
+          <option value="distance">Distance — nearest to Walnut Creek</option>
+          <option value="smart">Called today first, nearest — day-old at the bottom</option>
+          <option value="name">Name — A to Z</option>
+          <option value="bars">Inventory — most bars first</option>
+        </select>
+        <span class="jb-sortnote" id="jbSortNote">—</span>
+      </div>
+
+      <div class="jb-wrap" id="jbWrap">
+        <table class="jb-table">
+          <thead>
+            <tr>
+              <th>Warehouse</th><th class="r">Miles</th><th class="r">Pamp</th><th class="r">Generic</th>
+              <th class="r">Total</th><th>Called</th><th>By</th><th>Notes</th>
+            </tr>
+          </thead>
+          <tbody id="jbRows"></tbody>
+        </table>
+      </div>
+    </div>
+  </details>
 
   <!-- ALERT GAUGE (full-width band) -->
   <div class="gaugebar">
@@ -496,6 +814,13 @@
     onlinePrice:4169.99, onlineTime:"2026-07-25T10:15", inStock:true,
     discPamp:10, discGen:20, floor:25, onlinePrem:10
   };
+  // The built-in starting price, captured before anything can overwrite it. CFG.junePrice
+  // used to be written and never reverted, so a price that expired — or one Medi explicitly
+  // discarded — kept driving BUY while every label on the page called it "the seed".
+  const JUNE_SEED = {price:CFG.junePrice, t:CFG.juneTime};
+  // June's notes are free text she types on her phone — escape before it reaches innerHTML.
+  const esc = s => String(s).replace(/[&<>"']/g, c =>
+    ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
   // LIVE feed — the "Gold Flip — Engine" sheet (Drive: wc@adibs.com). Read-only, via the
   // viewer's Google Drive connector. Everything falls back to the seed values above if the
@@ -542,12 +867,22 @@
   }
   function fmtDT(v){
     if(!v) return "—";
-    const d=new Date(v); if(isNaN(d)) return v;
+    // An unparseable timestamp is echoed straight back, and every caller drops the result
+    // into innerHTML. A pasted round carries timestamps typed by a human, so escape it.
+    const d=new Date(v); if(isNaN(d)) return esc(v);
     return d.toLocaleDateString("en-US",{month:"short",day:"numeric"})+" · "+
            d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
   }
   let barType="pamp";
+  // Age of the Costco.com lookup, in days. Same yardstick as juneAgeDays(), declared here
+  // because compute() needs it and compute() runs before the June block is reached.
+  function onlineAgeDays(){
+    const d=new Date(CFG.onlineTime);
+    return isNaN(d) ? Infinity : (Date.now()-d.getTime())/864e5;
+  }
   let _bp=null;   // cached {rows, buy, lossP} so avail toggles recompute the band only
+  let _bpBars=0;  // whole bars the pooled credit can actually buy — read by the coverage band
+  let _impliedInStore=null;   // online listing minus the in-store premium, for the price check
   let _pulse=false;      // set true by a live update that moved the spot → compute() ripples the figures
 
   // FLASH PULSE: re-trigger a subtle pop (+ optional up/down color) by clearing & re-adding the class.
@@ -569,6 +904,7 @@
     let spendLeft=deployed, reward=0;
     for(const x of pool){ const use=Math.min(x.c.limit,spendLeft); reward+=use*(x.eff/100); spendLeft-=use; if(spendLeft<=0)break; }
     const totProfit=reward-totBars*lossP, unused=totCredit-deployed;
+    _bpBars=totBars;   // the coverage band answers "she found N, can I afford them?"
     $("bpCredit").textContent=money(totCredit);
     $("bpBars").textContent=totBars+(totBars===1?" bar":" bars");
     $("bpDeployed").textContent=money(deployed);
@@ -606,10 +942,33 @@
   function compute(){
     const spot=num("spot");
     const june=CFG.junePrice, online=CFG.onlinePrice, inStock=CFG.inStock;
-    const discP=CFG.discPamp, discG=CFG.discGen, floorV=CFG.floor;
-    const impliedInStore=online-(CFG.onlinePrem||10);
-    const overridden=inStock && impliedInStore>june+0.001;
+    /* Elemetal's discount is ONE quantity with, until now, two homes: CFG.discPamp/discGen
+       drove the profit math, while BUYERS[].offset drove the "Where you sell" card — and
+       applySheet() updates only the latter from the engine sheet. Setting elemetal_pamp to
+       -25 there would have shown "spot − $25" in the buyers card while every card figure,
+       NET, buying power and the ALERT verdict still sold at spot − $10. The buyers entry is
+       the one the sheet can move, so it wins; CFG stays as the fallback. */
+    const eP=BUYERS.filter(function(b){ return b.key==="elemetal_pamp"; })[0];
+    const eG=BUYERS.filter(function(b){ return b.key==="elemetal_generic"; })[0];
+    const discP=(eP && isFinite(eP.offset)) ? -eP.offset : CFG.discPamp;
+    const discG=(eG && isFinite(eG.offset)) ? -eG.offset : CFG.discGen;
+    const floorV=CFG.floor;
+    const prem = (CFG.onlinePrem==null || isNaN(CFG.onlinePrem)) ? 10 : Number(CFG.onlinePrem);
+    const impliedInStore=online-prem;   // `||10` swallowed a legitimate premium of 0
+    // The online lookup gets the SAME 2-day expiry June's price gets. It used to get none,
+    // which meant a seeded or long-dead online number could quietly outrank a price June
+    // phoned in this morning and become BUY — the very thing the 2-day rule exists to stop.
+    // PULL ONLINE only flags a refresh for Claude; it does not fetch, so this number can sit
+    // still for days without anything on screen admitting it.
+    const onlineOld = onlineAgeDays()>=2;
+    const overridden = inStock && !onlineOld && impliedInStore>june+0.001;
+
     const buy=overridden?impliedInStore:june;
+
+    // Publish the decision IMMEDIATELY. priceState() reads _juneOverridden, and the gauge and
+    // matrix stamps below call it — if these were still assigned at the end of compute() the
+    // stamps would describe the PREVIOUS run's decision.
+    _juneBuy=buy; _juneOverridden=overridden; _impliedInStore=impliedInStore;
 
     const sellP=spot-discP, sellG=spot-discG;
     const lossP=buy-sellP, lossG=buy-sellG;
@@ -634,7 +993,7 @@
     fill.className="fill "+(heroSel>=floorV?"good":"bad");
     $("gaugeVal").textContent=`${money(heroSel)} / ${money(floorV)}`;
     const v=$("verdict");
-    if(heroSel>=floorV){v.className="verdict go";v.textContent="✓ ALERT — floor clears $25/bar";}
+    if(heroSel>=floorV){v.className="verdict go";v.textContent="✓ ALERT — floor clears "+money(floorV)+"/bar";}
     else{v.className="verdict no";v.textContent=`✗ No-go — need ${money(floorV-heroSel)} more/bar`;}
 
     // matrix: fixed order, Visa group then MC divider then MC group
@@ -659,9 +1018,22 @@
     _bp={rows, buy, lossP};
     computeBP(rows, buy, lossP);
 
-    const sp=$("spotStamp").dataset.t||nowStr();
-    $("heroStamp").innerHTML=`spot <b>${sp}</b> · buy from <b>${overridden?"online lookup":"June "+fmtDT(CFG.juneTime)}</b>`;
-    $("matrixStamp").innerHTML=`spot ${sp} · June ${fmtDT(CFG.juneTime)}`;
+    // dataset.t is set ONLY by a real live read. Falling back to nowStr() printed the current
+    // clock next to a build-time constant on every keystroke — exactly the false "just pulled"
+    // claim the PULL fix removed, re-entering through the stamp.
+    const sp=$("spotStamp").dataset.t || "not a live price";
+    // Same single source of truth the price card uses, so the two stamps and the card can
+    // never disagree about who set BUY or when. Previously this printed CFG.juneTime, which
+    // on a fresh load is still the seed literal — a date nobody had actually captured.
+    const st = priceState();
+    const priceSrc =
+        st==="online"          ? "online lookup"
+      : st==="fresh"           ? (priceWhoWord()+" "+fmtDT(buyPriceAt()))
+      : st==="expired-held"    ? (priceWhoWord()+" "+fmtDT(buyPriceAt())+" · STALE")
+      : st==="expired-dropped" ? "starting figure — the phoned-in price expired"
+      :                          "starting figure — nobody has phoned yet";
+    $("heroStamp").innerHTML=`spot <b>${sp}</b> · buy from <b>${priceSrc}</b>`;
+    $("matrixStamp").innerHTML=`spot ${sp} · price ${priceSrc}`;
     $("deltaStamp").innerHTML=`vs spot <b>${sp}</b>`;
 
     // FLASH PULSE ripple — only on a live update that moved spot, never while the user is typing.
@@ -671,6 +1043,10 @@
       mx.querySelectorAll(".col-bar").forEach(el=>flashPulse(el));
     }
     _pulse=false;
+
+    // (_juneBuy / _juneOverridden / _impliedInStore were published at the top of compute().)
+    juneVerdict();
+    renderCoverage();   // coverage + affordability + the price-agreement check
 
     renderBuyers(spot);
   }
@@ -700,7 +1076,12 @@
 
   function renderCFG(){
     $("junePriceV").textContent=money(CFG.junePrice);
-    $("juneTimeV").textContent=fmtDT(CFG.juneTime);
+    // Show the timestamp of the price BUY is actually using — not CFG.juneTime, which on a
+    // fresh load is still the seed literal and invented a capture time for a price nobody
+    // captured. When the phoned-in price has expired and been dropped, say so.
+    const at = buyPriceAt();
+    $("juneTimeV").textContent = at ? fmtDT(at)
+      : (priceState()==="expired-dropped" ? "expired — not in use" : "not captured yet");
     $("onlinePriceV").textContent=money(CFG.onlinePrice);
     $("onlineTimeV").textContent=fmtDT(CFG.onlineTime);
     const s=$("inStockV"); s.textContent=CFG.inStock?"in stock":"out of stock";
@@ -762,11 +1143,20 @@
         // direction for the color flash — skip the very first sync so nothing pops on load
         if(_sheetInit && oldSpot && Math.abs(nv-oldSpot)>0.001) spotDir = nv>oldSpot?1:-1;
       }
-      if(map.gold_spot.t){ $("spotStamp").dataset.t=fmtDT(map.gold_spot.t);
-        $("spotStamp").innerHTML=`spot pulled <b>${fmtDT(map.gold_spot.t)}</b>`; }
+      // Only stamp a pull when the box actually holds the pulled number. The value write
+      // above already skips a focused field; the stamp used to go in regardless, so the page
+      // claimed a pull time next to a figure Medi had just typed over it.
+      if(map.gold_spot.t && document.activeElement!==spotEl &&
+         Math.abs((+spotEl.value)-nv)<0.005){
+        $("spotStamp").dataset.t=fmtDT(map.gold_spot.t);
+        $("spotStamp").innerHTML=`spot pulled <b>${fmtDT(map.gold_spot.t)}</b>`;
+      }
     }
-    setNum("june_price",(v)=>CFG.junePrice=v);
-    if(map.june_price&&map.june_price.t) CFG.juneTime=map.june_price.t;
+    // june_price is DELIBERATELY not read from the sheet any more. Supabase is the single
+    // owner of that number now that June writes it from her phone. When both wrote it, the
+    // 60s sheet tick and the 30s Supabase poll fought over CFG.junePrice, BUY flipped back
+    // and forth, and the price panel named whichever one it had last seen — not the one the
+    // gauge used. One writer, one number.
     setNum("online_price",(v)=>CFG.onlinePrice=v);
     if(map.online_price&&map.online_price.t) CFG.onlineTime=map.online_price.t;
     setNum("online_premium",(v)=>CFG.onlinePrem=v);
@@ -825,14 +1215,25 @@
     }).catch(err=>setStatus(false, err&&err.code));
   }
 
+  /* The spot stamp must never claim a pull that did not happen. Only the live-feed handler
+     is allowed to write "spot pulled <time>"; everything else says where the number came
+     from — a value typed in this box, or the built-in starting figure. */
+  function markSpotManual(){
+    const el=$("spotStamp");
+    el.dataset.t="";      // only a real live read may set this
+    el.innerHTML="<b>not a live price</b> — this is the number in the box above, edit it to match the market";
+  }
+
   const btn=$("pullBtn");
   btn.addEventListener("click",()=>{ if(btn.disabled)return; btn.disabled=true;
     // If live, force a fresh sheet read; the watch handler restamps from the sheet.
     if(_liveServer && window.claude && window.claude.mcp){
       window.claude.mcp.invalidate(_liveServer,"download_file_content").catch(()=>{});
     } else {
-      $("spotStamp").dataset.t=nowStr();
-      $("spotStamp").innerHTML=`spot pulled <b>${$("spotStamp").dataset.t}</b>`;
+      // No live feed connected. There is nothing to pull, so do NOT restamp the clock —
+      // that told Medi a build-time constant had just been fetched, and spot is the sell
+      // side of every figure on the page. Recompute and say plainly what happened.
+      markSpotManual();
       compute();
     }
     setTimeout(()=>btn.disabled=false,650); });
@@ -844,15 +1245,27 @@
     r.style.display="block";
     setTimeout(()=>obtn.disabled=false,650); });
 
-  $("spot").addEventListener("input",compute);
+  $("spot").addEventListener("input",function(){
+    // A hand-typed spot is no longer the pulled one; keeping the old stamp made the page
+    // quote a pull time next to a number Medi had just changed.
+    markSpotManual(); compute();
+  });
   $("matrix").addEventListener("change",e=>{
     const cb=e.target.closest('input[type=checkbox][data-card]'); if(!cb)return;
     avail[cb.dataset.card]=cb.checked;
     if(_bp) computeBP(_bp.rows,_bp.buy,_bp.lossP);  // band only → keeps checkbox focus
+    // computeBP just moved _bpBars, and the coverage band's affordability sentence quotes it.
+    // Without this the two disagree on screen until the next 30s poll — at the exact moment
+    // Medi has just told the app a card is unavailable.
+    renderCoverage();
   });
   $("themeBtn").addEventListener("click",()=>{
     const cur=document.documentElement.getAttribute("data-theme");
-    document.documentElement.setAttribute("data-theme",cur==="light"?"dark":"light");
+    const next=cur==="light"?"dark":"light";
+    document.documentElement.setAttribute("data-theme",next);
+    // The chart paints colours into SVG attributes, so it cannot inherit the new tokens —
+    // it has to be redrawn or it keeps the old theme's grid and candle colours.
+    try{ drawChart(_chartTF); }catch(e){}
   });
 
   function marketStatus(){
@@ -969,7 +1382,13 @@
     const x=i=> padL + (data.length===1? cw/2 : i*(cw/(data.length-1)));
     const y=p=> padT + (hi-p)/(hi-lo)*ch;
     const bw=Math.max(1.2, Math.min(11, cw/data.length*0.66));
-    const good="#4bd6a0", bad="#f2686f", grid="#262c3a", mute="#767d90", gold="#e8c46a";
+    // Read the live design tokens instead of hardcoding the dark palette — the chart is
+    // drawn into SVG attributes, so it does not inherit CSS variables the way the rest of
+    // the page does and used to keep its dark grid on the cream light theme.
+    const tok=getComputedStyle(document.documentElement);
+    const T=(name,fallback)=>{ const v=tok.getPropertyValue(name).trim(); return v||fallback; };
+    const good=T("--good","#4bd6a0"), bad=T("--bad","#f2686f"),
+          grid=T("--line","#262c3a"), mute=T("--ink-mute","#767d90"), gold=T("--gold","#e8c46a");
     let s="";
     for(let g=0; g<=4; g++){
       const p=hi-(hi-lo)*g/4, yy=y(p);
@@ -1070,14 +1489,1181 @@
   $("tfbar").addEventListener("click",e=>{const b=e.target.closest(".tfbtn"); if(b) drawChart(b.dataset.tf);});
   $("chartBox").addEventListener("toggle",function(){ if(this.open && !_chartDrawn) drawChart(_chartTF); });
 
-  $("spotStamp").dataset.t=nowStr();
-  $("spotStamp").innerHTML=`spot pulled <b>${$("spotStamp").dataset.t}</b>`;
+  /* ================= JUNE'S ROUND — live shared list + BUY =================
+     June works june-call-sheet.html on her phone; every save she makes lands in the shared
+     Supabase tables below, and this panel re-reads them every 30s. Costco charges the SAME
+     price at every warehouse, so the round carries ONE price plus a per-store Pamp/Generic
+     count. That price becomes CFG.junePrice — the BUY side of every card — as long as it was
+     captured within the last 2 days. "I CALLED ONE MYSELF" writes to the very same list.
+     A pasted round is kept as the offline fallback. */
+  const SB_URL="https://hkndckjkwcgnhziikgvl.supabase.co";
+  const SB_KEY="sb_publishable_T-J8pW4u52UvhYjv_u8blA_xHQ4vxAp";
+  const JUNE_KEY="alchemy_june_round_v3", JUNE_DAY=864e5;
+  let JUNEROUND=null;
+
+  /* ============================================================
+     THE 45 WAREHOUSES — byte-for-byte the same list as june-call-sheet.html:403.
+     Both files carry their own copy on purpose: June's page has to work in a Costco
+     parking lot with no signal, so the list cannot live in Supabase. A drift check
+     (scripts/check-store-drift.py) diffs the two lists before every commit.
+     "mi" = approximate DRIVING miles from Walnut Creek. "bc" = Business Center,
+     which stocks differently from a regular warehouse.
+     ============================================================ */
+  const JSTORES = [
+    {id:"concord",     n:"Concord",                  a:"2400 Monument Blvd",        c:"Concord",              p:"9255664003", mi:5},
+    {id:"danville",    n:"Danville",                 a:"3150 Fostoria Way",         c:"Danville",             p:"9252770407", mi:12},
+    {id:"richmond",    n:"Richmond",                 a:"4801 Central Ave",          c:"Richmond",             p:"5108982003", mi:18},
+    {id:"brentwood",   n:"Brentwood",                a:"5151 Heidorn Ranch Rd",     c:"Brentwood",            p:"9256660223", mi:22},
+    {id:"livermore",   n:"Livermore",                a:"2800 Independence Dr",      c:"Livermore",            p:"9254436306", mi:25},
+    {id:"sanleandro",  n:"San Leandro",              a:"1900 Davis St",             c:"San Leandro",          p:"5105626708", mi:26},
+    {id:"antioch",     n:"Antioch",                  a:"2201 Verne Roberts Cir",    c:"Antioch",              p:"9257577130", mi:27},
+    {id:"vallejo",     n:"Vallejo",                  a:"198 Plaza Dr",              c:"Vallejo",              p:"7075536400", mi:28},
+    {id:"sf",          n:"San Francisco",            a:"450 10th St",               c:"San Francisco",        p:"4156264388", mi:29},
+    {id:"haywardbc",   n:"Hayward Business Center",  a:"22330 Hathaway Ave",        c:"Hayward",              p:"5102596600", mi:30, bc:true},
+    {id:"hayward",     n:"Hayward",                  a:"28505 Hesperian Blvd",      c:"Hayward",              p:"5109213126", mi:33},
+    {id:"ssfbc",       n:"S. San Francisco Business Center", a:"900 Dubuque Ave",   c:"South San Francisco",  p:"6507844047", mi:33, bc:true},
+    {id:"ssf",         n:"South San Francisco",      a:"1600 El Camino Real",       c:"South San Francisco",  p:"6507573003", mi:35},
+    {id:"fremont",     n:"Fremont",                  a:"43621 Pacific Commons Blvd",c:"Fremont",              p:"5108971092", mi:36},
+    {id:"novato",      n:"Novato",                   a:"300 Vintage Way",           c:"Novato",               p:"4158991332", mi:38},
+    {id:"fairfield",   n:"Fairfield",                a:"5101 Business Center Dr",   c:"Fairfield",            p:"7078643816", mi:39},
+    {id:"fostercity",  n:"Foster City",              a:"1001 Metro Center Blvd",    c:"Foster City",          p:"6502860739", mi:42},
+    {id:"tracy",       n:"Tracy",                    a:"3250 W Grant Line Rd",      c:"Tracy",                p:"2098305340", mi:42},
+    {id:"napa",        n:"Napa",                     a:"280 Riversound Way",        c:"Napa",                 p:"7078195900", mi:43},
+    {id:"santaclara",  n:"Santa Clara",              a:"1601 Coleman Ave",          c:"Santa Clara",          p:"4085679000", mi:44},
+    {id:"sjne",        n:"San Jose — Automation Pkwy",a:"1709 Automation Pkwy",     c:"San Jose",             p:"4086782150", mi:45},
+    {id:"redwoodcity", n:"Redwood City",             a:"2300 Middlefield Rd",       c:"Redwood City",         p:"6505684040", mi:46},
+    {id:"sunnyvale",   n:"Sunnyvale",                a:"150 Lawrence Station Rd",   c:"Sunnyvale",            p:"4087301892", mi:47},
+    {id:"mountainview",n:"Mountain View",            a:"1000 N Rengstorff Ave",     c:"Mountain View",        p:"6509881841", mi:48},
+    {id:"vacaville",   n:"Vacaville",                a:"1051 Hume Way",             c:"Vacaville",            p:"7074537343", mi:48},
+    {id:"sjsenter",    n:"San Jose — Senter Rd",     a:"2201 Senter Rd",            c:"San Jose",             p:"4082750199", mi:50},
+    {id:"sjalmaden",   n:"San Jose — Almaden",       a:"5301 Almaden Expy",         c:"San Jose",             p:"4087230964", mi:55},
+    {id:"stockton",    n:"Stockton",                 a:"1616 E Hammer Ln",          c:"Stockton",             p:"2094782040", mi:57},
+    {id:"manteca",     n:"Manteca",                  a:"2440 Daniels St",           c:"Manteca",              p:"2098258200", mi:58},
+    {id:"rohnertpark", n:"Rohnert Park",             a:"5901 Redwood Dr",           c:"Rohnert Park",         p:"7075409113", mi:62},
+    {id:"lodi",        n:"Lodi",                     a:"2680 Reynolds Ranch Pkwy",  c:"Lodi",                 p:"2093667300", mi:65},
+    {id:"santarosa",   n:"Santa Rosa",               a:"1900 Santa Rosa Ave",       c:"Santa Rosa",           p:"7075783775", mi:68},
+    {id:"morganhill",  n:"Morgan Hill",              a:"820 E Dunne Ave #100",      c:"Morgan Hill",          p:"4087822131", mi:68},
+    {id:"modesto",     n:"Modesto",                  a:"3801 Pelandale Ave",        c:"Modesto",              p:"2093424903", mi:72},
+    {id:"elkgrove",    n:"Elk Grove",                a:"7400 Elk Grove Blvd",       c:"Elk Grove",            p:"9164656050", mi:72},
+    {id:"sacflorin",   n:"Sacramento — Florin Rd",   a:"8484 Florin Rd",            c:"Sacramento",           p:"9167391045", mi:75},
+    {id:"gilroy",      n:"Gilroy",                   a:"7251 Camino Arroyo",        c:"Gilroy",               p:"4088480700", mi:78},
+    {id:"saccalexpo",  n:"Sacramento — Cal Expo",    a:"1600 Expo Pkwy",            c:"Sacramento",           p:"9168301078", mi:78},
+    {id:"sacbc",       n:"Sacramento Business Center",a:"3360 El Camino Ave",       c:"Sacramento",           p:"9164264556", mi:80, bc:true},
+    {id:"sacnatomas",  n:"Sacramento — Natomas",     a:"3881 E Commerce Way",       c:"Sacramento",           p:"9162659594", mi:80},
+    {id:"woodland",    n:"Woodland",                 a:"2299 Bronze Star Dr",       c:"Woodland",             p:"5304062120", mi:82},
+    {id:"roseville",   n:"Roseville",                a:"6750 Stanford Ranch Rd",    c:"Roseville",            p:"9167891485", mi:92},
+    {id:"salinas",     n:"Salinas",                  a:"1339 N Davis Rd",           c:"Salinas",              p:"8314244242", mi:93},
+    {id:"folsom",      n:"Folsom",                   a:"1800 Cavitt Dr",            c:"Folsom",               p:"9168501000", mi:95},
+    {id:"sandcity",    n:"Sand City (Monterey)",     a:"801 Tioga Ave",             c:"Sand City",            p:"8318991255", mi:100}
+  ];
+  const SMAP = (function(){ const m={}; JSTORES.forEach(function(s){ m[s.id]=s; }); return m; })();
+  // Name → store, so a pasted round (which carries names, not ids) still joins onto the 45.
+  const NAME2STORE = (function(){ const m={}; JSTORES.forEach(function(s){ m[s.n.toLowerCase()]=s; }); return m; })();
+
+  function sbH(extra){
+    const h={apikey:SB_KEY, Authorization:"Bearer "+SB_KEY, "Content-Type":"application/json"};
+    if(extra) Object.keys(extra).forEach(k=>h[k]=extra[k]);
+    return h;
+  }
+  function setJbLive(on,txt){
+    const el=$("jbLive"); if(!el) return;
+    el.className="jb-live "+(on?"on":"off");
+    el.textContent=txt||(on?"● live":"◉ offline");
+  }
+  const nnum=v=>(v==null||v===""||isNaN(v))?0:Number(v);
+  function juneAgeDays(iso){ const d=new Date(iso); return isNaN(d)?Infinity:(Date.now()-d.getTime())/JUNE_DAY; }
+  // Must agree with juneVerdict()'s guard (p<=0 is not a price). When these two disagreed,
+  // a zero could reach CFG.junePrice, make buy 0, flip the verdict to "ALERT — clears $25"
+  // and divide by zero in computeBP, printing "NaN bars" and "$NaN".
+  function junePriceFresh(r){
+    return !!r && r.price!=null && isFinite(r.price) && Number(r.price)>0 && juneAgeDays(r.priceAt)<2;
+  }
+
+  /* ---- every network call goes through here, so no failure can be silent ----
+     Returns {kind, status, data}. kind is one of:
+       ok       — got usable JSON
+       timeout  — Supabase took longer than SB_TIMEOUT (no infinite spinner)
+       network  — could not reach it at all (no signal, DNS, CORS)
+       http     — reached it, but it said no (4xx/5xx). 4xx is PERMANENT: retrying
+                  a value the database rejects would loop forever.
+       parse    — 200 OK but the body was not JSON we can read. */
+  const SB_TIMEOUT=8000;
+  function sbFetch(url, opts){
+    const o=Object.assign({}, opts||{});
+    let ctl=null, timer=null;
+    if(typeof AbortController==="function"){
+      ctl=new AbortController(); o.signal=ctl.signal;
+      timer=setTimeout(function(){ try{ ctl.abort(); }catch(e){} }, SB_TIMEOUT);
+    }
+    // Belt AND braces. Aborting only works if fetch honours the signal; a request that
+    // never settles at all would otherwise leave the panel reading "reading…" forever.
+    // Racing a timer guarantees this promise always resolves and the UI always moves on.
+    const guard=new Promise(function(res){
+      setTimeout(function(){ res({kind:"timeout", status:0}); }, SB_TIMEOUT+250);
+    });
+    const req=fetch(url,o).then(function(r){
+      if(timer) clearTimeout(timer);
+      if(!r.ok) return r.text().then(function(t){
+        return {kind:"http", status:r.status, body:t||"", permanent:r.status>=400&&r.status<500};
+      },function(){ return {kind:"http", status:r.status, body:"", permanent:r.status>=400&&r.status<500}; });
+      if(o.method && o.method!=="GET") return {kind:"ok", status:r.status, data:null};
+      return r.json().then(function(j){ return {kind:"ok", status:r.status, data:j}; },
+                          function(){ return {kind:"parse", status:r.status}; });
+    },function(err){
+      if(timer) clearTimeout(timer);
+      const aborted = err && (err.name==="AbortError" || /abort/i.test(String(err&&err.message)));
+      return {kind:aborted?"timeout":"network", status:0};
+    });
+    return Promise.race([req, guard]);
+  }
+
+  /* Turn one raw database row into the shape the table renders, or null if it is
+     unreadable. Unreadable rows are COUNTED, never silently dropped. */
+  function coerceCall(r){
+    if(!r || typeof r!=="object") return null;
+    const id=(r.store_id==null?"":String(r.store_id)).trim();
+    if(!id) return null;
+    const t=r.called_at;
+    if(!t || isNaN(new Date(t))) return null;
+    const known=SMAP[id]||null;
+    const num=function(v){
+      if(v==null||v==="") return null;
+      const n=Number(v); return isFinite(n)?n:null;
+    };
+    return {
+      id:id,
+      store: known ? known.n : (r.store_name?String(r.store_name):id),
+      city:  known ? known.c : (r.city?String(r.city):""),
+      mi:    known ? known.mi : (num(r.miles)==null?null:num(r.miles)),
+      bc:    !!(known&&known.bc),
+      known: !!known,
+      stock: !!r.in_stock,
+      pamp:  num(r.pamp), generic:num(r.generic),
+      note:  r.note==null?"":String(r.note),
+      t:t, by:r.called_by==null?"":String(r.called_by)
+    };
+  }
+
+  /* ---- pull the shared list ---- */
+  let _juneErrKind="", _juneSkipped=0, _juneUnknown=0, _juneDupes=0, _juneLastGoodAt="";
+  let _pasteDropped=false;   // Medi explicitly discarded the pasted round this session
+  function pullJune(announce){
+    setJbLive(false,"◉ reading…");
+    return Promise.all([
+      sbFetch(SB_URL+"/rest/v1/alchemy_calls?select=*",{headers:sbH()}),
+      sbFetch(SB_URL+"/rest/v1/alchemy_price?select=*&id=eq.1",{headers:sbH()})
+    ]).then(function(res){
+      const a=res[0], b=res[1];
+      // The WAREHOUSE list failing on its own is the dangerous case: `calls` would fall back
+      // to [], a round with zero rows would be built, marked live, and written over the
+      // cached copy — so a timed-out query turned into a confident green "0 of 45 called".
+      // Treat a failed rows-read exactly like being offline: keep what we have and say so.
+      if(a.kind!=="ok"){
+        _juneErrKind = a.kind;
+        setJbLive(false, a.kind==="timeout" ? "◉ too slow to answer" : "◉ offline");
+        if(JUNEROUND && !JUNEROUND.live && !_pasteDropped) $("jbDropPaste").style.display="";
+        renderJune();
+        return false;
+      }
+      if(a.kind!=="ok" && b.kind!=="ok"){
+        _juneErrKind = a.kind;
+        setJbLive(false, a.kind==="timeout" ? "◉ too slow to answer" : "◉ offline");
+        // Offer the escape hatch here too. Without this, a bad paste restored from this
+        // device plus a failed first read left Medi with no way to drop it until the
+        // connection came back.
+        if(JUNEROUND && !JUNEROUND.live && !_pasteDropped) $("jbDropPaste").style.display="";
+        renderJune();                       // still paint all 45 from what we have
+        return false;
+      }
+      _juneErrKind="";
+      const calls = (a.kind==="ok" && Array.isArray(a.data)) ? a.data : [];
+      const prow  = (b.kind==="ok" && Array.isArray(b.data)) ? b.data : [];
+      const p=prow[0]||null;
+
+      let skipped=0, unknown=0;
+      const rows=[];
+      calls.forEach(function(raw){
+        const row=coerceCall(raw);
+        if(!row){ skipped++; return; }
+        if(!row.known) unknown++;
+        rows.push(row);
+      });
+      _juneSkipped=skipped; _juneUnknown=unknown;
+      _juneLastGoodAt=new Date().toISOString();
+      const round={
+        price: p?Number(p.price):(JUNEROUND?JUNEROUND.price:null),
+        priceKind: p?(p.bar_type||""):(JUNEROUND?JUNEROUND.priceKind:""),
+        priceAt: p?p.updated_at:(JUNEROUND?JUNEROUND.priceAt:""),
+        priceBy: p?(p.updated_by||""):(JUNEROUND?JUNEROUND.priceBy:""),
+        rows: rows, at:_juneLastGoodAt, live:true
+      };
+
+      /* THE PASTED ROUND — a backup for when June's phone cannot sync.
+         Two rules, and both are needed:
+
+         1. OBSOLETE CHECK. If JUNE has called anything AFTER the paste was imported, her
+            phone is syncing again and her live list is authoritative, so the paste is
+            dropped whole. Medi's own saves are excluded from this test — one tap of SAVE MY
+            CALL used to wipe her imported round off his device.
+         2. Otherwise MERGE newest-wins PER WAREHOUSE, so a single freshly-synced row cannot
+            bin the other 39 stores (and the only stored copy of them) in one go.
+         Ties go to the live row: a queued call flushing late carries its original called_at,
+         so paste and live describe the same call and the server's version should win.
+
+         KNOWN LIMIT, accepted deliberately: a DELETE carries no timestamp, so clearing a
+         store (or a whole round) does not by itself make the paste obsolete — those rows
+         keep showing until June calls something new, they age past 2 days, or Medi presses
+         DROP PASTED ROUND. Auto-suppressing them would mean destroying the only copy of a
+         round June typed, which is the worse failure. The pill says how many rows are still
+         coming from the paste so it is never silent. */
+      const ts=function(v){ const t=new Date(v).getTime(); return isNaN(t)?0:t; };
+      const pasteRows = JUNEROUND && (JUNEROUND.pasteRows || JUNEROUND.rows);
+      const pasteAt   = JUNEROUND ? ts(JUNEROUND.pasteAt || JUNEROUND.at) : 0;
+      const havePaste = !!(JUNEROUND && !JUNEROUND.live && pasteRows && pasteRows.length && !_pasteDropped);
+
+      // Only JUNE syncing can make her paste obsolete. Medi logging a call himself is not
+      // evidence her phone is back — but it lands in the same table, and counting it here
+      // meant one tap of SAVE MY CALL wiped her whole imported round off his device.
+      const juneNewest = havePaste ? rows.reduce(function(m,r){
+        return (r.by==="medi") ? m : Math.max(m, ts(r.t));
+      },0) : 0;
+      const pasteStillGood = havePaste && juneNewest <= pasteAt;
+
+      let pasteKept=0;
+      if(pasteStillGood){
+        const byId={};
+        rows.forEach(function(r){ byId[r.id]=r; });
+        pasteRows.forEach(function(pr){
+          if(!pr||!pr.id) return;
+          const live=byId[pr.id];
+          if(!live || ts(pr.t)>ts(live.t)){ byId[pr.id]=pr; pasteKept++; }
+        });
+        round.rows      = Object.keys(byId).map(function(k){ return byId[k]; });
+        round.pasteAt   = JUNEROUND.pasteAt || JUNEROUND.at;  // the ORIGINAL import moment
+        round.pasteRows = pasteRows;                          // the ORIGINAL pasted rows
+        // Carry the paste forward as a paste for as long as its rows are still being used,
+        // AND while its price is still the fresher one. Flipping to live the moment every
+        // row happened to tie disarmed the price rule below on the very next poll, so a
+        // newer pasted price survived exactly 30 seconds before silently reverting.
+        round.live = false;
+      }
+      // The paste carries its own price, and it is kept whenever it is the fresher of the
+      // two. Deliberately OUTSIDE the pasteKept test: the rows can all tie while the price
+      // is the only thing that never synced — which is exactly when this matters.
+      if(pasteStillGood && JUNEROUND.price!=null && ts(JUNEROUND.priceAt) > ts(round.priceAt)){
+        round.price     = JUNEROUND.price;
+        round.priceKind = JUNEROUND.priceKind;
+        round.priceAt   = JUNEROUND.priceAt;
+        round.priceBy   = JUNEROUND.priceBy;
+      }
+
+      applyJune(round, !announce);
+      if(pasteStillGood){
+        $("jbDropPaste").style.display="";
+        setJbLive(true, pasteKept
+          ? "● live · "+pasteKept+" of "+round.rows.length+" still from the pasted round"
+          : "● live · holding the pasted round's price (nothing newer has synced)");
+      } else {
+        $("jbDropPaste").style.display="none";
+        setJbLive(true,"● live · "+nowStr().split(" · ")[1]);
+      }
+      return true;
+    }).catch(function(e){
+      // Never let a render error masquerade as an offline state, and never leave the
+      // panel spinning: say something true and keep the last good copy on screen.
+      _juneErrKind="network";
+      setJbLive(false,"◉ offline");
+      try{ renderJune(); }catch(e2){}
+      return false;
+    });
+  }
+
+  /* ---- write one call (Medi entering it himself) ----
+     Resolves to {ok, kind, msg}. A 4xx is permanent (the database refused the value),
+     so the caller must NOT queue it for retry. */
+  function pushSelfCall(rec){
+    return sbFetch(SB_URL+"/rest/v1/alchemy_calls?on_conflict=store_id",{
+      method:"POST",
+      headers:sbH({Prefer:"resolution=merge-duplicates,return=minimal"}),
+      body:JSON.stringify(rec)
+    }).then(function(r){
+      if(r.kind==="ok"){ logCall(rec); return {ok:true, kind:"ok"}; }
+      return {ok:false, kind:r.kind, permanent:!!r.permanent, msg:writeErrMsg(r, rec)};
+    });
+  }
+  function pushSelfPrice(v){
+    // No bar type any more - Costco charges the same for Pamp and Generic, so there is
+    // only one price. The column stays in the table; it is simply not used.
+    const body={id:1, price:v, bar_type:"",
+                updated_at:new Date().toISOString(), updated_by:"medi"};
+    return sbFetch(SB_URL+"/rest/v1/alchemy_price?on_conflict=id",{
+      method:"POST",
+      headers:sbH({Prefer:"resolution=merge-duplicates,return=minimal"}),
+      body:JSON.stringify(body)
+    }).then(function(r){
+      if(r.kind==="ok"){ logPrice(body); return {ok:true, kind:"ok"}; }
+      return {ok:false, kind:r.kind, permanent:!!r.permanent, msg:writeErrMsg(r, body)};
+    });
+  }
+
+  /* ---- append-only history. Every save is inserted here and never updated or
+         deleted, so a last-write-wins overwrite (or a "clear all") can always be
+         recovered. Failures here are deliberately silent: the log is insurance,
+         and losing a log line must never block the actual save. ---- */
+  function logCall(rec){
+    sbFetch(SB_URL+"/rest/v1/alchemy_calls_log",{
+      method:"POST", headers:sbH({Prefer:"return=minimal"}), body:JSON.stringify(rec)
+    });
+  }
+  function logPrice(rec){
+    sbFetch(SB_URL+"/rest/v1/alchemy_price_log",{
+      method:"POST", headers:sbH({Prefer:"return=minimal"}),
+      body:JSON.stringify({price:rec.price, bar_type:rec.bar_type,
+                           updated_at:rec.updated_at, updated_by:rec.updated_by})
+    });
+  }
+
+  /* Plain English for every way a write can fail. No status codes in Medi's face. */
+  function writeErrMsg(r, rec){
+    if(r.kind==="timeout") return "The shared list took too long to answer. Nothing was saved — try again.";
+    if(r.kind==="network") return "No connection to the shared list. Nothing was saved — try again when you have signal.";
+    if(r.kind==="http" && r.permanent){
+      const b=String(r.body||"");
+      if(/pamp_sane|generic_sane/.test(b))
+        return "That bar count can't be right (it has to be a whole number from 0 to 500). Nothing was saved.";
+      if(/price_sane/.test(b))
+        return "That price can't be right (it has to be between $500 and $20,000). Nothing was saved.";
+      if(/miles_sane/.test(b))
+        return "That distance can't be right. Nothing was saved.";
+      return "The shared list refused that entry — one of the values is out of range. Nothing was saved.";
+    }
+    return "The shared list couldn't save that. Nothing was lost on your side — try REFRESH NOW, then again.";
+  }
+
+  /* ---- pasted-round fallback ---- */
+  function csvSplit(line){
+    const out=[]; let cur="", q=false;
+    for(let i=0;i<line.length;i++){
+      const ch=line[i];
+      if(q){ if(ch==='"'){ if(line[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=ch; }
+      else if(ch==='"') q=true;
+      else if(ch===","){ out.push(cur); cur=""; }
+      else cur+=ch;
+    }
+    out.push(cur); return out;
+  }
+  function parseJune(text){
+    const lines=String(text||"").split(/\r?\n/);
+    let price=null, priceKind="", priceAt="", hi=-1;
+    for(let i=0;i<lines.length;i++){
+      const c=csvSplit(lines[i]), k=(c[0]||"").trim().toLowerCase();
+      if(k==="price" && c[1]!=null && c[1].trim()!=="") price=Number(c[1].trim());
+      else if(k==="price_type") priceKind=(c[1]||"").trim();
+      else if(k==="price_at")   priceAt=(c[1]||"").trim();
+      else if(k==="store" && /^\s*city\s*$/i.test(c[1]||"")){ hi=i; break; }
+    }
+    if(hi<0) return {err:"Couldn't find June's store header (store,city,phone,…). Paste the whole block she copied."};
+    if(price==null||!isFinite(price)||price<=0)
+      return {err:"That round has no Costco price on it. June needs to fill in Step 1, then copy again."};
+    const cols=csvSplit(lines[hi]).map(s=>s.trim().toLowerCase());
+    const ix=n=>cols.indexOf(n);
+    const rows=[];
+    for(let i=hi+1;i<lines.length;i++){
+      if(!lines[i].trim()) continue;
+      const c=csvSplit(lines[i]);
+      if(c.length<cols.length) continue;
+      const g=n=>{ const j=ix(n); return j<0?"":(c[j]||"").trim(); };
+      // A pasted round carries names, not ids. Match the name back to a known warehouse so
+      // the row joins onto the 45 exactly like a live one; unmatched names stay unknown.
+      const nm=g("store"), known=NAME2STORE[nm.toLowerCase()]||null;
+      // NB: parseJune's return below carries priceBy:"june" so a pasted round is attributed
+      // correctly instead of falling back to the anonymous "the price on file".
+      rows.push({id: known?known.id:("paste:"+nm.toLowerCase().replace(/\s+/g,"")),
+                 store:nm, city:g("city"),
+                 mi: known?known.mi:null, bc:!!(known&&known.bc), known:!!known,
+                 stock:/^y/i.test(g("in_stock")),
+                 pamp:g("pamp")===""?null:Number(g("pamp")),
+                 generic:g("generic")===""?null:Number(g("generic")),
+                 note:g("notes"), t:g("saved_at"), by:"june"});
+    }
+    if(!rows.length) return {err:"Header found, but no store rows under it."};
+    // A timestamp typed by a human reaches innerHTML via fmtDT — reject anything unparseable
+    // rather than echoing it, and attribute the round so priceWho() names June, not "on file".
+    if(priceAt && isNaN(new Date(priceAt))) priceAt="";
+    return {price, priceKind, priceAt, priceBy:"june", rows,
+            at:new Date().toISOString(), live:false};
+  }
+
+  /* ================= RENDER =================
+     The table shows ALL 45 warehouses, always — the called ones AND the ones nobody has
+     reached yet. Rendering only the called ones (what this did before) made coverage gaps
+     invisible, which defeats the point of a call sheet. */
+  let _juneStocked=0, _junePamp=0, _juneGen=0, _juneBuy=null, _juneOverridden=false;
+  let _cov={called:0, today:0, total:JSTORES.length, bars:0, pamp:0, gen:0,
+            recall:0, stocked:0, near:[], skipped:0, unknown:0};
+
+  // Sort tiers — identical to june-call-sheet.html so both screens agree on "smart".
+  const JB_TIER={done:0, todo:1, day:2, stale:3, unknown:4};
+  const JB_SORTNOTE={
+    smart:"Called today at the top · never-called next · day-old and older at the bottom · nearest first inside each group",
+    distance:"Straight distance order — closest Costco to Walnut Creek first",
+    name:"Alphabetical by warehouse name",
+    bars:"Most bars on hand first · counts older than 2 days don't count · never-called and sold-out last"
+  };
+  const DASH_SORT_KEY="alchemy_dash_sort";
+  // Distance is the default: the first question is always "where do I drive?".
+  let jbSortBy=(function(){
+    let v="distance"; try{ v=localStorage.getItem(DASH_SORT_KEY)||"distance"; }catch(e){}
+    return JB_SORTNOTE[v]?v:"distance";
+  })();
+
+  function barsOf(call){ return (call && call.stock) ? nnum(call.pamp)+nnum(call.generic) : 0; }
+  function statusOf(call){
+    if(!call) return "todo";
+    if(!call.known) return "unknown";
+    const age=juneAgeDays(call.t);
+    if(age>=2) return "stale";
+    if(age>=1) return "day";
+    return "done";
+  }
+  // Fresh stock is what BUY and the bar totals key off.
+  // "In stock" with a zero count is NOT stock: it used to be counted as a stocked warehouse,
+  // pushed into "Where the bars are" as a chip reading "Concord 0", and styled as the best
+  // pick — while the affordability line right underneath said "Nobody has bars right now".
+  function isLiveStock(call){
+    return !!call && call.stock && juneAgeDays(call.t)<2 && (nnum(call.pamp)+nnum(call.generic))>0;
+  }
+  // "They have bars but she didn't write down how many." Real information — it must not be
+  // silently dropped just because it can't be added up, and June's page counts it too.
+  function isStockUnknownCount(call){
+    return !!call && call.stock && juneAgeDays(call.t)<2 && (nnum(call.pamp)+nnum(call.generic))===0;
+  }
+
+  /* Left-join the 45 known warehouses against whatever the shared list returned. */
+  function joinStores(){
+    const byId={};
+    _juneDupes=0;
+    ((JUNEROUND&&JUNEROUND.rows)||[]).forEach(function(r){
+      if(!r||!r.id) return;
+      // Two rows for the same warehouse (a paste listing a store twice). Keep the NEWER one
+      // rather than whichever happened to be last in the array, and count the collision so
+      // it can be surfaced instead of vanishing.
+      const cur=byId[r.id];
+      if(cur){
+        _juneDupes++;
+        if(new Date(r.t) <= new Date(cur.t)) return;
+      }
+      byId[r.id]=r;
+    });
+    const out=JSTORES.map(function(s){
+      const call=byId[s.id]||null;
+      return {id:s.id, name:s.n, mi:s.mi, bc:!!s.bc, call:call, status:statusOf(call)};
+    });
+    // Rows the database has that no longer match a warehouse we know about. They get their
+    // own group instead of quietly inflating the coverage count.
+    ((JUNEROUND&&JUNEROUND.rows)||[]).forEach(function(r){
+      if(r && r.id && !SMAP[r.id]){
+        out.push({id:r.id, name:r.store||r.id, mi:r.mi, bc:false, call:r, status:"unknown"});
+      }
+    });
+    return out;
+  }
+
+  function jbSorted(list){
+    const mi=e=>(e.mi==null?99999:e.mi);
+    return list.slice().sort(function(a,b){
+      // Unknown rows are pinned to the bottom in EVERY sort mode. Otherwise the
+      // "not one of the 45" header lands mid-table and reads as if everything under
+      // it were unknown too — and in "most bars first" a bogus row would lead the list.
+      const au=a.status==="unknown", bu=b.status==="unknown";
+      if(au!==bu) return au?1:-1;
+      if(jbSortBy==="distance") return mi(a)-mi(b) || a.name.localeCompare(b.name);
+      if(jbSortBy==="name")     return a.name.localeCompare(b.name);
+      if(jbSortBy==="bars"){
+        // Count only bars the headline also counts. Without the age filter a warehouse
+        // called six days ago led "most bars first" with 40 in its Total column while the
+        // coverage band above it read "0 bars" — stale data back at the top of the list.
+        const ab=a.status==="todo"?-1:(isLiveStock(a.call)?barsOf(a.call):-1);
+        const bb=b.status==="todo"?-1:(isLiveStock(b.call)?barsOf(b.call):-1);
+        if(ab!==bb) return bb-ab;
+        return mi(a)-mi(b);
+      }
+      const at=JB_TIER[a.status], bt=JB_TIER[b.status];
+      if(at!==bt) return at-bt;
+      return mi(a)-mi(b);
+    });
+  }
+
+  function renderJune(){
+    const sub=$("jbSub"), cov=$("jbCov"), body=$("jbRows"), note=$("jbSortNote");
+    const all=joinStores();
+
+    // ---- coverage tallies ----
+    let called=0, today=0, stocked=0, pamp=0, gen=0, recall=0, unknownCount=0;
+    const near=[];
+    all.forEach(function(e){
+      if(e.status==="unknown") return;          // never counts toward the 45
+      if(!e.call) return;
+      called++;
+      const age=juneAgeDays(e.call.t);
+      if(age<1) today++; else recall++;
+      if(isLiveStock(e.call)){
+        stocked++; pamp+=nnum(e.call.pamp); gen+=nnum(e.call.generic);
+        near.push({name:e.name, mi:e.mi, bars:barsOf(e.call), day:age>=1, by:e.call.by});
+      } else if(isStockUnknownCount(e.call)){
+        unknownCount++;
+      }
+    });
+    near.sort(function(a,b){ return (a.mi==null?99999:a.mi)-(b.mi==null?99999:b.mi); });
+    _juneStocked=stocked; _junePamp=pamp; _juneGen=gen;
+    _cov={called:called, today:today, total:JSTORES.length, bars:pamp+gen, pamp:pamp, gen:gen,
+          recall:recall, stocked:stocked, near:near, skipped:_juneSkipped, unknown:_juneUnknown,
+          unknownCount:unknownCount};
+
+    cov.textContent=called+" of "+JSTORES.length+" called · "+(pamp+gen)+" bars";
+    sub.textContent = _juneErrKind
+      ? "showing the last list this device saw"
+      : (JUNEROUND&&JUNEROUND.live ? "live list · read "+fmtDT(JUNEROUND.at)
+        : (JUNEROUND ? "live list + pasted round imported "+fmtDT(JUNEROUND.pasteAt||JUNEROUND.at)
+                     : JSTORES.length+" warehouses within 100 miles · nearest to Walnut Creek first"));
+    if(note) note.textContent=JB_SORTNOTE[jbSortBy]||"";
+
+    // ---- rows ----
+    const rows=jbSorted(all);
+    let html="", unknownOpen=false;
+    rows.forEach(function(e){
+      if(e.status==="unknown" && !unknownOpen){
+        unknownOpen=true;
+        // A pasted round is matched by NAME, a live row by id — say whichever is true so the
+        // instruction is actionable ("check the store id" is nonsense for a paste).
+        const byName = JUNEROUND && !JUNEROUND.live;
+        html+="<tr class='grouphead'><td colspan='8'>⚠ Not one of the "+JSTORES.length+
+              " warehouses — "+(byName?"the name didn't match any of them":"check the store id")+
+              "</td></tr>";
+      }
+      html+=rowHTMLJune(e);
+    });
+    body.innerHTML=html;
+
+    juneVerdict();
+    renderCoverage();
+  }
+
+  function rowHTMLJune(e){
+    const c=e.call, st=e.status;
+    // Precedence: stale beats day beats in-stock. A 30-hour-old row can never be styled
+    // as the best pick — that was the bug that hid day-old data in plain sight.
+    const cls = st==="unknown" ? "unknown"
+              : st==="stale"   ? "stale"
+              : st==="day"     ? "day"
+              : st==="todo"    ? "todo"
+              : isLiveStock(c) ? "best" : "";   // "in stock, zero bars" is not a best pick
+    let tags="";
+    if(e.bc)          tags+="<span class='jb-tag bc'>Business</span>";
+    if(st==="day")    tags+="<span class='jb-tag old'>day old</span>";
+    if(st==="stale")  tags+="<span class='jb-tag veryold'>2d+</span>";
+    if(st==="unknown")tags+="<span class='jb-tag warnid'>unknown id</span>";
+    const total = !c ? "not called"
+                : !c.stock ? "sold out"
+                : (barsOf(c)>0 ? String(barsOf(c)) : "yes · no count");
+    const aria = e.name+", "+(e.mi==null?"distance unknown":e.mi+" miles")+", "+
+                 (!c ? "not called yet"
+                      : !c.stock ? "sold out"
+                      : (barsOf(c)>0 ? barsOf(c)+" bars" : "has bars, count not recorded"));
+    return "<tr class=\""+cls+"\" aria-label=\""+esc(aria)+"\">"+
+      "<td>"+esc(e.name)+tags+"</td>"+
+      "<td class='r'>"+(e.mi==null?"—":e.mi)+"</td>"+
+      "<td class='r'>"+(c&&c.stock?nnum(c.pamp):"—")+"</td>"+
+      "<td class='r'>"+(c&&c.stock?nnum(c.generic):"—")+"</td>"+
+      "<td class='r'>"+total+"</td>"+
+      "<td>"+(c?fmtDT(c.t):"—")+"</td>"+
+      "<td>"+(c?esc(c.by||"—"):"—")+"</td>"+
+      "<td>"+(c?esc(c.note||"—"):"—")+"</td>"+
+    "</tr>";
+  }
+
+  /* ---- the always-visible coverage band ---- */
+  function renderCoverage(){
+    const pctDone = _cov.total ? _cov.called/_cov.total : 0;
+    const C=2*Math.PI*26;
+    const fill=$("cbRingFill"), rtxt=$("cbRingTxt");
+    if(fill) fill.setAttribute("stroke-dasharray",(C*pctDone).toFixed(1)+" "+C.toFixed(1));
+    if(rtxt) rtxt.textContent=Math.round(pctDone*100)+"%";
+
+    $("cbCalled").textContent=_cov.called+" of "+_cov.total;
+    $("cbCalledSub").textContent = _cov.called===0
+      ? "nobody has been phoned yet"
+      : (_cov.total-_cov.called)+" still to call · "+_cov.today+" done today";
+
+    $("cbBars").textContent=String(_cov.bars);
+    $("cbBars").className="v "+(_cov.bars>0?"gold":"mute");
+    $("cbBarsSub").textContent=_cov.pamp+" Pamp / "+_cov.gen+" Generic across "+
+      _cov.stocked+" warehouse"+(_cov.stocked===1?"":"s")+
+      (_cov.unknownCount ? " · +"+_cov.unknownCount+" said yes but gave no count" : "");
+
+    $("cbStale").textContent=String(_cov.recall);
+    $("cbStale").className="v "+(_cov.recall>0?"day":"mute");
+    $("cbStaleSub").textContent=_cov.recall===0
+      ? "nothing over a day old"
+      : "called over 24h ago — worth re-checking";
+
+    // Where the bars are: nearest first, because he has to drive there.
+    const nearEl=$("cbNear");
+    if(!_cov.near.length){
+      nearEl.innerHTML="<span class='cb-chip none'>"+
+        (_cov.called===0 ? "No warehouse has confirmed bars yet"
+                         : "Nobody called so far has bars in stock")+"</span>";
+    } else {
+      nearEl.innerHTML=_cov.near.slice(0,6).map(function(n){
+        return "<span class='cb-chip"+(n.day?" day":"")+"'>"+esc(n.name)+
+               " <b>"+n.bars+"</b> <span class='mi'>"+(n.mi==null?"—":n.mi+" mi")+"</span>"+
+               (n.day?" <span class='mi'>day old</span>":"")+"</span>";
+      }).join("") + (_cov.near.length>6
+        ? "<span class='cb-chip none'>+"+(_cov.near.length-6)+" more</span>" : "");
+    }
+
+    // Tie her bar count to what the cards can actually pay for.
+    const af=$("cbAfford");
+    const afford=_bpBars, found=_cov.bars;
+    // "June found" is wrong when Medi logged the rows himself. Say who actually called.
+    const anyMedi=_cov.near.some(function(n){ return n.by==="medi"; });
+    const allMedi=_cov.near.length>0 && _cov.near.every(function(n){ return n.by==="medi"; });
+    const finder = allMedi ? "You found" : (anyMedi ? "You and June have found" : "June found");
+    if(_cov.called===0){
+      af.className="cb-afford"; af.textContent="Waiting on the first call.";
+    } else if(found===0){
+      // Order matters: when no card is profitable, say THAT rather than blaming credit.
+      const anyProfitable0 = !!(_bp && _bp.rows && _bp.rows.some(function(x){ return x.barP>0; }));
+      af.className="cb-afford";
+      af.innerHTML = anyProfitable0
+        ? "Nobody has bars right now. Your credit could cover <b>"+afford+
+          "</b> bar"+(afford===1?"":"s")+" the moment somebody finds some."
+        : "Nobody has bars right now — and at "+money(_juneBuy||CFG.junePrice)+
+          " a bar <b>no card would turn a profit anyway</b>.";
+    } else if(afford===0){
+      // Two very different reasons the pool can be empty, and blaming the price when Medi
+      // has simply unticked his cards would talk him out of a trade that is actually fine.
+      const anyProfitable = !!(_bp && _bp.rows && _bp.rows.some(function(x){ return x.barP>0; }));
+      const anyAvailable  = !!(_bp && _bp.rows && _bp.rows.some(function(x){ return x.barP>0 && avail[x.c.name]; }));
+      af.className="cb-afford short";
+      af.innerHTML=finder+" <b>"+found+"</b> bar"+(found===1?"":"s")+", but "+
+        (!anyProfitable
+          ? "at "+money(_juneBuy||CFG.junePrice)+" a bar <b>no card turns a profit</b>. Wait for "+
+            "the price to come down or spot to come up."
+          : !anyAvailable
+            ? "<b>every profitable card is switched off</b> below. Tick one back on to see what you could buy."
+            : "your available credit <b>can't cover a single bar</b> at "+
+              money(_juneBuy||CFG.junePrice)+".");
+    } else if(found<=afford){
+      af.className="cb-afford";
+      const milesTxt=_cov.near.length?" The nearest is <b>"+esc(_cov.near[0].name)+"</b>, "+
+        (_cov.near[0].mi==null?"distance unknown":_cov.near[0].mi+" miles away")+".":"";
+      af.innerHTML=finder+" <b>"+found+"</b> bar"+(found===1?"":"s")+
+        " and you can afford <b>"+afford+"</b> — you can buy every one of them."+milesTxt;
+    } else {
+      af.className="cb-afford short";
+      const runIdx=barsWithin(afford);
+      af.innerHTML=finder+" <b>"+found+"</b> bars but you can only afford <b>"+afford+
+        "</b>. "+(runIdx ? "The nearest "+afford+" sit within <b>"+runIdx+" miles</b>."
+                        : "Start with the closest warehouse.");
+    }
+
+    const warn=[];
+    if(_cov.unknown) warn.push(_cov.unknown+" row"+(_cov.unknown===1?"":"s")+" in the shared list "+
+      (_cov.unknown===1?"does":"do")+" not match any of the "+_cov.total+" warehouses");
+    if(_cov.skipped) warn.push(_cov.skipped+" row"+(_cov.skipped===1?"":"s")+" couldn't be read and "+
+      (_cov.skipped===1?"was":"were")+" left out");
+    if(_juneDupes) warn.push(_juneDupes+" duplicate entr"+(_juneDupes===1?"y":"ies")+
+      " for the same warehouse — the newest one is shown");
+    let w=document.getElementById("cbWarn");
+    if(warn.length){
+      if(!w){ w=document.createElement("div"); w.id="cbWarn"; w.className="cb-warn"; af.parentNode.insertBefore(w, af.nextSibling); }
+      w.textContent="⚠ "+warn.join(" · ");
+    } else if(w){ w.remove(); }
+
+    renderPriceAgree();
+  }
+
+  // How far he'd have to drive to collect the first N affordable bars.
+  function barsWithin(n){
+    let acc=0;
+    for(let i=0;i<_cov.near.length;i++){
+      acc+=_cov.near[i].bars;
+      if(acc>=n) return _cov.near[i].mi;
+    }
+    return 0;
+  }
+
+  /* ---- do June's register price and the online listing agree? ----
+     They are NOT the same measurement: Costco.com lists about $10 above the in-store
+     price, which is why the online figure is compared after subtracting that premium.
+     Comparing June's number to the raw online number would show a permanent fake gap. */
+  const PX_TOL=1.00;   // under a dollar apart is rounding, not disagreement
+
+  /* The ONE place that names the number BUY is actually running on. compute() has already
+     decided it (`_juneOverridden`), so this can never disagree with the gauge — which is
+     exactly what it did in the first cut of this card: it announced "BUY is running on the
+     online listing" while the accordion, correctly, said "BUY is still the seed price".
+     The online figure can only win when Costco.com is IN STOCK and implies more than the
+     price on file; out of stock it cannot override at all. */
+  // Who actually recorded the price on file — June from her phone, or Medi from this page.
+  // Presenting a number Medi typed himself as "June's" would destroy the whole point of the
+  // cross-check this card exists to provide.
+  function priceWho(){
+    const by=(JUNEROUND && JUNEROUND.priceBy)||"";
+    return by==="medi" ? "your number" : (by==="june" ? "June's number" : "the price on file");
+  }
+  /* Four genuinely different states, and the page used to describe two of them wrongly.
+     CFG.junePrice is overwritten only while a price is fresh and is NEVER cleared, so an
+     expired price keeps driving BUY — calling that "seed value, nobody has phoned yet" was
+     false, and so was announcing that the 2-day guard had moved BUY onto something safer.
+     It hadn't; there is nothing else to move to. */
+  /* ONE description of where BUY came from, used by the price card, the gauge stamp and the
+     matrix stamp so they can never tell three different stories. Five states, and the two
+     "expired" ones are genuinely different:
+       expired-held   — the price aged past 2 days while this tab was open, so CFG.junePrice
+                        is STILL that number and BUY is running on it.
+       expired-dropped— the page loaded fresh, the guard refused to apply the old price, and
+                        BUY fell back to the built-in figure. Naming the expired price here
+                        would attribute a number to June that BUY is not using. */
+  function priceState(){
+    if(_juneOverridden) return "online";
+    if(JUNEROUND && junePriceFresh(JUNEROUND)) return "fresh";
+    const hasOld = JUNEROUND && JUNEROUND.price!=null && isFinite(JUNEROUND.price) && Number(JUNEROUND.price)>0;
+    if(hasOld){
+      return Math.abs(Number(JUNEROUND.price)-Number(CFG.junePrice))<0.005
+        ? "expired-held" : "expired-dropped";
+    }
+    return "seed";
+  }
+  function priceWhoWord(){ return (JUNEROUND&&JUNEROUND.priceBy==="medi") ? "you" : "June"; }
+  // Sentence-initial / possessive form. Every place that used to hardcode "June" now asks,
+  // so a price Medi typed himself is never reported back to him as hers — which would have
+  // destroyed the independent cross-check this whole panel exists to provide.
+  function priceWhoName(){ return (JUNEROUND&&JUNEROUND.priceBy==="medi") ? "You" : "June"; }
+  // "You" needs different verb agreement from "June", and swapping the name in mechanically
+  // produced "You was quoted" / "You has". These keep the sentences grammatical either way.
+  function priceWhoIsMe(){ return !!(JUNEROUND && JUNEROUND.priceBy==="medi"); }
+  function whoWasQuoted(){ return priceWhoIsMe() ? "You were quoted" : "June was quoted"; }
+  function whoHas(){ return priceWhoIsMe() ? "You have" : "June has"; }
+  // The timestamp that belongs to the price BUY is actually using.
+  function buyPriceAt(){
+    const st=priceState();
+    if(st==="fresh"||st==="expired-held") return JUNEROUND?JUNEROUND.priceAt:CFG.juneTime;
+    // When the ONLINE lookup is driving BUY, June's price still exists and is still shown
+    // on the card — so the card must date it. Returning "" here made the trio read
+    // "$4,169.99 · Captured: not captured yet" beside a genuinely captured price.
+    // Only when her price is genuinely FRESH. While the override is running on an EXPIRED
+    // price, CFG.junePrice has already reverted to the seed, so dating it with her real
+    // capture time paired a built-in constant with a specific moment nobody quoted it at.
+    if(st==="online" && JUNEROUND && JUNEROUND.priceAt && junePriceFresh(JUNEROUND))
+      return JUNEROUND.priceAt;
+    return "";
+  }
+  function buySourceText(){
+    switch(priceState()){
+      case "online":
+        return "the online listing (<b>"+money(_impliedInStore)+"</b> in store) — it is in stock, fresh and higher";
+      case "fresh":
+        return priceWho()+" (<b>"+money(CFG.junePrice)+"</b>)";
+      case "expired-held":
+        return "the <b>"+money(CFG.junePrice)+"</b> "+priceWhoWord()+" phoned in on "+
+               fmtDT(JUNEROUND.priceAt)+" — over 2 days old, and still the number in use "+
+               "because there is nothing newer to replace it with";
+      case "expired-dropped":
+        return "the built-in starting figure (<b>"+money(CFG.junePrice)+"</b>) — the "+
+               money(JUNEROUND.price)+" "+priceWhoWord()+" phoned in on "+fmtDT(JUNEROUND.priceAt)+
+               " is over 2 days old and has been dropped";
+      default:
+        return "the built-in starting figure (<b>"+money(CFG.junePrice)+"</b>) — nobody has phoned a price in yet";
+    }
+  }
+  function stockCaveat(){
+    let s="";
+    if(!CFG.inStock)
+      s+=" Costco.com is showing <b>out of stock</b>, so the online figure cannot take over even if it is higher.";
+    if(onlineAgeDays()>=2)
+      s+=" The online lookup is <b>over 2 days old</b> ("+fmtDT(CFG.onlineTime)+
+         "), so it is locked out of driving BUY until someone refreshes it.";
+    return s;
+  }
+
+  function renderPriceAgree(){
+    const jEl=$("pxJune"), oEl=$("pxOnline"), iEl=$("pxImplied"), gEl=$("pxGap"), vEl=$("pxVerdict");
+    if(!jEl) return;
+    const jp = (JUNEROUND && JUNEROUND.price!=null && isFinite(JUNEROUND.price) && JUNEROUND.price>0)
+               ? Number(JUNEROUND.price) : null;
+    const online = CFG.onlinePrice;
+    const prem0 = (CFG.onlinePrem==null || isNaN(CFG.onlinePrem)) ? 10 : Number(CFG.onlinePrem);
+    const implied = (_impliedInStore==null) ? (online-prem0) : _impliedInStore;
+
+    oEl.textContent = isFinite(online) ? (money(online)+(CFG.inStock?"":" · out of stock")) : "—";
+    oEl.className = "v mute";
+    iEl.textContent = isFinite(implied) ? money(implied) : "—";
+    jEl.textContent = jp==null ? "—" : money(jp);
+
+    if(jp==null){
+      gEl.textContent="—"; gEl.className="v mute";
+      vEl.className="px-verdict";
+      vEl.innerHTML="No price from June yet — nothing to compare. BUY is using "+
+        buySourceText()+"."+stockCaveat();
+      return;
+    }
+    const fresh=junePriceFresh(JUNEROUND);
+    const gap=jp-implied;
+    gEl.textContent=signMoney(gap);
+    gEl.className="v";
+
+    if(!fresh){
+      gEl.className="v mute";
+      vEl.className="px-verdict gap";
+      // Do NOT claim a guard fired and moved BUY somewhere safer. Unless the online figure
+      // took over, the expired price IS still the number every card is priced from.
+      // A pasted round with no usable time on its price is not "over 2 days old" — we simply
+      // cannot tell how old it is. Saying the wrong reason sends June re-checking the wrong
+      // thing, so name the real one.
+      const noStamp = !JUNEROUND.priceAt || isNaN(new Date(JUNEROUND.priceAt));
+      const why = noStamp
+        ? "<b>has no date on it</b>, so there is no way to tell how old it is"
+        : "is <b>over 2 days old</b> ("+fmtDT(JUNEROUND.priceAt)+")";
+      vEl.innerHTML = _juneOverridden
+        ? ("⚠️ "+(priceWhoIsMe()?"Your":"June's")+" price "+why+
+           ", so the online listing has taken over. BUY is using "+buySourceText()+
+           ". "+priceWhoName()+" should re-check today's shelf price."+stockCaveat())
+        : ("⚠️ "+(priceWhoIsMe()?"Your":"June's")+" price "+why+
+           ". BUY is using "+buySourceText()+
+           ". Treat every figure below as a guess until "+(priceWhoIsMe()?"you re-check":"she re-checks")+" today's shelf price."+
+           stockCaveat());
+      return;
+    }
+    const who = buySourceText();
+    if(Math.abs(gap)<PX_TOL){
+      vEl.className="px-verdict ok";
+      vEl.innerHTML="✅ <b>They agree.</b> "+whoWasQuoted()+" "+money(jp)+
+        " at the register and the online listing implies "+money(implied)+
+        " in store — the same number. BUY is using "+who+"."+stockCaveat();
+    } else if(gap>0){
+      vEl.className="px-verdict gap";
+      vEl.innerHTML="⚠️ <b>They disagree by "+money(Math.abs(gap))+".</b> "+whoWasQuoted()+" <b>"+
+        money(jp)+"</b> at the register, but the online listing implies only <b>"+money(implied)+
+        "</b> in store. The register is the real number "+(priceWhoIsMe()?"you were":"she was")+" told — the online listing may "+
+        "be lagging. BUY is using "+who+"."+stockCaveat();
+    } else {
+      vEl.className="px-verdict gap";
+      vEl.innerHTML="⚠️ <b>They disagree by "+money(Math.abs(gap))+".</b> "+whoWasQuoted()+" <b>"+
+        money(jp)+"</b> at the register — <b>cheaper</b> than the "+money(implied)+
+        " the online listing implies. BUY is using "+who+"."+stockCaveat();
+    }
+  }
+
+  // Whether June's price ACTUALLY drives BUY is decided by compute() (the online lookup wins
+  // when it implies a higher in-store price). compute() reports back here so the panel can
+  // never advertise a BUY the gauge is not using.
+  function juneVerdict(){
+    const msg=$("jbMsg"), src=$("juneSrc");
+    if(!msg) return;
+    // A connection problem outranks everything else — say so in words, not a spinner.
+    if(_juneErrKind){
+      msg.className="jb-msg err";
+      msg.textContent = _juneErrKind==="timeout"
+        ? "The shared list is taking too long to answer. Showing the last copy this device saved"+
+          (_juneLastGoodAt?" ("+fmtDT(_juneLastGoodAt)+")":"")+". Press REFRESH NOW to try again."
+        : "Can't reach the shared list — you may be offline. Showing the last copy this device saved"+
+          (_juneLastGoodAt?" ("+fmtDT(_juneLastGoodAt)+")":"")+". Nothing has been lost.";
+      if(src) src.textContent="shared list unreachable · showing last saved copy";
+      return;
+    }
+    if(!JUNEROUND){
+      msg.className="jb-msg"; msg.textContent="Nothing recorded yet — BUY is still the seed price.";
+      if(src) src.textContent="seed value · no call round yet";
+      return;
+    }
+    const p=JUNEROUND.price, kind=JUNEROUND.priceKind?" ("+esc(JUNEROUND.priceKind)+")":"";
+    if(p==null || !isFinite(p) || p<=0){
+      msg.className="jb-msg";
+      msg.textContent="No Costco price recorded yet — BUY is still the seed price. June sets it in Step 1 on her call sheet, or use I CALLED ONE MYSELF.";
+      if(src) src.textContent="seed value · no price recorded yet";
+      return;
+    }
+    // Route through the same priceState() the stamps and the price card use. This branch
+    // used to say "BUY holds the previous number" in BOTH expired cases — but on a fresh
+    // load the old price is refused outright and BUY falls back to the built-in figure,
+    // so nothing was "held" and the accordion contradicted the rest of the screen.
+    if(!junePriceFresh(JUNEROUND)){
+      msg.className="jb-msg err";
+      // Check the override FIRST. priceState() answers "online" whenever the lookup is
+      // driving BUY, so asking it here reported the seed as BUY while the gauge was pricing
+      // off the online figure — the panel naming a number compute() had not used.
+      msg.innerHTML = _juneOverridden
+        ? ("The Costco price on file is <b>over 2 days old</b>, so the online lookup has taken "+
+           "over: BUY is <b>"+money(_juneBuy)+"</b>. "+priceWhoName()+" should re-check today's shelf price.")
+        : ("The Costco price on file is <b>over 2 days old</b> and has been dropped, so BUY has "+
+           "fallen back to the built-in starting figure of <b>"+money(CFG.junePrice)+"</b>. "+
+           priceWhoName()+" should re-check today's shelf price.");
+      if(src) src.textContent = _juneOverridden ? "price expired · online lookup driving BUY"
+                                                : "price expired · back to the starting figure";
+      return;
+    }
+    const bars=_junePamp+_juneGen;
+    if(_juneOverridden){
+      msg.className="jb-msg";
+      msg.innerHTML=whoHas()+" <b>"+money(p)+"</b>"+kind+" at the register, but the online lookup implies <b>"+
+        money(_juneBuy)+"</b> in store — the higher number wins, so BUY is the online figure.";
+      if(src) src.textContent=priceWhoName()+" "+money(p)+" · online lookup is driving BUY";
+    } else {
+      msg.className="jb-msg ok";
+      msg.innerHTML="BUY = <b>"+money(p)+"</b>"+kind+" · "+fmtDT(JUNEROUND.priceAt)+" — "+
+        _juneStocked+" warehouse"+(_juneStocked===1?"":"s")+" holding "+bars+" bar"+(bars===1?"":"s")+".";
+      if(src) src.textContent=_cov.called+" of "+_cov.total+" called · "+bars+" bars ("+_junePamp+"P / "+_juneGen+"G)";
+    }
+  }
+
+  function applyJune(round, quiet){
+    JUNEROUND=round;
+    try{ localStorage.setItem(JUNE_KEY, JSON.stringify(round)); }catch(e){}
+    if(junePriceFresh(round)){ CFG.junePrice=round.price; CFG.juneTime=round.priceAt; }
+    // A price that is no longer fresh must be let go, not silently kept. Retaining it made a
+    // long-lived tab price off an expired number while a reload priced off the seed — the
+    // same dashboard giving two different BUYs — and left a discarded paste's price driving
+    // every card after Medi had thrown it away.
+    else { CFG.junePrice=JUNE_SEED.price; CFG.juneTime=JUNE_SEED.t; }
+    // compute() BEFORE renderCFG(): renderCFG reads _juneOverridden (via buyPriceAt), and
+    // compute() is what decides it. The old order painted the trio card from the previous
+    // poll's decision on the tick where the override flipped.
+    renderJune(); compute(); renderCFG();
+    if(!quiet) $("juneBox").open=true;
+  }
+
+  /* ---- wiring ---- */
+  (function fillSelfStores(){
+    const sel=$("jsStore"); if(!sel) return;
+    sel.innerHTML=JSTORES.map(function(s){
+      return '<option value="'+s.id+'">'+esc(s.n)+(s.bc?" (Business)":"")+' — '+s.mi+' mi</option>';
+    }).join("");
+  })();
+
+  $("jbSort").addEventListener("change",function(e){
+    jbSortBy=e.target.value;
+    try{ localStorage.setItem(DASH_SORT_KEY, jbSortBy); }catch(err){}
+    renderJune();
+  });
+
+  $("jbRefresh").addEventListener("click",function(){
+    pullJune(true).then(function(ok){
+      if(!ok) juneVerdict();   // the message is already written by the error path
+    });
+  });
+  $("jbSelf").addEventListener("click",function(){
+    const f=$("jbSelfForm");
+    f.style.display = f.style.display==="none" ? "" : "none";
+    if(f.style.display==="") $("jsStore").focus();
+  });
+  $("jbPasteToggle").addEventListener("click",function(){
+    const w=$("jbPasteWrap");
+    w.style.display = w.style.display==="none" ? "" : "none";
+  });
+  /* Whole bars, 0–500. Matches the database CHECK constraint, so the rule is enforced
+     here first and Medi gets a sentence instead of a rejected write. */
+  function clampBars(v){
+    if(v===""||v==null) return {v:0, changed:false};
+    let n=Number(v);
+    if(!isFinite(n)) return {v:0, changed:true};
+    const r=Math.min(500, Math.max(0, Math.round(n)));
+    return {v:r, changed:r!==n};
+  }
+
+  /* Has somebody else written this warehouse since the copy I'm looking at?
+     Two people phoning the same store seconds apart used to silently overwrite each
+     other. This reads the one row first and asks. There is still a small window
+     between this read and the write — it is seconds wide, and every save is kept in
+     alchemy_calls_log either way, so nothing can actually be lost. */
+  function checkConflict(id){
+    const mine=((JUNEROUND&&JUNEROUND.rows)||[]).filter(function(r){ return r.id===id; })[0]||null;
+    return sbFetch(SB_URL+"/rest/v1/alchemy_calls?select=*&store_id=eq."+encodeURIComponent(id),
+                   {headers:sbH()}).then(function(r){
+      if(r.kind!=="ok" || !Array.isArray(r.data) || !r.data.length) return null;
+      const srv=r.data[0];
+      const srvT=new Date(srv.called_at).getTime();
+      if(isNaN(srvT)) return null;
+      const mineT=mine?new Date(mine.t).getTime():0;
+      if(srvT<=mineT) return null;                       // nothing newer than what I have
+      if((srv.called_by||"")==="medi") return null;      // my own earlier save
+      return srv;
+    });
+  }
+
+  $("jsSave").addEventListener("click",function(){
+    const id=$("jsStore").value;
+    const meta=SMAP[id];
+    if(!meta) return;
+    const stock=$("jsStock").value==="yes";
+    const msg=$("jsMsg");
+
+    const cp=clampBars($("jsPamp").value), cg=clampBars($("jsGen").value);
+    if(stock && (cp.changed||cg.changed)){
+      msg.className="jb-msg err";
+      msg.textContent="Bar counts have to be whole numbers from 0 to 500. Fix them and save again.";
+      return;
+    }
+    const pv=$("jsPrice").value;
+    let priceNum=null;
+    if(pv!==""){
+      priceNum=Number(pv);
+      if(!isFinite(priceNum) || priceNum<500 || priceNum>20000){
+        msg.className="jb-msg err";
+        msg.textContent="That shelf price doesn't look right — it has to be between $500 and $20,000. Leave it blank to keep the current price.";
+        return;
+      }
+    }
+    const rec={store_id:id, store_name:meta.n, city:meta.c, miles:meta.mi,
+      in_stock:stock,
+      pamp: stock?cp.v:0,
+      generic: stock?cg.v:0,
+      note: $("jsNote").value.trim(),
+      called_at:new Date().toISOString(), called_by:"medi"};
+
+    msg.className="jb-msg"; msg.textContent="Checking the shared list…";
+    checkConflict(id).then(function(srv){
+      if(srv){
+        const theirs=(srv.in_stock?(nnum(srv.pamp)+nnum(srv.generic))+" bars ("+nnum(srv.pamp)+"P / "+nnum(srv.generic)+"G)":"sold out");
+        const mineTxt=(stock?(cp.v+cg.v)+" bars ("+cp.v+"P / "+cg.v+"G)":"sold out");
+        const whoElse = srv.called_by==="june" ? "June"
+                      : srv.called_by==="medi" ? "You (on another device)"
+                      : "Someone else";
+        const ok=window.confirm(
+          whoElse+" already logged "+meta.n+" at "+fmtDT(srv.called_at)+".\n\n"+
+          "Theirs: "+theirs+"\n"+
+          "Yours:  "+mineTxt+"\n\n"+
+          "OK = replace it with yours.\nCancel = keep theirs and throw yours away.\n\n"+
+          "Either way both entries stay in the history log.");
+        if(!ok){
+          // The dialog promises both entries survive. Honour that: the discarded count still
+          // goes to the append-only log, so it is recoverable even though it never became
+          // the live row. Without this the reassurance in the prompt would be a lie.
+          logCall(rec);
+          msg.className="jb-msg";
+          msg.textContent="Kept "+(srv.called_by==="june"?"June's":"the other")+
+            " entry. Yours was not used, but it is saved in the history.";
+          pullJune(false);
+          return null;
+        }
+      }
+      msg.textContent="Saving…";
+      const jobs=[pushSelfCall(rec)];
+      if(priceNum!=null) jobs.push(pushSelfPrice(priceNum));
+      return Promise.all(jobs).then(function(res){
+        const bad=res.filter(function(r){ return !r.ok; })[0];
+        if(!bad){
+          msg.className="jb-msg ok"; msg.textContent=meta.n+" saved to the shared list.";
+          $("jsPamp").value=""; $("jsGen").value=""; $("jsNote").value=""; $("jsPrice").value="";
+          pullJune(false);
+        } else {
+          msg.className="jb-msg err"; msg.textContent=bad.msg;
+        }
+      });
+    });
+  });
+  $("jbImport").addEventListener("click",function(){
+    const res=parseJune($("jbPaste").value), msg=$("jbMsg");
+    if(res.err){ msg.className="jb-msg err"; msg.textContent=res.err; return; }
+    // These counters describe the LIVE pull. Carrying them onto a pasted round would show
+    // Medi warnings about rows that are no longer on screen.
+    _juneSkipped=0; _juneUnknown=0; _pasteDropped=false;
+    applyJune(res);
+    $("jbPaste").value="";
+  });
+
+  // Without this there was no way back: a pasted round only cleared itself when a newer
+  // live round arrived, so a bad or finished paste could sit on screen indefinitely.
+  $("jbDropPaste").addEventListener("click",function(){
+    if(!window.confirm("Drop the pasted round and go back to the live shared list?\n\n"+
+                       "The paste is only on this screen — nothing in the shared list changes.")) return;
+    _pasteDropped=true;
+    JUNEROUND=null;
+    try{ localStorage.removeItem(JUNE_KEY); }catch(e){}
+    this.style.display="none";
+    pullJune(true);
+  });
+
+  /* ---- "June's price went UP" ----
+     Costco raising the shelf price is the one event that can quietly kill a flip, so it
+     gets a banner of its own. The comparison comes from alchemy_price_log rather than this
+     device's memory, so it is correct on a phone that has never seen the old price. */
+  const PXSEEN_KEY="alchemy_pxalert_dismissed";
+  function checkPriceRise(){
+    // Read a window, not just the last two rows. Saving the same price twice — correcting the
+    // bar type, or a double-tap on the save button — used to put two identical entries on top,
+    // which read as "no change" and swallowed the one event this banner exists for.
+    return sbFetch(SB_URL+"/rest/v1/alchemy_price_log?select=price,updated_at,updated_by"+
+                   "&order=logged_at.desc&limit=25",{headers:sbH()}).then(function(r){
+      if(r.kind!=="ok" || !Array.isArray(r.data) || r.data.length<2){ hidePxAlert(); return; }
+      const now=r.data[0], a=Number(now.price);
+      if(!isFinite(a)){ hidePxAlert(); return; }
+      // Walk back to the most recent entry with a DIFFERENT price — that is the real "before".
+      let prev=null;
+      for(let i=1;i<r.data.length;i++){
+        const v=Number(r.data[i].price);
+        if(isFinite(v) && Math.abs(v-a)>0.005){ prev=r.data[i]; break; }
+      }
+      if(!prev){ hidePxAlert(); return; }
+      const b=Number(prev.price);
+      if(a<=b){ hidePxAlert(); return; }
+      let dismissed=""; try{ dismissed=localStorage.getItem(PXSEEN_KEY)||""; }catch(e){}
+      if(dismissed===String(now.updated_at)) return;
+      const el=$("pxAlert");
+      // Only claim the margin moved if this price is the one BUY is actually running on.
+      // When the online lookup is overriding, or the new price is already over 2 days old
+      // (a queued save from June's phone that only just flushed), nothing moved.
+      const drivesBuy = !_juneOverridden && junePriceFresh(JUNEROUND) &&
+                        Math.abs(Number(CFG.junePrice)-a)<0.005;
+      $("pxAlertTxt").innerHTML="<b>Costco's price went UP "+money(a-b)+".</b> "+
+        (now.updated_by==="june"?"June":"You")+" recorded "+money(a)+" at "+fmtDT(now.updated_at)+
+        " — it was "+money(b)+" before. "+
+        (drivesBuy
+          ? "Every card's margin just moved against you by "+money(a-b)+" a bar."
+          : "This is not the number BUY is using right now, so nothing on the dashboard has "+
+            "moved — but it is what the register is charging.");
+      el.classList.add("show");
+      el.dataset.at=String(now.updated_at);
+    });
+  }
+  function hidePxAlert(){ const el=$("pxAlert"); if(el) el.classList.remove("show"); }
+  $("pxAlertX").addEventListener("click",function(){
+    const el=$("pxAlert");
+    try{ localStorage.setItem(PXSEEN_KEY, el.dataset.at||""); }catch(e){}
+    el.classList.remove("show");
+  });
+
+  markSpotManual();   // honest until (and unless) a live read actually lands
   $("builtStamp").textContent="built "+nowStr();
   applyMarket(); setInterval(applyMarket,60000);
   setInterval(checkStale,30000);   // heartbeat: flips the pill red if the live feed stops advancing
   setInterval(checkCandleStale,30000);   // candle heartbeat: red ONLY if market OPEN + no new bar in 30 min
   sampleCandles(); drawChart(_chartTF); setCandleSrc();   // render sample immediately + honest "not live" label
-  renderCFG(); compute(); initLive();
+  // Show the last known round instantly, then go read the shared list for anything newer.
+  (function restoreJune(){
+    try{
+      const raw=localStorage.getItem(JUNE_KEY);
+      if(raw){ const r=JSON.parse(raw); if(r&&r.rows&&r.rows.length){
+        // Rounds saved before the join existed carry a name but no id. Repair them by
+        // name so an upgraded dashboard doesn't show every restored row as "unknown".
+        r.rows=r.rows.map(function(row){
+          if(row && !row.id){
+            const k=NAME2STORE[String(row.store||"").toLowerCase()];
+            if(k){ row.id=k.id; row.mi=k.mi; row.bc=!!k.bc; row.known=true; }
+            else { row.id="legacy:"+String(row.store||"?").toLowerCase().replace(/\s+/g,""); row.known=false; }
+          } else if(row && row.known===undefined){ row.known=!!SMAP[row.id]; }
+          return row;
+        });
+        JUNEROUND=r;
+        if(junePriceFresh(r)){ CFG.junePrice=r.price; CFG.juneTime=r.priceAt; } } }
+    }catch(e){}
+  })();
+  $("jbSort").value=jbSortBy;      // restore the remembered sort before the first paint
+  // Same order as applyJune(): compute() decides the override, renderCFG() paints it.
+  renderJune(); compute(); renderCFG(); initLive();
+  pullJune(false).then(checkPriceRise);   // June's phone writes straight into this list
+  setInterval(function(){ pullJune(false).then(checkPriceRise); }, 30000);
 
   window.__gfhIngest = applySheet;   // public-page ingest hook (build-injected; unused in the artifact)
 })();
