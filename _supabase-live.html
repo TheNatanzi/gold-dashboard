@@ -1,0 +1,101 @@
+<!-- ============================================================================
+     SUPABASE LIVE LAYER — brother's public page ONLY (never in Medi's artifact).
+     The artifact reads the Google Sheet via the Drive connector. This page has no
+     connector, so it reads the SAME prices from the gold-flip-hub Supabase project
+     with the PUBLISHABLE (read-only) key. Writes are impossible with this key (RLS).
+
+     It feeds Supabase rows through the dashboard's OWN applySheet(map) — exposed as
+     window.__gfhIngest by the build — so every figure + the council-tested 3-min
+     stale-guard recompute exactly as on Medi's side. This layer owns only:
+       • the confidence badge (auto · HH:MM  vs  ✅ confirmed by Medi)
+       • the "request a pull" button (logs to Supabase + refetches)
+     ============================================================================ -->
+<script>
+(function(){
+  var SB_URL = "https://cuubqcxzvyiryxcygadh.supabase.co";
+  var SB_KEY = "sb_publishable_vuJ1bfkLjpPNbrouZb_3eQ_9dSJXlep";   // publishable/read key — safe to expose (gold-only project, RLS read-only)
+  var H = { apikey: SB_KEY, Authorization: "Bearer " + SB_KEY };
+
+  function p2(n){ return (n < 10 ? "0" : "") + n; }
+  function fmtT(iso){                       // ISO -> "yyyy-MM-dd HH:mm" (the format the dashboard's fmtDT expects)
+    try { var d = new Date(iso);
+      return d.getFullYear() + "-" + p2(d.getMonth()+1) + "-" + p2(d.getDate()) + " " + p2(d.getHours()) + ":" + p2(d.getMinutes());
+    } catch(e){ return ""; }
+  }
+  function el(id){ return document.getElementById(id); }
+
+  function newest(){                        // most recent timestamp across the given ISO strings
+    var t = 0;
+    for(var i=0;i<arguments.length;i++){ var v=arguments[i]; if(v){ var n=Date.parse(v); if(!isNaN(n) && n>t) t=n; } }
+    return t ? new Date(t).toISOString() : "";
+  }
+  function badge(spot, online){
+    // confidence: confirmed if Medi's own-eyes wrote online.source='confirmed'; else auto.
+    var src = (online && online.source) || "auto";
+    var when = (src === "confirmed" && online && online.confirmed_at)
+      ? online.confirmed_at
+      : newest(spot && spot.fetched_at, online && online.fetched_at);
+    var hhmm = when ? fmtT(when).slice(11) : "";
+    var s = el("spotStatus"); if(!s) return;
+    if(src === "confirmed"){ s.textContent = "✅ confirmed by Medi · " + hhmm; s.className = "spot-status live"; }
+    else { s.textContent = "● LIVE · auto · " + hhmm; s.className = "spot-status live"; }
+    var ds = el("dataSrc"); if(ds) ds.textContent = "data: LIVE from shared cloud feed (Supabase)";
+  }
+
+  function apply(rows){
+    var spot = null, online = null;
+    rows.forEach(function(r){ if(r.id === "spot") spot = r; else if(r.id === "online") online = r; });
+    var map = {};
+    if(spot && spot.price != null)
+      map.gold_spot = { v: String(spot.price), t: spot.fetched_at ? fmtT(spot.fetched_at) : "" };
+    if(online){
+      if(online.price   != null) map.online_price   = { v: String(online.price),   t: online.fetched_at ? fmtT(online.fetched_at) : "" };
+      if(online.premium != null) map.online_premium = { v: String(online.premium), t: "" };
+      if(online.in_stock != null) map.online_instock = { v: online.in_stock ? "yes" : "no", t: "" };
+    }
+    if(window.__gfhIngest) window.__gfhIngest(map);   // recompute via the dashboard's own tested path
+    badge(spot, online);                              // then stamp the confidence badge (applySheet already ran)
+  }
+
+  function load(){
+    fetch(SB_URL + "/rest/v1/gold_prices?select=*", { headers: H })
+      .then(function(r){ return r.json(); })
+      .then(function(rows){ if(Array.isArray(rows)) apply(rows); })
+      .catch(function(){ /* keep last-good; applySheet's stale-guard greys after 3 min of no advance */ });
+  }
+
+  var FN_URL = SB_URL + "/functions/v1/refresh-prices?online=1";   // force a fresh spot+online fetch on demand
+  function wirePull(){
+    var b = el("onlinePullBtn"); if(!b) return;
+    var nb = b.cloneNode(true); b.parentNode.replaceChild(nb, b);   // strip the artifact's "tell Claude" handler
+    nb.addEventListener("click", function(){
+      if(nb.disabled) return; nb.disabled = true;
+      var r = el("onlineReq");
+      if(r){ r.textContent = "↻ Fetching a fresh price now…"; r.style.display = "block"; }
+      // log the request (audit) — fire and forget
+      fetch(SB_URL + "/rest/v1/pull_requests", {
+        method: "POST",
+        headers: Object.assign({ "Content-Type": "application/json", Prefer: "return=minimal" }, H),
+        body: JSON.stringify({ note: "brother page pull " + new Date().toISOString() })
+      }).catch(function(){});
+      // trigger a real fresh fetch on Supabase, then reload the displayed values
+      fetch(FN_URL, { method: "POST" })
+        .then(function(res){ return res.json(); })
+        .then(function(j){
+          if(Array.isArray(j && j.data)) apply(j.data);           // instant paint from the function's own return
+          if(r){ r.textContent = (j && j.wrote && j.wrote.length)
+            ? "✓ Fresh price pulled just now."
+            : "✓ Checked — no in-stock change; showing the last saved price."; }
+        })
+        .catch(function(){ if(r){ r.textContent = "↻ Couldn't reach the feed — showing the last saved price."; } load(); })
+        .then(function(){ setTimeout(function(){ nb.disabled = false; }, 1200); });
+    });
+  }
+
+  function start(){
+    var s = el("spotStatus"); if(s){ s.textContent = "● connecting…"; s.className = "spot-status"; }
+    wirePull(); load(); setInterval(load, 60000);
+  }
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
+})();
+</script>
