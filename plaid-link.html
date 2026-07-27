@@ -1,0 +1,38 @@
+<!doctype html>
+<!-- plaid-link.html — hosts Plaid Link for the Unified Financial Hub's 2 real cards.
+     Lives on GitHub Pages because Supabase rewrites text/html to text/plain on
+     *.supabase.co (anti-phishing), so the hub can't serve its own page.
+     This URL is the registered OAuth redirect_uri in the Plaid dashboard — OAuth
+     banks (US Bank, Citi) bounce to the bank's site and return HERE with
+     ?oauth_state_id=…; the page resumes Link with the link_token saved in
+     localStorage. No secrets here: the publishable key is public by design and
+     the access_token never reaches the browser (exchange happens server-side). -->
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hub - Connect Cards (Plaid)</title>
+<script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+<style>
+body{font-family:system-ui,sans-serif;background:#0f172a;color:#e2e8f0;display:flex;flex-direction:column;align-items:center;padding:40px 16px;gap:18px}
+h1{font-size:22px;margin:0;text-align:center}
+button{font-size:18px;padding:14px 22px;border-radius:10px;border:0;cursor:pointer;min-width:340px}
+.bank{background:#2563eb;color:#fff}
+.sync{background:#059669;color:#fff}
+#status{font-size:16px;max-width:680px;text-align:left;white-space:pre-wrap;background:#1e293b;border-radius:10px;padding:14px 18px;min-height:24px}
+</style></head><body>
+<h1>Unified Financial Hub - connect the 2 real cards</h1>
+<button class="bank" onclick="start('usbank')">1. US Bank Smartly Visa (map #3)</button>
+<button class="bank" onclick="start('citi')">2. Costco Anywhere Visa - Citi (map #6)</button>
+<button class="sync" onclick="runSync()">Run sync now</button>
+<div id="status">Pick a card to begin. You type the bank login yourself - this page never sees or stores credentials.</div>
+<script>
+var FN='https://fnqhiozovmhpbnilkwrd.supabase.co/functions/v1';
+var PK='sb_publishable_YYUYY2_nbxVygLaNN8codQ_mUKIIDSV';
+var CONNS={usbank:'5ecb5181-1dda-40c5-866a-7abd17a02c59',citi:'52a4492b-9c64-4b13-9ae0-db61e1b988b3'};
+function say(m){document.getElementById('status').textContent=m;}
+function post(p,b){return fetch(FN+p,{method:'POST',headers:{'content-type':'application/json','Authorization':'Bearer '+PK,'apikey':PK},body:JSON.stringify(b||{})}).then(function(r){return r.json();});}
+function openLink(tok,received){var cfg={token:tok,onSuccess:function(pub){exchange(pub);},onExit:function(err){say(err?('Link closed with error:\n'+JSON.stringify(err,null,2)):'Link closed before finishing. Click the card button to retry.');}};if(received){cfg.receivedRedirectUri=received;}Plaid.create(cfg).open();}
+function start(k){localStorage.setItem('plaid_conn',CONNS[k]);say('Getting a fresh link token...');post('/plaid-link-token',{}).then(function(d){if(!d.ok){say('link-token FAILED:\n'+JSON.stringify(d,null,2));return;}localStorage.setItem('plaid_link_token',d.link_token);openLink(d.link_token,null);}).catch(function(e){say('link-token fetch error: '+e);});}
+function exchange(pub){say('Bank connected - exchanging for the permanent token (stored in Vault, never shown)...');post('/plaid-exchange',{public_token:pub,connection_id:localStorage.getItem('plaid_conn')}).then(function(d){say(d.ok?('CONNECTED - item_id '+d.item_id+'\nNow click Run sync now.'):('exchange FAILED:\n'+JSON.stringify(d,null,2)));}).catch(function(e){say('exchange fetch error: '+e);});}
+function runSync(){say('Syncing transactions (2 years of history - can take a minute)...');post('/plaid-sync',{}).then(function(d){say('SYNC RESULT:\n'+JSON.stringify(d,null,2));}).catch(function(e){say('sync fetch error: '+e);});}
+var q=new URLSearchParams(location.search);
+if(q.get('oauth_state_id')){var t=localStorage.getItem('plaid_link_token');if(t){say('Back from the bank - finishing the connection...');openLink(t,location.href);}else{say('Lost the saved link token - click the card button again.');}}
+</script></body></html>
