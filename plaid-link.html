@@ -26,7 +26,7 @@ button{font-size:18px;padding:14px 22px;border-radius:10px;border:0;cursor:point
 <script>
 var FN='https://fnqhiozovmhpbnilkwrd.supabase.co/functions/v1';
 var PK='sb_publishable_YYUYY2_nbxVygLaNN8codQ_mUKIIDSV';
-var CONNS={usbank:'5ecb5181-1dda-40c5-866a-7abd17a02c59',citi:'52a4492b-9c64-4b13-9ae0-db61e1b988b3'};
+var CONNS={usbank:'5ecb5101-1dda-40c5-866a-7abd17a02c59',citi:'52a4492b-9c64-4b13-9ae0-db61e1b908b3'};
 function say(m){document.getElementById('status').textContent=m;}
 function post(p,b){return fetch(FN+p,{method:'POST',headers:{'content-type':'application/json','Authorization':'Bearer '+PK,'apikey':PK},body:JSON.stringify(b||{})}).then(function(r){return r.json();});}
 function openLink(tok,received){var cfg={token:tok,onSuccess:function(pub){exchange(pub);},onExit:function(err){say(err?('Link closed with error:\n'+JSON.stringify(err,null,2)):'Link closed before finishing. Click the card button to retry.');}};if(received){cfg.receivedRedirectUri=received;}Plaid.create(cfg).open();}
