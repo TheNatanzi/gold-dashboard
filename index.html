@@ -1186,6 +1186,53 @@
     t.textContent = sLeft > 0 ? "↻ " + sLeft + "s" : "↻ now…";
   }
 
+  // ---- live spot chart: real 24h line from spot_history (the hub's own 1-min ticks) ----
+  function mountSpotChart(){
+    if(el("gfhChart")) return;
+    var anchor = el("chartBox"); if(!anchor || !anchor.parentNode) return;
+    var d = document.createElement("div");
+    d.className = "capcard";
+    d.id = "gfhChart";
+    d.innerHTML =
+      '<div class="cap-t"><div class="lab"><span class="ic">📈</span> Gold spot — LIVE (hub, 1-min)</div>' +
+      '<span class="ro" id="gfhChartLast">—</span></div>' +
+      '<svg id="gfhChartSvg" viewBox="0 0 600 150" preserveAspectRatio="none" style="width:100%;height:150px;display:block"></svg>' +
+      '<div id="gfhChartNote" style="font-size:11px;opacity:.6;margin-top:4px">loading history…</div>';
+    anchor.parentNode.insertBefore(d, anchor);
+  }
+  function drawSpotChart(pts){
+    var svg = el("gfhChartSvg"), note = el("gfhChartNote"); if(!svg) return;
+    if(!pts || pts.length < 2){
+      if(note) note.textContent = "building history — the hub saves one point per minute, line appears shortly";
+      return;
+    }
+    var min = Infinity, max = -Infinity;
+    pts.forEach(function(p){ var v = Number(p.price); if(v < min) min = v; if(v > max) max = v; });
+    var lo = min, hi = max, pad = (max - min) || 1;
+    min -= pad * 0.10; max += pad * 0.10;
+    var t0 = Date.parse(pts[0].t), t1 = Date.parse(pts[pts.length - 1].t) || (t0 + 1);
+    var W = 600, H = 150;
+    var line = pts.map(function(p, i){
+      var x = (Date.parse(p.t) - t0) / ((t1 - t0) || 1) * W;
+      var y = H - (Number(p.price) - min) / (max - min) * H;
+      return (i ? "L" : "M") + x.toFixed(1) + "," + y.toFixed(1);
+    }).join("");
+    svg.innerHTML =
+      '<path d="' + line + ' L' + W + ',' + H + ' L0,' + H + ' Z" fill="rgba(230,179,37,.10)" stroke="none"/>' +
+      '<path d="' + line + '" fill="none" stroke="#e6b325" stroke-width="2"/>';
+    var last = Number(pts[pts.length - 1].price);
+    var lastEl = el("gfhChartLast");
+    if(lastEl) lastEl.textContent = "$" + last.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if(note) note.textContent = "last 24h · " + pts.length + " pts · low $" + lo.toFixed(2) + " · high $" + hi.toFixed(2) + " · data: this hub's own minute-by-minute spot saves";
+  }
+  function loadSpotChart(){
+    var since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    fetch(SB_URL + "/rest/v1/spot_history?select=t,price&t=gte." + since + "&order=t", { headers: H })
+      .then(function(r){ return r.json(); })
+      .then(function(rows){ if(Array.isArray(rows)) drawSpotChart(rows); })
+      .catch(function(){ /* keep whatever is drawn */ });
+  }
+
   function load(){
     nextAt = Date.now() + 60000;
     fetch(SB_URL + "/rest/v1/gold_prices?select=*", { headers: H })
@@ -1225,6 +1272,7 @@
   function start(){
     var s = el("spotStatus"); if(s){ s.textContent = "● connecting…"; s.className = "spot-status"; }
     wirePull(); mountTimer(); load(); setInterval(load, 60000); setInterval(tickTimer, 1000);
+    mountSpotChart(); loadSpotChart(); setInterval(loadSpotChart, 300000);   // chart refetches every 5 min
   }
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
 })();
