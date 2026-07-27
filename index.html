@@ -1197,8 +1197,17 @@
       '<div class="cap-t"><div class="lab"><span class="ic">📈</span> Gold spot — LIVE (hub, 1-min)</div>' +
       '<span class="ro" id="gfhChartLast">—</span></div>' +
       '<svg id="gfhChartSvg" viewBox="0 0 600 150" preserveAspectRatio="none" style="width:100%;height:150px;display:block"></svg>' +
+      '<div id="gfhChartTimes" style="display:flex;justify-content:space-between;font-family:monospace;font-size:10px;opacity:.55;margin-top:2px"></div>' +
       '<div id="gfhChartNote" style="font-size:11px;opacity:.6;margin-top:4px">loading history…</div>';
     anchor.parentNode.insertBefore(d, anchor);
+  }
+  // Public-page-only rename of the candle chart header (the shared dashboard source stays untouched).
+  function renameFuturesChart(){
+    var l = document.querySelector("#chartBox .cs-l"); if(!l) return;
+    for(var i = 0; i < l.childNodes.length; i++){
+      var n = l.childNodes[i];
+      if(n.nodeType === 3 && /Gold price chart/i.test(n.nodeValue)){ n.nodeValue = " Futures Gold Price Chart "; return; }
+    }
   }
   function drawSpotChart(pts){
     var svg = el("gfhChartSvg"), note = el("gfhChartNote"); if(!svg) return;
@@ -1220,6 +1229,12 @@
     svg.innerHTML =
       '<path d="' + line + ' L' + W + ',' + H + ' L0,' + H + ' Z" fill="rgba(230,179,37,.10)" stroke="none"/>' +
       '<path d="' + line + '" fill="none" stroke="#e6b325" stroke-width="2"/>';
+    var tl = el("gfhChartTimes");
+    if(tl){   // same 3 time marks as the futures chart: start · middle · end, "h:mm AM/PM"
+      var fmt = function(iso){ return new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }); };
+      var midIdx = Math.floor(pts.length / 2);
+      tl.innerHTML = "<span>" + fmt(pts[0].t) + "</span><span>" + fmt(pts[midIdx].t) + "</span><span>" + fmt(pts[pts.length - 1].t) + "</span>";
+    }
     var last = Number(pts[pts.length - 1].price);
     var lastEl = el("gfhChartLast");
     if(lastEl) lastEl.textContent = "$" + last.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -1272,7 +1287,7 @@
   function start(){
     var s = el("spotStatus"); if(s){ s.textContent = "● connecting…"; s.className = "spot-status"; }
     wirePull(); mountTimer(); load(); setInterval(load, 60000); setInterval(tickTimer, 1000);
-    mountSpotChart(); loadSpotChart(); setInterval(loadSpotChart, 300000);   // chart refetches every 5 min
+    mountSpotChart(); renameFuturesChart(); loadSpotChart(); setInterval(loadSpotChart, 300000);   // chart refetches every 5 min
   }
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
 })();
