@@ -1186,20 +1186,45 @@
     t.textContent = sLeft > 0 ? "↻ " + sLeft + "s" : "↻ now…";
   }
 
-  // ---- live spot chart: real 24h line from spot_history (the hub's own 1-min ticks) ----
+  // ---- live spot chart: real line from spot_history (the hub's own 1-min ticks) ----
+  var GFH_TFS = { "5M":5, "10M":10, "30M":30, "1H":60, "6H":360, "1D":1440, "1W":10080, "1M":43200 };  // window in minutes; 1M = 1 month
+  var gfhTf = "1D";
   function mountSpotChart(){
     if(el("gfhChart")) return;
     var anchor = el("chartBox"); if(!anchor || !anchor.parentNode) return;
-    var d = document.createElement("div");
-    d.className = "capcard";
+    var d = document.createElement("details");        // same accordion pattern as the futures chart
+    d.className = "chartbox";
     d.id = "gfhChart";
+    d.open = true;                                    // the live chart starts expanded
+    var btns = Object.keys(GFH_TFS).map(function(tf){
+      return '<button class="tfbtn' + (tf === gfhTf ? " active" : "") + '" data-gfhtf="' + tf + '"' +
+             (tf === "1M" ? ' title="1 month"' : '') + '>' + tf + '</button>';
+    }).join("");
     d.innerHTML =
-      '<div class="cap-t"><div class="lab"><span class="ic">📈</span> Gold spot — LIVE (hub, 1-min)</div>' +
-      '<span class="ro" id="gfhChartLast">—</span></div>' +
-      '<svg id="gfhChartSvg" viewBox="0 0 600 150" preserveAspectRatio="none" style="width:100%;height:150px;display:block"></svg>' +
-      '<div id="gfhChartTimes" style="display:flex;justify-content:space-between;font-family:monospace;font-size:10px;opacity:.55;margin-top:2px"></div>' +
-      '<div id="gfhChartNote" style="font-size:11px;opacity:.6;margin-top:4px">loading history…</div>';
+      '<summary class="chart-sum">' +
+        '<span class="cs-l"><span class="cs-ic">📈</span> Gold Spot Price Chart — LIVE ' +
+          '<span class="cs-sub">hub feed · true spot · 1-min ticks</span></span>' +
+        '<span class="cs-r"><span class="cs-last" id="gfhChartLast">—</span>' +
+          '<span class="cs-toggle"><span class="cs-toggle-txt"></span><span class="cs-chev">▾</span></span></span>' +
+      '</summary>' +
+      '<div class="chart-body">' +
+        '<div class="tfbar" id="gfhTfbar">' + btns + '</div>' +
+        '<svg id="gfhChartSvg" viewBox="0 0 600 150" preserveAspectRatio="none" style="width:100%;height:150px;display:block"></svg>' +
+        '<div id="gfhChartTimes" style="display:flex;justify-content:space-between;font-family:monospace;font-size:10px;opacity:.55;margin-top:2px"></div>' +
+        '<div id="gfhChartNote" style="font-size:11px;opacity:.6;margin-top:4px">loading history…</div>' +
+      '</div>';
     anchor.parentNode.insertBefore(d, anchor);
+    var bs = d.querySelectorAll("button[data-gfhtf]");
+    for(var i = 0; i < bs.length; i++){
+      bs[i].addEventListener("click", function(e){
+        e.preventDefault(); e.stopPropagation();
+        var tf = this.getAttribute("data-gfhtf"); if(!GFH_TFS[tf]) return;
+        gfhTf = tf;
+        var all = el("gfhTfbar").querySelectorAll(".tfbtn");
+        for(var j = 0; j < all.length; j++) all[j].classList.toggle("active", all[j] === this);
+        loadSpotChart();
+      });
+    }
   }
   // Public-page-only rename of the candle chart header (the shared dashboard source stays untouched).
   function renameFuturesChart(){
@@ -1230,21 +1255,36 @@
       '<path d="' + line + ' L' + W + ',' + H + ' L0,' + H + ' Z" fill="rgba(230,179,37,.10)" stroke="none"/>' +
       '<path d="' + line + '" fill="none" stroke="#e6b325" stroke-width="2"/>';
     var tl = el("gfhChartTimes");
-    if(tl){   // same 3 time marks as the futures chart: start · middle · end, "h:mm AM/PM"
-      var fmt = function(iso){ return new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }); };
+    if(tl){   // same 3 time marks as the futures chart: start · middle · end ("h:mm AM/PM"; day-based views show the date)
+      var wide = (GFH_TFS[gfhTf] || 0) >= 10080;
+      var fmt = function(iso){
+        var dd = new Date(iso);
+        return wide ? dd.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                    : dd.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+      };
       var midIdx = Math.floor(pts.length / 2);
       tl.innerHTML = "<span>" + fmt(pts[0].t) + "</span><span>" + fmt(pts[midIdx].t) + "</span><span>" + fmt(pts[pts.length - 1].t) + "</span>";
     }
     var last = Number(pts[pts.length - 1].price);
     var lastEl = el("gfhChartLast");
     if(lastEl) lastEl.textContent = "$" + last.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    if(note) note.textContent = "last 24h · " + pts.length + " pts · low $" + lo.toFixed(2) + " · high $" + hi.toFixed(2) + " · data: this hub's own minute-by-minute spot saves";
+    if(note) note.textContent = "last " + gfhTf + (gfhTf === "1M" ? " (month)" : "") + " · " + pts.length + " pts · low $" + lo.toFixed(2) + " · high $" + hi.toFixed(2) + " · data: this hub's own minute-by-minute spot saves";
   }
   function loadSpotChart(){
-    var since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
-    fetch(SB_URL + "/rest/v1/spot_history?select=t,price&t=gte." + since + "&order=t", { headers: H })
+    var win = GFH_TFS[gfhTf] || 1440;
+    var since = new Date(Date.now() - win * 60000).toISOString();
+    fetch(SB_URL + "/rest/v1/spot_history?select=t,price&t=gte." + since + "&order=t&limit=50000", { headers: H })
       .then(function(r){ return r.json(); })
-      .then(function(rows){ if(Array.isArray(rows)) drawSpotChart(rows); })
+      .then(function(rows){
+        if(!Array.isArray(rows)) return;
+        if(rows.length > 600){                       // thin long windows for drawing speed; always keep the newest point
+          var step = Math.ceil(rows.length / 600), thin = [];
+          for(var i = 0; i < rows.length; i += step) thin.push(rows[i]);
+          if(thin[thin.length - 1] !== rows[rows.length - 1]) thin.push(rows[rows.length - 1]);
+          rows = thin;
+        }
+        drawSpotChart(rows);
+      })
       .catch(function(){ /* keep whatever is drawn */ });
   }
 
