@@ -1496,8 +1496,11 @@
      count. That price becomes CFG.junePrice — the BUY side of every card — as long as it was
      captured within the last 2 days. "I CALLED ONE MYSELF" writes to the very same list.
      A pasted round is kept as the offline fallback. */
-  const SB_URL="https://hkndckjkwcgnhziikgvl.supabase.co";
-  const SB_KEY="sb_publishable_T-J8pW4u52UvhYjv_u8blA_xHQ4vxAp";
+  /* Moved 2026-07-27 out of the Adibs Rugs business project and into the gold-only
+     project (gold-flip-hub), which already owns refresh-prices + pg_cron. The business
+     project's key was being published on a public page; gold data does not belong there. */
+  const SB_URL="https://cuubqcxzvyiryxcygadh.supabase.co";
+  const SB_KEY="sb_publishable_vuJ1bfkLjpPNbrouZb_3eQ_9dSJXlep";
   const JUNE_KEY="alchemy_june_round_v3", JUNE_DAY=864e5;
   let JUNEROUND=null;
 
