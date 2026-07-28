@@ -411,11 +411,32 @@
     // The buy zone is everything ABOVE the trigger: spot up there means the bar clears the
     // $25/bar floor. Shade it under the price line so the line stays the brightest thing.
     refDraw.forEach(function(o){
-      if(o.r.key !== "buy" || o.off === 1) return;                 // trigger off the top = nothing qualifies
-      var top = padT, bot = o.off === -1 ? padT + ch : o.y;        // trigger off the bottom = all of it qualifies
-      if(bot - top > 0.5)
-        s += '<rect x="' + padL + '" y="' + top + '" width="' + cw + '" height="' + (bot - top).toFixed(1) +
-             '" fill="' + good + '" opacity="0.07"/>';
+      if(o.r.key !== "buy") return;
+      // Green = the gap between where spot IS and where the buy zone STARTS. The old
+      // top-down rectangle painted "every qualifying price", but what gets read off the
+      // chart is "how far is spot from the zone" - which is exactly this band. It follows
+      // the stepped zone when there is one, and closes to nothing where spot crosses in.
+      function zoneAt(tms){
+        var sr = o.r.series;
+        if(sr && sr.length){
+          var zv = sr[0].price;
+          for(var zi = 0; zi < sr.length; zi++){
+            if(Date.parse(sr[zi].t) <= tms) zv = sr[zi].price; else break;
+          }
+          return zv;
+        }
+        return o.r.v;
+      }
+      var fwd = "", n2 = 0;
+      pts.forEach(function(p2){
+        fwd += (n2++ ? "L" : "M") + X(p2.t).toFixed(1) + "," + Y(Number(p2.price)).toFixed(1);
+      });
+      var back = "";
+      for(var bi = pts.length - 1; bi >= 0; bi--){
+        var zy = Math.max(padT, Math.min(padT + ch, Y(zoneAt(Date.parse(pts[bi].t)))));
+        back += "L" + X(pts[bi].t).toFixed(1) + "," + zy.toFixed(1);
+      }
+      if(n2 >= 2) s += '<path d="' + fwd + back + ' Z" fill="' + good + '" opacity="0.10" stroke="none"/>';
     });
 
     var d = pts.map(function(p, i){ return (i ? "L" : "M") + X(p.t).toFixed(1) + "," + Y(Number(p.price)).toFixed(1); }).join("");
@@ -433,7 +454,13 @@
     // Reference lines + their labels, drawn on top of the price line so neither is lost under
     // it. Labels sit inside on the left because the right gutter already belongs to the $ axis
     // and the last-price tag. Two labels closer than 13px would overlap, so nudge the lower one.
-    var labY = [];
+    var labY = [], tagYs = [ly];   // right-edge tags already placed (spot first)
+    function placeTag(y0){
+      var yy = Math.max(padT + 9, Math.min(padT + ch - 9, y0));
+      tagYs.forEach(function(prev){ if(Math.abs(yy - prev) < 20) yy = prev + (yy >= prev ? 20 : -20); });
+      tagYs.push(yy);
+      return yy;
+    }
     refDraw.slice().sort(function(a, b){ return a.y - b.y; }).forEach(function(o){
       var isBuy = o.r.key === "buy";
       var col = isBuy ? good : mute;
@@ -480,12 +507,21 @@
       var ty = o.y - 5; if(ty < padT + 11) ty = o.y + 13;
       for(var q = 0; q < labY.length; q++) if(Math.abs(ty - labY[q]) < 13) ty = labY[q] + 13;
       labY.push(ty);
+      if(o.r.key === "buy"){
+        // The zone trigger's dollar amount on the right edge - green like its line, so the
+        // three tags (spot gold, costco muted, zone green) name themselves by colour.
+        var bty = placeTag(o.y);
+        s += '<rect x="' + (padL + cw) + '" y="' + (bty - 9).toFixed(1) + '" width="' + padR +
+             '" height="18" rx="3" fill="' + good + '"/>' +
+             '<text x="' + (padL + cw + padR / 2) + '" y="' + (bty + 4).toFixed(1) +
+             '" text-anchor="middle" fill="#0d2113" font-family="monospace" font-size="11" font-weight="700">' +
+             Math.round(o.r.v) + '</text>';
+      }
       if(o.r.key === "costco"){
         // The bar's dollar amount on the right edge, same treatment as the spot tag so the
         // two prices read as peers. Clamped into the frame; nudged if it would sit on the
         // spot tag. Muted fill = reference, gold fill = the live line - hierarchy by colour.
-        var cty = Math.max(padT + 9, Math.min(padT + ch - 9, o.y));
-        if(Math.abs(cty - ly) < 20) cty = ly + (cty >= ly ? 20 : -20);
+        var cty = placeTag(o.y);
         s += '<rect x="' + (padL + cw) + '" y="' + (cty - 9).toFixed(1) + '" width="' + padR +
              '" height="18" rx="3" fill="' + mute + '"/>' +
              '<text x="' + (padL + cw + padR / 2) + '" y="' + (cty + 4).toFixed(1) +
