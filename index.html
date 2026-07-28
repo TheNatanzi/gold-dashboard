@@ -1009,8 +1009,23 @@
             <span class="rb-why">gold_prices.premium is a PERCENT over spot. The dashboard's
               onlinePrem is DOLLARS. Mixing them once invented a $7.10 gap with no error.</span></div>
         </div>
-        <div class="rb-rule rb-warn">
+        <div class="rb-rule rb-key">
           <span class="rb-n">9</span>
+          <div><b>Always price off the most current gold spot.</b>
+            <span class="rb-why">Spot is re-pulled on a timer and stamped with the time it was
+              read. If the stamp is not recent, hit PULL before trusting a single figure on
+              this page — every profit number is spot minus a discount.</span></div>
+        </div>
+        <div class="rb-rule rb-key">
+          <span class="rb-n">10</span>
+          <div><b>Only flag a June-vs-Costco conflict if June posted a price TODAY.</b>
+            <span class="rb-why">Her price is frozen at the moment she called; spot keeps
+              moving. Comparing yesterday's shelf price against a live implied price mostly
+              measures the overnight market, not a real disagreement — and sends her
+              re-checking a store that was never wrong.</span></div>
+        </div>
+        <div class="rb-rule rb-warn">
+          <span class="rb-n">11</span>
           <div><b>Elemetal pays spot − $10 for Pamp Fortuna. NOT VERIFIED.</b>
             <span class="rb-why">This number is hardcoded in the alert engine and nothing checks
               it. If Elemetal has changed it, every profit figure here is wrong.</span></div>
@@ -1020,6 +1035,10 @@
       </div><!-- /tab-rules -->
 
   <div class="foot">
+    <!-- Which build am I looking at? The builder replaces the marker below with the source
+         commit + build time. If you can still read the words "dev copy", you are NOT on a
+         published build — you are on the raw source file. -->
+    <span id="verStamp" class="tnum">version: 7923d34 · built 2026-07-28 18:07 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -1809,6 +1828,24 @@
   // and divide by zero in computeBP, printing "NaN bars" and "$NaN".
   function junePriceFresh(r){
     return !!r && r.price!=null && isFinite(r.price) && Number(r.price)>0 && juneAgeDays(r.priceAt)<2;
+  }
+  /* Was the price posted TODAY, on the calendar — not "within 24 hours"?
+     This is deliberately stricter than junePriceFresh and is used for ONE thing: whether
+     to raise a June-vs-Costco conflict. A price from yesterday is compared against a spot
+     price from this minute, so any gap it shows is mostly the market having moved
+     overnight, not a real disagreement about the shelf price. Reporting that as a conflict
+     sends June re-checking a store that was never wrong.
+
+     It must NEVER gate BUY. Which price drives BUY is junePriceFresh's job, and narrowing
+     that would silently change a money number. */
+  function junePriceToday(r){
+    if(!junePriceFresh(r)) return false;
+    const d = new Date(r.priceAt);
+    if(isNaN(d)) return false;              // no usable stamp -> cannot claim it is today's
+    const now = new Date();
+    return d.getFullYear() === now.getFullYear() &&
+           d.getMonth()    === now.getMonth()    &&
+           d.getDate()     === now.getDate();
   }
 
   /* ---- every network call goes through here, so no failure can be silent ----
@@ -2694,6 +2731,17 @@
       return;
     }
     const who = buySourceText();
+    // RULE: only raise a conflict if June posted a price TODAY. Her price is fixed at the
+    // moment she called; spot keeps moving. Comparing yesterday's shelf price against a
+    // live implied price mostly measures the overnight market, not a disagreement.
+    if(!junePriceToday(JUNEROUND)){
+      gEl.className="v mute";
+      vEl.className="px-verdict";
+      vEl.innerHTML="Not comparing today. "+whoWasQuoted()+" <b>"+money(jp)+"</b>, but that was "+
+        fmtDT(JUNEROUND.priceAt)+" — not today, so any gap is mostly the market moving "+
+        "overnight rather than a real disagreement. BUY is using "+who+"."+stockCaveat();
+      return;
+    }
     if(Math.abs(gap)<PX_TOL){
       vEl.className="px-verdict ok";
       vEl.innerHTML="✅ <b>They agree.</b> "+whoWasQuoted()+" "+money(jp)+

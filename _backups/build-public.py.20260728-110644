@@ -62,28 +62,6 @@ dash_patched = dash[:idx] + hook + dash[idx:]
 assert "window.__gfhIngest = applySheet;" in dash_patched, "hook not injected"
 assert dash_patched.count(marker) == dash.count(marker), "IIFE count changed"
 
-# ---------------------------------------------------------------------------
-# VERSION STAMP — answer "which build am I looking at?" from the page itself.
-# The source footer carries a "dev copy" marker; a published build replaces it
-# with the dashboard source commit + build time (UTC). If a page still says
-# "dev copy", it is the raw artifact, not a build. This exists because on
-# 2026-07-28 three copies of this page (source, artifact, live site) were
-# compared by eye and nobody could tell which was current.
-# ---------------------------------------------------------------------------
-import datetime
-VER_MARKER = "version: dev copy — not a published build"
-if VER_MARKER not in dash_patched:
-    raise SystemExit("ERROR: version marker missing from the dashboard footer.")
-try:
-    r = subprocess.run(["git", "-C", os.path.dirname(DASH), "rev-parse", "--short", "HEAD"],
-                       capture_output=True, text=True, timeout=15)
-    _commit = r.stdout.strip() or "unknown"
-except Exception:
-    _commit = "unknown"
-_built = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-dash_patched = dash_patched.replace(
-    VER_MARKER, "version: %s · built %s" % (_commit, _built), 1)
-
 out = head + pin + dash_patched + live
 with io.open(os.path.join(BASE, "index.html"), "w", encoding="utf-8", newline="\n") as f:
     f.write(out)

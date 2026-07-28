@@ -1,0 +1,604 @@
+<!-- ============================================================================
+     SUPABASE LIVE LAYER — brother's public page ONLY (never in Medi's artifact).
+     The artifact reads the Google Sheet via the Drive connector. This page has no
+     connector, so it reads the SAME prices from the gold-flip-hub Supabase project
+     with the PUBLISHABLE (read-only) key. Writes are impossible with this key (RLS).
+
+     It feeds Supabase rows through the dashboard's OWN applySheet(map) — exposed as
+     window.__gfhIngest by the build — so every figure + the council-tested 3-min
+     stale-guard recompute exactly as on Medi's side. This layer owns only:
+       • the confidence badge (auto · HH:MM  vs  ✅ confirmed by Medi)
+       • the "request a pull" button (logs to Supabase + refetches)
+     ============================================================================ -->
+<style>
+  /* pulse-on-change: numbers a live update moves glow gold then fade — text only, no block highlight */
+  @keyframes gfhPulse{ 0%{ color:#e6b325; text-shadow:0 0 12px rgba(230,179,37,.85); } 100%{ text-shadow:0 0 0 rgba(230,179,37,0); } }
+  .gfh-pulse{ animation:gfhPulse 1.2s ease-out; }
+</style>
+<script>
+(function(){
+  var SB_URL = "https://cuubqcxzvyiryxcygadh.supabase.co";
+  var SB_KEY = "sb_publishable_vuJ1bfkLjpPNbrouZb_3eQ_9dSJXlep";   // publishable/read key — safe to expose (gold-only project, RLS read-only)
+  var H = { apikey: SB_KEY, Authorization: "Bearer " + SB_KEY };
+
+  function p2(n){ return (n < 10 ? "0" : "") + n; }
+  function fmtT(iso){                       // ISO -> "yyyy-MM-dd HH:mm" (the format the dashboard's fmtDT expects)
+    try { var d = new Date(iso);
+      return d.getFullYear() + "-" + p2(d.getMonth()+1) + "-" + p2(d.getDate()) + " " + p2(d.getHours()) + ":" + p2(d.getMinutes());
+    } catch(e){ return ""; }
+  }
+  function el(id){ return document.getElementById(id); }
+
+  function newest(){                        // most recent timestamp across the given ISO strings
+    var t = 0;
+    for(var i=0;i<arguments.length;i++){ var v=arguments[i]; if(v){ var n=Date.parse(v); if(!isNaN(n) && n>t) t=n; } }
+    return t ? new Date(t).toISOString() : "";
+  }
+  function badge(spot, online){
+    // confidence: confirmed if Medi's own-eyes wrote online.source='confirmed'; else auto.
+    var src = (online && online.source) || "auto";
+    var when = (src === "confirmed" && online && online.confirmed_at)
+      ? online.confirmed_at
+      : newest(spot && spot.fetched_at, online && online.fetched_at);
+    var hhmm = when ? fmtT(when).slice(11) : "";
+    var s = el("spotStatus"); if(!s) return;
+    if(src === "confirmed"){ s.textContent = "✅ confirmed by Medi · " + hhmm; s.className = "spot-status live"; }
+    else { s.textContent = "● LIVE · auto · " + hhmm; s.className = "spot-status live"; }
+    var ds = el("dataSrc"); if(ds) ds.textContent = "data: LIVE from shared cloud feed (Supabase)";
+  }
+
+  // ---- pulse-on-change: flash every displayed number the update actually moved ----
+  var WATCH = ["spotStamp","junePriceV","juneTimeV","onlinePriceV","onlineTimeV","inStockV",
+               "deltaV","deltaStamp","gaugeVal","verdict","heroStamp","mBuy","mSell","mLoss",
+               "bpCredit","bpBars","bpDeployed","bpProfit","bpUnused","matrixStamp","chartLast"];
+  var firstPaint = true;                       // first fill after PIN: no flash-fest
+  function snapNums(){
+    var s = {};
+    WATCH.forEach(function(id){ var e = el(id); if(e) s[id] = e.textContent; });
+    var sp = el("spot"); if(sp) s.__spot = sp.value;      // #spot is an <input>
+    return s;
+  }
+  function flash(e){ e.classList.remove("gfh-pulse"); void e.offsetWidth; e.classList.add("gfh-pulse"); }
+  function pulseDiff(before){
+    if(firstPaint){ firstPaint = false; return; }
+    WATCH.forEach(function(id){
+      var e = el(id); if(e && before[id] !== undefined && e.textContent !== before[id]) flash(e);
+    });
+    var sp = el("spot"); if(sp && before.__spot !== undefined && sp.value !== before.__spot) flash(sp);
+  }
+
+  // ==========================================================================================
+  // UNITS CONTRACT — the guard against the 2026-07-28 class of bug.
+  //
+  // A bare number does not describe itself. 2.9 is a perfectly plausible DOLLAR amount and a
+  // perfectly plausible PERCENT, which is exactly how gold_prices.premium (a percent over
+  // spot) got piped into CFG.onlinePrem (dollars off the register) and quietly moved BUY by
+  // $7.10 with no error anywhere. A range check could never have caught it — $2.90 sits
+  // comfortably inside any sane dollar band.
+  //
+  // So the rule is not "check the value", it is "declare the unit". Every key handed to the
+  // dashboard must appear below with its unit and its exact source column. Anything NOT
+  // declared here is refused rather than guessed at, and refusals are shown on the page —
+  // silence is what made both of this project's expensive bugs expensive.
+  // ==========================================================================================
+  var INGEST_CONTRACT = {
+    june_price:     { unit: "usd",  from: "gold_prices.june.price",      min: 500, max: 20000 },
+    gold_spot:      { unit: "usd",  from: "gold_prices.spot.price",      min: 500, max: 20000 },
+    online_price:   { unit: "usd",  from: "gold_prices.online.price",    min: 500, max: 20000 },
+    online_instock: { unit: "bool", from: "gold_prices.online.in_stock" }
+  };
+  // Named explicitly so the next person gets the reason, not just "unknown key".
+  var INGEST_FORBIDDEN = {
+    online_premium: "wants DOLLARS off the register; the only premium Supabase has is " +
+                    "gold_prices.premium, a PERCENT over spot. No dollar source exists — " +
+                    "leave CFG.onlinePrem at its $10 default."
+  };
+
+  function guardIngest(map){
+    var bad = [];
+    Object.keys(map).forEach(function(k){
+      if(INGEST_FORBIDDEN[k]){ bad.push(k + " is forbidden: " + INGEST_FORBIDDEN[k]); delete map[k]; return; }
+      var c = INGEST_CONTRACT[k];
+      if(!c){ bad.push(k + " has no declared unit — add it to INGEST_CONTRACT before sending it"); delete map[k]; return; }
+      if(c.unit === "usd"){
+        var n = Number(map[k].v);
+        if(!isFinite(n) || n < c.min || n > c.max){
+          bad.push(k + " = " + map[k].v + " is outside $" + c.min + "–$" + c.max + " (from " + c.from + ")");
+          delete map[k];
+        }
+      }
+    });
+    return bad;
+  }
+
+  // End-to-end assertion on the one number that actually moves money. BUY can only ever be
+  // June's register price or the online listing minus the $10 in-store premium — there is no
+  // third possibility. In the bug BUY silently became online − $2.90 and nothing objected.
+  function checkBuyPrice(online, june){
+    var e = el("mBuy"); if(!e || !online || online.price == null) return null;
+    var shown = Number(String(e.textContent).replace(/[^\d.]/g, ""));
+    if(!isFinite(shown) || shown === 0) return null;
+    var legal = [];
+    if(june && june.price != null) legal.push(Number(june.price));
+    legal.push(Number(online.price) - 10);
+    if(legal.some(function(v){ return isFinite(v) && Math.abs(v - shown) < 0.02; })) return null;
+    return "BUY shows $" + shown.toFixed(2) + " but the only legal values are " +
+           legal.map(function(v){ return "$" + v.toFixed(2); }).join(" or ");
+  }
+
+  // Violations must be impossible to miss. Both bugs this project has paid for were invisible.
+  function showGuardFailures(msgs){
+    var b = el("gfhGuard");
+    if(!msgs.length){ if(b) b.style.display = "none"; return; }
+    if(!b){
+      b = document.createElement("div");
+      b.id = "gfhGuard";
+      b.style.cssText = "margin:10px 0;padding:10px 12px;border:1px solid var(--bad,#f2686f);" +
+        "border-radius:8px;background:var(--bad-bg,rgba(242,104,111,.12));color:var(--bad,#f2686f);" +
+        "font:600 13px/1.5 var(--mono,monospace);white-space:pre-wrap;";
+      document.body.insertBefore(b, document.body.firstChild);
+    }
+    b.style.display = "block";
+    b.textContent = "⚠ DATA GUARD BLOCKED A BAD VALUE — the figures below may be incomplete:\n• " +
+                    msgs.join("\n• ");
+    try { console.error("[gfh units guard]", msgs); } catch(e){}
+  }
+
+  function apply(rows){
+    var spot = null, online = null, june = null;
+    rows.forEach(function(r){ if(r.id === "spot") spot = r; else if(r.id === "online") online = r; else if(r.id === "june") june = r; });
+    var map = {};
+    if(june && june.price != null)
+      map.june_price = { v: String(june.price), t: june.fetched_at ? fmtT(june.fetched_at) : "" };
+    if(spot && spot.price != null)
+      map.gold_spot = { v: String(spot.price), t: spot.fetched_at ? fmtT(spot.fetched_at) : "" };
+    if(online){
+      if(online.price   != null) map.online_price   = { v: String(online.price),   t: online.fetched_at ? fmtT(online.fetched_at) : "" };
+      // DELIBERATELY NOT MAPPED: gold_prices.premium is the scraper's premium over SPOT as a
+      // PERCENT (it parses `([\d.]+)%` off the listing — 2.9 means 2.9%). CFG.onlinePrem is a
+      // DOLLAR figure: how much cheaper the register is than the web listing, $10 by Medi's
+      // own measurement. Feeding the percent into the dollar field made the page compute
+      // implied-in-store as $4159.99 − 2.90 = $4157.09 instead of − $10 = $4149.99, which
+      // invented a $7.10 disagreement with June's quote, raised a ⚠ "they disagree" warning,
+      // and pushed BUY $7.10 too high — making every $/bar figure ~$6.86 too pessimistic.
+      // Leave CFG.onlinePrem at its $10 default. The premium-over-spot idea is already on the
+      // page in dollars as the "Costco → spot delta" card, so nothing is lost by dropping it.
+      if(online.in_stock != null) map.online_instock = { v: online.in_stock ? "yes" : "no", t: "" };
+    }
+    var failures = guardIngest(map);                  // refuse anything whose unit is not declared
+    var before = snapNums();                          // snapshot every displayed number
+    if(window.__gfhIngest) window.__gfhIngest(map);   // recompute via the dashboard's own tested path
+    var buyErr = checkBuyPrice(online, june);         // and re-check BUY after the engine has run
+    if(buyErr) failures.push(buyErr);
+    showGuardFailures(failures);
+    pulseDiff(before);                                // flash whatever the update moved
+    badge(spot, online);                              // then stamp the confidence badge (applySheet already ran)
+    _gfhOnline = online;                              // the chart's Costco reference line reads this
+    // Prices refresh every 60s but the chart only refetches every 5 min. Redraw the last
+    // points now so the buy-zone and Costco lines never sit up to 5 minutes behind the
+    // numbers printed right above them. Cheap: same data, one SVG rebuild.
+    if(_gfhLast) drawSpotChart(_gfhLast.pts, _gfhLast.capped);
+  }
+
+  // ---- refresh countdown: tiny "↻ 42s" chip next to the LIVE badge ----
+  var nextAt = 0;
+  function mountTimer(){
+    var s = el("spotStatus"); if(!s || el("gfhTimer")) return;
+    var t = document.createElement("span");
+    t.id = "gfhTimer";
+    t.title = "seconds until the next auto-refresh";
+    t.style.cssText = "margin-left:8px;font-size:.72em;opacity:.65;white-space:nowrap;";
+    s.parentNode.insertBefore(t, s.nextSibling);
+  }
+  function tickTimer(){
+    var t = el("gfhTimer"); if(!t) return;
+    var sLeft = Math.max(0, Math.round((nextAt - Date.now()) / 1000));
+    t.textContent = sLeft > 0 ? "↻ " + sLeft + "s" : "↻ now…";
+  }
+
+  // ---- live spot chart: real line from spot_history (the hub's own 1-min ticks) ----
+  var GFH_TFS = { "5M":5, "10M":10, "30M":30, "1H":60, "6H":360, "1D":1440, "1W":10080, "1M":43200 };  // window in minutes; 1M = 1 month
+  var gfhTf = "1D";
+  function mountSpotChart(){
+    if(el("gfhChart")) return;
+    var anchor = el("chartBox"); if(!anchor || !anchor.parentNode) return;
+    var d = document.createElement("details");        // same accordion pattern as the futures chart
+    d.className = "chartbox";
+    d.id = "gfhChart";
+    d.open = true;                                    // the live chart starts expanded
+    var btns = Object.keys(GFH_TFS).map(function(tf){
+      return '<button class="tfbtn' + (tf === gfhTf ? " active" : "") + '" data-gfhtf="' + tf + '"' +
+             (tf === "1M" ? ' title="1 month"' : '') + '>' + tf + '</button>';
+    }).join("");
+    d.innerHTML =
+      '<summary class="chart-sum">' +
+        '<span class="cs-l"><span class="cs-ic">📈</span> Gold Spot Price Chart — LIVE ' +
+          '<span class="cs-sub">hub feed · true spot · 1-min ticks</span></span>' +
+        '<span class="cs-r"><span class="cs-last" id="gfhChartLast">—</span>' +
+          '<span class="cs-toggle"><span class="cs-toggle-txt"></span><span class="cs-chev">▾</span></span></span>' +
+      '</summary>' +
+      // Same shell as the futures chart below it: .chartwrap + .chart-tip + .chart-foot, and a
+      // meet-fitted viewBox. The old chart used preserveAspectRatio="none", which stretches the
+      // SVG horizontally — fine for a bare line, but it would smear any axis text, which is why
+      // the price labels had to live outside. Matching geometry lets them live inside.
+      '<div class="chart-body">' +
+        '<div class="tfbar" id="gfhTfbar">' + btns + '</div>' +
+        '<div class="chartwrap" id="gfhChartWrap">' +
+          '<svg id="gfhChartSvg" viewBox="0 0 1000 360" preserveAspectRatio="xMidYMid meet"' +
+               ' aria-label="Live gold spot price chart"></svg>' +
+          '<div class="chart-tip" id="gfhChartTip" style="display:none"></div>' +
+        '</div>' +
+        '<div class="chart-foot">' +
+          '<span id="gfhChartRange">—</span>' +
+          '<span id="gfhChartNote">loading history…</span>' +
+        '</div>' +
+      '</div>';
+    anchor.parentNode.insertBefore(d, anchor);
+    var bs = d.querySelectorAll("button[data-gfhtf]");
+    for(var i = 0; i < bs.length; i++){
+      bs[i].addEventListener("click", function(e){
+        e.preventDefault(); e.stopPropagation();
+        var tf = this.getAttribute("data-gfhtf"); if(!GFH_TFS[tf]) return;
+        gfhTf = tf;
+        var all = el("gfhTfbar").querySelectorAll(".tfbtn");
+        for(var j = 0; j < all.length; j++) all[j].classList.toggle("active", all[j] === this);
+        loadSpotChart();
+      });
+    }
+  }
+  // Public-page-only rename of the candle chart header (the shared dashboard source stays untouched).
+  function renameFuturesChart(){
+    var l = document.querySelector("#chartBox .cs-l"); if(!l) return;
+    for(var i = 0; i < l.childNodes.length; i++){
+      var n = l.childNodes[i];
+      if(n.nodeType === 3 && /Gold price chart/i.test(n.nodeValue)){ n.nodeValue = " Futures Gold Price Chart "; return; }
+    }
+  }
+  var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
+  var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
+  var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
+
+  // "$4,159.99" / "−$12.34" -> Number.  money() prints a U+2212 minus, not a hyphen, and
+  // parseFloat would happily read "−$12.34" as NaN and "$12.34" as 12.34 either way — so
+  // pull the sign out first rather than trusting the number to carry it.
+  function pMoney(s){
+    if(!s) return NaN;
+    var neg = /[−-]\s*\$/.test(s);
+    var n = parseFloat(String(s).replace(/[^\d.]/g, ""));
+    return isFinite(n) ? (neg ? -n : n) : NaN;
+  }
+
+  // The two horizontal reference lines drawn across the spot chart.
+  //
+  // BUY ZONE — the spot price at which the hero card finally clears the $25/bar floor.
+  //   Profit per bar is  (eff% × buy) − buy + spot − buyerDiscount, and `buy` (Costco or
+  //   June) never depends on spot. So profit moves dollar-for-dollar with spot, and the
+  //   trigger is just today's spot plus whatever the gauge is still short by. That is read
+  //   off the gauge the dashboard already rendered rather than re-deriving the card table
+  //   here: one source of truth, and it automatically follows every override, buyer-offset
+  //   edit and stale-price fallback the engine applies.
+  // COSTCO — what a bar actually costs. Drawn faint, and drawn as a real curve as soon as
+  //   online_history holds two or more points in the window; until then it is the single
+  //   current value as a flat line. History is collected by the `online-history-tick` pg_cron
+  //   job (every 5 min, deduped on t = gold_prices.fetched_at, so one row per genuine
+  //   refresh), and only while the bar is in stock — a gap means nothing was buyable.
+  function gfhRefLines(){
+    var out = [], g = el("gaugeVal"), sp = el("spot");
+    if(g && sp && /\//.test(g.textContent)){
+      var parts = g.textContent.split("/");
+      var hero = pMoney(parts[0]), floor = pMoney(parts[1]), s = parseFloat(sp.value);
+      if(isFinite(hero) && isFinite(floor) && isFinite(s))
+        out.push({ key: "buy", v: s + (floor - hero), live: hero >= floor });   // live = already in the zone
+    }
+    if(_gfhOnline && isFinite(Number(_gfhOnline.price))){
+      // Once online_history has two or more points in the window the Costco line becomes a
+      // real curve instead of a flat reference. Below two it stays flat — one point cannot
+      // describe a shape, and drawing a horizontal line through a single sample would imply
+      // a steadiness nobody measured. lo/hi are published so the domain fitter sizes the
+      // frame around the whole curve, not just its last value.
+      // The engine disqualifies the online price at 2 days old (onlineOld) and when the bar is
+      // out of stock — in either case it falls back to June's in-store number. Say so on the
+      // label. A chart quietly drawing a price the engine has already thrown away is worse
+      // than not drawing it: it looks like corroboration when it is actually contradiction.
+      var ms = _gfhOnline.fetched_at ? (Date.now() - Date.parse(_gfhOnline.fetched_at)) : 0;
+      var days = ms > 0 ? Math.floor(ms / 86400000) : 0;
+      var ref = { key: "costco", v: Number(_gfhOnline.price),
+                  stock: _gfhOnline.in_stock !== false, stale: days >= 2, days: days };
+      if(_gfhOnlineHist && _gfhOnlineHist.length >= 2){
+        var ps = _gfhOnlineHist.map(function(p){ return Number(p.price); })
+                               .filter(function(n){ return isFinite(n); });
+        if(ps.length >= 2){
+          ref.series = _gfhOnlineHist;
+          ref.lo = Math.min.apply(null, ps);
+          ref.hi = Math.max.apply(null, ps);
+          ref.v  = ps[ps.length - 1];             // label the newest recorded price, not the row cache
+        }
+      }
+      out.push(ref);
+    }
+    return out;
+  }
+  // A reference line's vertical extent: the whole curve when there is one, else the single value.
+  function refLo(r){ return r.lo != null ? r.lo : r.v; }
+  function refHi(r){ return r.hi != null ? r.hi : r.v; }
+
+  function drawSpotChart(pts, capped){
+    var svg = el("gfhChartSvg"), note = el("gfhChartNote"); if(!svg) return;
+    if(!pts || pts.length < 2){
+      if(note) note.textContent = "building history — the hub saves one point per minute, line appears shortly";
+      _gfhGeom = null; return;
+    }
+    // Geometry + palette copied from the futures chart so the two read as one system.
+    // Colours come from the live design tokens, not hardcoded hex: SVG attributes do not
+    // inherit CSS variables, and the old hardcoded gold kept a dark line on the cream theme.
+    var W = 1000, H = 360, padL = 8, padR = 60, padT = 12, padB = 24;
+    var cw = W - padL - padR, ch = H - padT - padB;
+    var tok = getComputedStyle(document.documentElement);
+    function T(n, fb){ var v = tok.getPropertyValue(n).trim(); return v || fb; }
+    var good = T("--good", "#4bd6a0"), bad = T("--bad", "#f2686f"),
+        grid = T("--line", "#262c3a"), mute = T("--ink-mute", "#767d90"), gold = T("--gold", "#e8c46a"),
+        panel = T("--panel", "#141824");                // backing plate for the reference-line labels
+
+    var rawLo = Infinity, rawHi = -Infinity;
+    pts.forEach(function(p){ var v = Number(p.price); if(v < rawLo) rawLo = v; if(v > rawHi) rawHi = v; });
+    var lo = rawLo, hi = rawHi, pd = (rawHi - rawLo) * 0.08 || 1; lo -= pd; hi += pd;
+
+    // Fit the reference lines into the frame — but not at any cost. Costco sits ~$110 above
+    // spot while a day of spot may only travel $40, so forcing it into view would squash the
+    // price line into a flat ribbon and destroy the thing the chart is for. Admit each line
+    // nearest-first, and only while the price line keeps at least 35% of the height. Anything
+    // that still doesn't fit is pinned to the edge with an arrow — you lose its exact position
+    // but never its value, which is printed on the label anyway. Net effect: on a 1D/1W view
+    // Costco usually does fit and you see the real spread; on a 5M view it correctly steps out.
+    var refs = gfhRefLines(), band0lo = lo, band0hi = hi, maxSpan = (hi - lo) / 0.35;
+    function refDist(r){
+      return refLo(r) > band0hi ? refLo(r) - band0hi : (refHi(r) < band0lo ? band0lo - refHi(r) : 0);
+    }
+    refs.slice().sort(function(a, b){ return refDist(a) - refDist(b); }).forEach(function(r){
+      var nlo = Math.min(lo, refLo(r) - pd), nhi = Math.max(hi, refHi(r) + pd);
+      if(nhi - nlo <= maxSpan){ lo = nlo; hi = nhi; }
+    });
+
+    var t0 = Date.parse(pts[0].t), t1 = Date.parse(pts[pts.length - 1].t) || (t0 + 1);
+    function X(iso){ return padL + (Date.parse(iso) - t0) / ((t1 - t0) || 1) * cw; }
+    function Y(v){ return padT + (hi - v) / (hi - lo) * ch; }
+
+    var s = "";
+    for(var g = 0; g <= 4; g++){                        // 5 price gridlines + the right-hand $ axis
+      var pv = hi - (hi - lo) * g / 4, yy = Y(pv);
+      s += '<line x1="' + padL + '" y1="' + yy.toFixed(1) + '" x2="' + (padL + cw) + '" y2="' + yy.toFixed(1) +
+           '" stroke="' + grid + '" stroke-width="1"/>' +
+           '<text x="' + (padL + cw + 5) + '" y="' + (yy + 4).toFixed(1) + '" fill="' + mute +
+           '" font-family="monospace" font-size="11">$' + Math.round(pv) + '</text>';
+    }
+    // Reference-line geometry. A line outside the fitted domain is pinned to the nearest edge
+    // and flagged (off = +1 above / -1 below) so its label can say so instead of lying about
+    // where it sits.
+    var refDraw = refs.map(function(r){
+      var y = Y(r.v), off = 0;
+      if(r.v > hi){ y = padT + 0.5; off = 1; } else if(r.v < lo){ y = padT + ch - 0.5; off = -1; }
+      return { r: r, y: y, off: off };
+    });
+    // The buy zone is everything ABOVE the trigger: spot up there means the bar clears the
+    // $25/bar floor. Shade it under the price line so the line stays the brightest thing.
+    refDraw.forEach(function(o){
+      if(o.r.key !== "buy" || o.off === 1) return;                 // trigger off the top = nothing qualifies
+      var top = padT, bot = o.off === -1 ? padT + ch : o.y;        // trigger off the bottom = all of it qualifies
+      if(bot - top > 0.5)
+        s += '<rect x="' + padL + '" y="' + top + '" width="' + cw + '" height="' + (bot - top).toFixed(1) +
+             '" fill="' + good + '" opacity="0.07"/>';
+    });
+
+    var d = pts.map(function(p, i){ return (i ? "L" : "M") + X(p.t).toFixed(1) + "," + Y(Number(p.price)).toFixed(1); }).join("");
+    s += '<path d="' + d + ' L' + (padL + cw).toFixed(1) + ',' + (padT + ch) + ' L' + padL + ',' + (padT + ch) +
+         ' Z" fill="rgba(230,179,37,.10)" stroke="none"/>' +
+         '<path d="' + d + '" fill="none" stroke="' + gold + '" stroke-width="2"/>';
+
+    var last = Number(pts[pts.length - 1].price), ly = Y(last);
+    s += '<line x1="' + padL + '" y1="' + ly.toFixed(1) + '" x2="' + (padL + cw) + '" y2="' + ly.toFixed(1) +
+         '" stroke="' + gold + '" stroke-width="1" stroke-dasharray="3 3" opacity="0.85"/>' +
+         '<rect x="' + (padL + cw) + '" y="' + (ly - 9).toFixed(1) + '" width="' + padR + '" height="18" rx="3" fill="' + gold + '"/>' +
+         '<text x="' + (padL + cw + padR / 2) + '" y="' + (ly + 4).toFixed(1) + '" text-anchor="middle" fill="#1a1305" ' +
+         'font-family="monospace" font-size="11" font-weight="700">' + Math.round(last) + '</text>';
+
+    // Reference lines + their labels, drawn on top of the price line so neither is lost under
+    // it. Labels sit inside on the left because the right gutter already belongs to the $ axis
+    // and the last-price tag. Two labels closer than 13px would overlap, so nudge the lower one.
+    var labY = [];
+    refDraw.slice().sort(function(a, b){ return a.y - b.y; }).forEach(function(o){
+      var isBuy = o.r.key === "buy";
+      var col = isBuy ? good : mute;
+      var op  = isBuy ? 0.95 : (o.r.stale ? 0.25 : 0.45);
+      if(o.r.series){
+        // Real recorded history. Clamp each point into the plot rather than dropping it, so a
+        // stretch that runs off the top still reads as "up there" instead of vanishing.
+        var dd = "", n = 0;
+        o.r.series.forEach(function(p){
+          var v = Number(p.price); if(!isFinite(v)) return;
+          var xx = Math.max(padL, Math.min(padL + cw, X(p.t)));
+          var yy = Math.max(padT, Math.min(padT + ch, Y(v)));
+          dd += (n++ ? "L" : "M") + xx.toFixed(1) + "," + yy.toFixed(1);
+        });
+        if(n >= 2) s += '<path d="' + dd + '" fill="none" stroke="' + col +
+                        '" stroke-width="1.4" stroke-dasharray="2 5" opacity="' + op + '"/>';
+      } else {
+        s += '<line x1="' + padL + '" y1="' + o.y.toFixed(1) + '" x2="' + (padL + cw) + '" y2="' + o.y.toFixed(1) +
+             '" stroke="' + col + '" stroke-width="' + (isBuy ? 1.5 : 1) + '" stroke-dasharray="' +
+             (isBuy ? "7 4" : "2 5") + '" opacity="' + op + '"/>';
+      }
+      var ty = o.y - 5; if(ty < padT + 11) ty = o.y + 13;
+      for(var q = 0; q < labY.length; q++) if(Math.abs(ty - labY[q]) < 13) ty = labY[q] + 13;
+      labY.push(ty);
+      var arrow = o.off === 1 ? " ↑" : o.off === -1 ? " ↓" : "";
+      var txt = isBuy
+        ? "BUY ZONE ≥ $" + o.r.v.toFixed(2) + (o.r.live ? "  ✓ IN ZONE" : "") + arrow
+        : "COSTCO $" + o.r.v.toFixed(2) +
+          (o.r.stale ? " (" + o.r.days + "d old · engine ignoring)" : o.r.stock ? "" : " (out of stock)") + arrow;
+      // Backing pill. The price line wanders straight through where these labels sit and was
+      // slicing the digits in half; a panel-coloured plate behind the text keeps it readable
+      // without hiding the line. 6px/char is the advance width of this monospace face at 10px.
+      s += '<rect x="' + (padL + 3) + '" y="' + (ty - 10).toFixed(1) + '" width="' + (txt.length * 6 + 8) +
+           '" height="14" rx="3" fill="' + panel + '" opacity="0.82"/>';
+      s += '<text x="' + (padL + 6) + '" y="' + ty.toFixed(1) + '" fill="' + col + '" font-family="monospace" ' +
+           'font-size="10" font-weight="' + (isBuy ? 700 : 400) + '" opacity="' + (isBuy ? 1 : 0.7) + '">' +
+           txt + '</text>';
+    });
+
+    var wide = (GFH_TFS[gfhTf] || 0) >= 10080;          // week/month views label by date, not clock time
+    function tLab(iso){ var dd = new Date(iso);
+      return wide ? dd.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                  : dd.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }); }
+    [0, Math.floor(pts.length / 2), pts.length - 1].forEach(function(i, k){
+      var anch = k === 0 ? "start" : k === 2 ? "end" : "middle";
+      s += '<text x="' + X(pts[i].t).toFixed(1) + '" y="' + (H - 7) + '" text-anchor="' + anch + '" fill="' + mute +
+           '" font-family="monospace" font-size="10">' + tLab(pts[i].t) + '</text>';
+    });
+    s += '<line id="gfhCrossX" x1="0" y1="' + padT + '" x2="0" y2="' + (padT + ch) + '" stroke="' + mute +
+         '" stroke-width="1" stroke-dasharray="2 3" opacity="0"/>' +
+         '<circle id="gfhCrossDot" r="3.5" fill="' + gold + '" opacity="0"/>';
+    svg.innerHTML = s;
+    _gfhGeom = { pts: pts, W: W, X: X, Y: Y };
+    _gfhLast = { pts: pts, capped: capped };
+
+    var first = Number(pts[0].price), chg = last - first, pct = first ? chg / first * 100 : 0;
+    var lastEl = el("gfhChartLast");
+    if(lastEl){
+      lastEl.textContent = "$" + last.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      lastEl.className = "cs-last " + (chg >= 0 ? "up" : "down");
+    }
+    var rng = el("gfhChartRange");
+    if(rng) rng.innerHTML = '<span style="color:' + (chg >= 0 ? good : bad) + '">' + (chg >= 0 ? "▲" : "▼") +
+      " $" + Math.abs(chg).toFixed(2) + " (" + (pct >= 0 ? "+" : "") + pct.toFixed(2) + "%)</span> · " +
+      gfhTf + (gfhTf === "1M" ? " (month)" : "") + " window";
+    // State the span actually drawn, not the span the button asked for. The server row cap
+    // means a wide window can silently cover less than its label claims — say so.
+    var mins = Math.round((t1 - t0) / 60000);
+    var span = mins < 90 ? mins + " min" : mins < 2880 ? (mins / 60).toFixed(1) + " hrs" : (mins / 1440).toFixed(1) + " days";
+    if(note) note.textContent = pts.length + " pts · covering " + span + " · low $" + rawLo.toFixed(2) +
+      " · high $" + rawHi.toFixed(2) + (capped ? " · ⚠ window truncated by the server row cap" : "") +
+      " · this hub's own 1-min spot saves";
+  }
+  // Crosshair + tooltip, wired once. Snaps to the nearest real sample rather than
+  // interpolating, so the number under the pointer is always a price we actually saved.
+  function wireSpotHover(){
+    var wrap = el("gfhChartWrap"); if(!wrap || wrap.__gfhWired) return;
+    wrap.__gfhWired = true;
+    wrap.addEventListener("mousemove", function(e){
+      if(!_gfhGeom) return;
+      var svg = el("gfhChartSvg"), r = svg.getBoundingClientRect(); if(!r.width) return;
+      var vx = (e.clientX - r.left) / r.width * _gfhGeom.W;
+      var pts = _gfhGeom.pts, best = 0, bd = Infinity;
+      for(var i = 0; i < pts.length; i++){
+        var dx = Math.abs(_gfhGeom.X(pts[i].t) - vx);
+        if(dx < bd){ bd = dx; best = i; }
+      }
+      var p = pts[best], px = _gfhGeom.X(p.t), py = _gfhGeom.Y(Number(p.price));
+      var cx = el("gfhCrossX"), dot = el("gfhCrossDot");
+      if(cx){ cx.setAttribute("x1", px.toFixed(1)); cx.setAttribute("x2", px.toFixed(1)); cx.setAttribute("opacity", "0.7"); }
+      if(dot){ dot.setAttribute("cx", px.toFixed(1)); dot.setAttribute("cy", py.toFixed(1)); dot.setAttribute("opacity", "1"); }
+      var tip = el("gfhChartTip"); if(!tip) return;
+      tip.innerHTML = "<b>$" + Number(p.price).toFixed(2) + "</b><br>" +
+        new Date(p.t).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+      tip.style.display = "block";
+      var wr = wrap.getBoundingClientRect();
+      var lx = e.clientX - wr.left + 12; if(lx > wr.width - 140) lx = e.clientX - wr.left - 128;
+      tip.style.left = lx + "px"; tip.style.top = (e.clientY - wr.top + 10) + "px";
+    });
+    wrap.addEventListener("mouseleave", function(){
+      var t = el("gfhChartTip"); if(t) t.style.display = "none";
+      var cx = el("gfhCrossX"), dot = el("gfhCrossDot");
+      if(cx) cx.setAttribute("opacity", "0");
+      if(dot) dot.setAttribute("opacity", "0");
+    });
+  }
+  // PostgREST caps EVERY response at 1000 rows no matter what `limit` says — a 24h window
+  // holds ~1262 ticks and the server answered `Content-Range: 0-999/1262`. The old query
+  // ordered ASCENDING, so it silently received the OLDEST 1000 and threw away everything
+  // newer: the chart sat ~4h in the past and would have drifted further every day as
+  // history grew. Fetch newest-first and page backwards instead.
+  var GFH_PAGE = 1000, GFH_MAXPAGES = 6;            // 6000 one-minute ticks ≈ 4 days
+  function loadSpotChart(){
+    var win = GFH_TFS[gfhTf] || 1440;
+    var since = new Date(Date.now() - win * 60000).toISOString();
+    var url = SB_URL + "/rest/v1/spot_history?select=t,price&t=gte." + since + "&order=t.desc";
+    var all = [], page = 0, capped = false;
+    function grab(){
+      var from = page * GFH_PAGE;
+      return fetch(url, { headers: Object.assign({ Range: from + "-" + (from + GFH_PAGE - 1) }, H) })
+        .then(function(r){ return r.json(); })
+        .then(function(rows){
+          if(!Array.isArray(rows) || !rows.length) return;
+          all = all.concat(rows);
+          page++;
+          if(rows.length < GFH_PAGE) return;         // reached the start of the window
+          if(page < GFH_MAXPAGES) return grab();
+          capped = true;                              // hit our own page budget, not the window
+        });
+    }
+    grab()
+      .then(function(){
+        if(!all.length) return;
+        all.reverse();                                // back to oldest -> newest for drawing
+        if(all.length > 600){                         // thin for drawing speed; always keep the newest point
+          var step = Math.ceil(all.length / 600), thin = [];
+          for(var i = 0; i < all.length; i += step) thin.push(all[i]);
+          if(thin[thin.length - 1] !== all[all.length - 1]) thin.push(all[all.length - 1]);
+          all = thin;
+        }
+        drawSpotChart(all, capped);
+      })
+      .catch(function(){ /* keep whatever is drawn */ });
+  }
+
+  function load(){
+    nextAt = Date.now() + 60000;
+    fetch(SB_URL + "/rest/v1/gold_prices?select=*", { headers: H })
+      .then(function(r){ return r.json(); })
+      .then(function(rows){ if(Array.isArray(rows)) apply(rows); })
+      .catch(function(){ /* keep last-good; applySheet's stale-guard greys after 3 min of no advance */ });
+  }
+
+  var FN_URL = SB_URL + "/functions/v1/refresh-prices?online=1";   // force a fresh spot+online fetch on demand
+  function wirePull(){
+    var b = el("onlinePullBtn"); if(!b) return;
+    var nb = b.cloneNode(true); b.parentNode.replaceChild(nb, b);   // strip the artifact's "tell Claude" handler
+    nb.addEventListener("click", function(){
+      if(nb.disabled) return; nb.disabled = true;
+      var r = el("onlineReq");
+      if(r){ r.textContent = "↻ Fetching a fresh price now…"; r.style.display = "block"; }
+      // log the request (audit) — fire and forget
+      fetch(SB_URL + "/rest/v1/pull_requests", {
+        method: "POST",
+        headers: Object.assign({ "Content-Type": "application/json", Prefer: "return=minimal" }, H),
+        body: JSON.stringify({ note: "brother page pull " + new Date().toISOString() })
+      }).catch(function(){});
+      // trigger a real fresh fetch on Supabase, then reload the displayed values
+      fetch(FN_URL, { method: "POST" })
+        .then(function(res){ return res.json(); })
+        .then(function(j){
+          if(Array.isArray(j && j.data)) apply(j.data);           // instant paint from the function's own return
+          if(r){ r.textContent = (j && j.wrote && j.wrote.length)
+            ? "✓ Fresh price pulled just now."
+            : "✓ Checked — no in-stock change; showing the last saved price."; }
+        })
+        .catch(function(){ if(r){ r.textContent = "↻ Couldn't reach the feed — showing the last saved price."; } load(); })
+        .then(function(){ setTimeout(function(){ nb.disabled = false; }, 1200); });
+    });
+  }
+
+  function start(){
+    var s = el("spotStatus"); if(s){ s.textContent = "● connecting…"; s.className = "spot-status"; }
+    wirePull(); mountTimer(); load(); setInterval(load, 60000); setInterval(tickTimer, 1000);
+    mountSpotChart(); wireSpotHover(); renameFuturesChart(); loadSpotChart(); setInterval(loadSpotChart, 300000);   // chart refetches every 5 min
+    // SVG attributes cannot inherit CSS variables, so the palette is baked in at draw time.
+    // Flipping the theme therefore left the chart in the old theme's colours until the next
+    // redraw — briefly painting a near-black label plate onto the cream page. Redraw on the
+    // toggle instead of waiting for the 60s price tick to clean it up.
+    var tb = el("themeBtn");
+    if(tb) tb.addEventListener("click", function(){
+      setTimeout(function(){ if(_gfhLast) drawSpotChart(_gfhLast.pts, _gfhLast.capped); }, 60);
+    });
+  }
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
+})();
+</script>

@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
+<!-- PIN curtain (public share only). NOT real security — the page source is still readable.
+     Change the PIN by editing var PIN below. Colors are hardcoded (dashboard CSS vars load later). -->
+<style>
+  #pinGate{position:fixed;inset:0;z-index:99999;background:#0c0e13;
+    display:flex;align-items:center;justify-content:center;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  #pinGate.hidden{display:none}
+  .pg-card{display:flex;flex-direction:column;align-items:center;gap:16px;
+    background:linear-gradient(180deg,#1c212d,#161a24);border:1px solid #333a4d;
+    border-radius:18px;padding:34px 30px;box-shadow:0 18px 50px -20px rgba(0,0,0,.85);width:min(90vw,320px)}
+  .pg-lock{font-size:34px;line-height:1}
+  .pg-title{color:#f4f1ea;font-size:16px;font-weight:640;letter-spacing:.01em}
+  .pg-sub{color:#767d90;font-family:ui-monospace,"Cascadia Code",Consolas,monospace;font-size:11px;margin-top:-8px}
+  .pg-input{width:100%;text-align:center;background:#0c0e13;border:1px solid #333a4d;border-radius:10px;
+    color:#f4f1ea;font-family:ui-monospace,"Cascadia Code",Consolas,monospace;font-size:30px;
+    letter-spacing:.5em;padding:12px 10px;outline:none}
+  .pg-input:focus{border-color:#c99a3a}
+  .pg-btn{width:100%;cursor:pointer;border:1px solid #c99a3a;border-radius:10px;padding:11px;
+    background:linear-gradient(180deg,#e8c46a,#c99a3a);color:#1a1305;font-weight:700;font-size:14px;
+    font-family:inherit}
+  .pg-btn:active{transform:translateY(1px)}
+  .pg-err{color:#f2686f;font-family:ui-monospace,Consolas,monospace;font-size:11.5px;min-height:14px}
+</style>
+<div id="pinGate">
+  <div class="pg-card">
+    <div class="pg-lock">🔒</div>
+    <div class="pg-title">Gold Flip Dashboard</div>
+    <div class="pg-sub">enter PIN to view</div>
+    <input id="pgInput" class="pg-input" type="password" inputmode="numeric" maxlength="4"
+           autocomplete="off" aria-label="PIN" placeholder="••••">
+    <button id="pgBtn" class="pg-btn">Unlock</button>
+    <div id="pgErr" class="pg-err"></div>
+  </div>
+</div>
+<script>
+(function(){
+  var PIN = "9875";                       // <-- change to your 4 digits
+  var gate=document.getElementById('pinGate'),
+      inp=document.getElementById('pgInput'),
+      btn=document.getElementById('pgBtn'),
+      err=document.getElementById('pgErr');
+  document.documentElement.style.overflow='hidden';   // no scrolling the board behind the curtain
+  function unlock(){
+    if(inp.value===PIN){ gate.classList.add('hidden'); document.documentElement.style.overflow=''; }
+    else { err.textContent='Wrong PIN — try again'; inp.value=''; inp.focus(); }
+  }
+  btn.addEventListener('click',unlock);
+  inp.addEventListener('keydown',function(e){ if(e.key==='Enter') unlock(); });
+  inp.addEventListener('input',function(){ err.textContent=''; if(inp.value.length===4) unlock(); });
+  inp.focus();
+})();
+</script>
+<meta charset="utf-8">
+<title>Gold Flip — Profit Dashboard</title>
+<style>
+  /* ============ TOKENS ============ */
+  :root{
+    --bg:#0c0e13; --bg2:#12151d; --panel:#161a24; --panel2:#1c212d;
+    --line:#262c3a; --line2:#333a4d;
+    --ink:#f4f1ea; --ink-soft:#b7bcca; --ink-mute:#767d90;
+    --gold:#e8c46a; --gold-deep:#c99a3a; --gold-glow:rgba(232,196,106,.14);
+    --good:#4bd6a0; --good-bg:rgba(75,214,160,.12);
+    --bad:#f2686f; --bad-bg:rgba(242,104,111,.12);
+    --warn:#eab54c; --warn-bg:rgba(234,181,76,.12);
+    --closed:#ef8b3c;
+    --shadow:0 1px 0 rgba(255,255,255,.03) inset, 0 18px 40px -24px rgba(0,0,0,.8);
+    --r:16px; --r-sm:10px;
+    --mono:"SF Mono",ui-monospace,"Cascadia Code","Consolas",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  :root[data-theme="light"]{
+    --bg:#f3f0e9; --bg2:#eae6dc; --panel:#fffdf8; --panel2:#f6f2e9;
+    --line:#e0d9c9; --line2:#d0c7b2;
+    --ink:#231f18; --ink-soft:#4f4838; --ink-mute:#8a8069;
+    --gold:#9a7420; --gold-deep:#b98f2e; --gold-glow:rgba(154,116,32,.10);
+    --good:#0f9d6b; --good-bg:rgba(15,157,107,.12);
+    --bad:#d23b45; --bad-bg:rgba(210,59,69,.10);
+    --warn:#b07d17; --warn-bg:rgba(176,125,23,.12);
+    --closed:#c05a12;
+    --shadow:0 1px 0 rgba(255,255,255,.6) inset, 0 16px 34px -26px rgba(0,0,0,.35);
+  }
+  /* Dark by default (Medi: "dark like my lesson artifact"). Light is opt-in via the toggle. */
+  *{box-sizing:border-box}
+  /* Visible keyboard focus for every interactive control (spot input keeps its stronger rule). */
+  a:focus-visible,button:focus-visible,input:focus-visible,label:focus-visible,[tabindex]:focus-visible{
+    outline:2px solid var(--gold);outline-offset:2px;border-radius:8px}
+  body{margin:0;background:
+      radial-gradient(1100px 500px at 85% -8%,var(--gold-glow),transparent 60%),
+      var(--bg);
+    color:var(--ink);font-family:var(--sans);line-height:1.5;
+    -webkit-font-smoothing:antialiased;padding:clamp(14px,3vw,34px)}
+  .wrap{max-width:1120px;margin:0 auto}
+  .tnum{font-variant-numeric:tabular-nums}
+
+  /* ============ TOP BAR ============ */
+  .top{margin-bottom:12px}
+  .kicker{font-family:var(--mono);font-size:10px;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--gold);margin:0 2px 6px}
+  .spotbar{display:flex;flex-wrap:wrap;align-items:center;gap:14px 22px;
+    background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line2);
+    border-radius:var(--r);padding:14px 22px;box-shadow:var(--shadow)}
+  .spot-lead{flex:1;min-width:220px;display:flex;flex-direction:column;gap:1px}
+  .spot-lab{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-mute)}
+  .spot-num{display:flex;align-items:baseline;gap:5px}
+  .spot-num .cur{font-family:var(--mono);font-size:clamp(22px,3.2vw,30px);font-weight:600;color:var(--gold);opacity:.85}
+  .spot-in{width:100%;max-width:360px;background:transparent;border:0;color:var(--ink);
+    font-family:var(--mono);font-size:clamp(40px,6.4vw,58px);font-weight:680;letter-spacing:-.02em;
+    padding:0;text-align:left;line-height:1.04}
+  .spot-in:focus{outline:2px solid var(--gold);outline-offset:3px;border-radius:6px}
+  .spot-side{display:flex;align-items:center;gap:14px;margin-left:auto}
+  .spot-status{color:var(--warn);font-size:9.5px;letter-spacing:.08em;border:1px solid var(--line2);
+    border-radius:6px;padding:4px 8px;white-space:nowrap}
+  .spot-status.live{color:var(--good)}
+  .spot-in.closed{color:var(--closed);transition:color .3s}
+  /* STALE guard — feed stopped updating (must sit AFTER .closed so grey wins when both apply) */
+  .spot-status.stale{color:var(--bad);border-color:var(--bad)}
+  .spot-in.stale{color:var(--ink-mute);transition:color .3s}
+  /* FLASH PULSE — fires when a live update changes a figure: soft pop + up/down color, ≤500ms */
+  @keyframes fpop{0%{transform:scale(1)}30%{transform:scale(1.07)}100%{transform:scale(1)}}
+  @keyframes fpop-up{0%{transform:scale(1)}18%{color:var(--good)}32%{transform:scale(1.09);color:var(--good)}72%{color:var(--good)}100%{transform:scale(1)}}
+  @keyframes fpop-down{0%{transform:scale(1)}18%{color:var(--bad)}32%{transform:scale(1.09);color:var(--bad)}72%{color:var(--bad)}100%{transform:scale(1)}}
+  .flash{animation:fpop .46s ease;will-change:transform}
+  .flash.up{animation:fpop-up .5s ease}
+  .flash.down{animation:fpop-down .5s ease}
+  @media (prefers-reduced-motion:reduce){.flash,.flash.up,.flash.down{animation:none}}
+  .mktnote{font-family:var(--mono);font-size:11px;color:var(--closed);font-weight:600;
+    letter-spacing:.02em;margin-top:3px;white-space:normal}
+  .stamp{font-family:var(--mono);font-size:10.5px;color:var(--ink-mute);white-space:nowrap}
+  .stamp b{color:var(--ink-soft);font-weight:600}
+  .pull{cursor:pointer;border:1px solid var(--gold-deep);
+    background:linear-gradient(180deg,var(--gold),var(--gold-deep));
+    color:#1a1305;font-weight:700;font-size:13px;letter-spacing:.02em;
+    border-radius:10px;padding:10px 16px;font-family:var(--sans);
+    display:inline-flex;align-items:center;gap:7px;transition:transform .08s,filter .15s}
+  .pull:hover{filter:brightness(1.06)} .pull:active{transform:translateY(1px)}
+  .pull:disabled{opacity:.55;cursor:progress;filter:saturate(.5)}
+  .pull .dot{width:7px;height:7px;border-radius:50%;background:#1a1305;opacity:.7}
+  .pull.sm{padding:7px 12px;font-size:11.5px;border-radius:8px}
+  .pull.big{padding:15px 22px;font-size:14px}
+
+  /* ============ GOLD PRICE CHART (accordion) ============ */
+  .chartbox{margin-bottom:12px;background:linear-gradient(180deg,var(--panel2),var(--panel));
+    border:1px solid var(--line2);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+  .chart-sum{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;
+    gap:12px;padding:12px 18px;user-select:none}
+  .chart-sum::-webkit-details-marker{display:none}
+  .chart-sum:focus-visible{outline:2px solid var(--gold);outline-offset:-2px;border-radius:8px}
+  .cs-l{display:flex;align-items:center;gap:9px;font-weight:640;font-size:14px;flex-wrap:wrap}
+  .cs-ic{font-size:16px}
+  .cs-sub{font-family:var(--mono);font-size:10px;color:var(--ink-mute);font-weight:400;letter-spacing:.02em}
+  .cs-r{display:flex;align-items:center;gap:12px}
+  .cs-last{font-family:var(--mono);font-size:16px;font-weight:660;color:var(--gold)}
+  .cs-last.up{color:var(--good)} .cs-last.down{color:var(--bad)}
+  .cs-toggle{display:inline-flex;align-items:center;gap:7px;background:var(--gold-glow);
+    border:1px solid var(--gold-deep);border-radius:999px;padding:6px 13px}
+  .cs-toggle-txt{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--gold)}
+  .cs-toggle-txt::after{content:"Show chart"}
+  details[open] .cs-toggle-txt::after{content:"Hide chart"}
+  .cs-chev{font-size:19px;line-height:1;color:var(--gold);transition:transform .25s}
+  details[open] .cs-chev{transform:rotate(180deg)}
+  .chartbox:not([open]) .cs-toggle{animation:chevpulse 2.4s ease-in-out infinite}
+  @keyframes chevpulse{0%,100%{box-shadow:0 0 0 0 var(--gold-glow)}50%{box-shadow:0 0 0 5px transparent}}
+  @media (prefers-reduced-motion:reduce){.chartbox:not([open]) .cs-toggle{animation:none}}
+  .chart-body{padding:0 14px 14px}
+  .tfbar{display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+  .tfbtn{cursor:pointer;font-family:var(--mono);font-size:12px;font-weight:600;color:var(--ink-soft);
+    background:var(--bg2);border:1px solid var(--line2);border-radius:8px;padding:5px 12px}
+  .tfbtn:hover{border-color:var(--gold-deep)}
+  .tfbtn.active{background:linear-gradient(180deg,var(--gold),var(--gold-deep));color:#1a1305;border-color:var(--gold-deep)}
+  .tf-src{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--ink-mute)}
+  .tf-src.sample{color:var(--closed)}                 /* amber = illustrative, NOT a live price */
+  .tf-src.live{color:var(--good)}
+  .tf-src.stale{color:var(--bad);font-weight:600}     /* red = live feed stopped delivering new bars */
+  .chartwrap{position:relative;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:6px}
+  #chartSvg{width:100%;height:auto;display:block}
+  .chart-tip{position:absolute;pointer-events:none;background:var(--panel);border:1px solid var(--line2);
+    border-radius:8px;padding:6px 9px;font-family:var(--mono);font-size:10.5px;color:var(--ink);line-height:1.5;
+    box-shadow:var(--shadow);white-space:nowrap;z-index:5}
+  .chart-tip b{color:var(--gold)}
+  .chart-foot{display:flex;justify-content:space-between;gap:10px;margin-top:8px;flex-wrap:wrap;
+    font-family:var(--mono);font-size:10.5px;color:var(--ink-mute)}
+
+  /* ============ TRIO (June · Online · Delta) ============ */
+  .trio{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px}
+  @media (max-width:820px){.trio{grid-template-columns:1fr 1fr}}
+  @media (max-width:560px){.trio{grid-template-columns:1fr}}
+  .deltacard{border-left:3px solid #c3a4ff}
+  .deltacard .dv{font-family:var(--mono);font-size:clamp(28px,3.6vw,38px);font-weight:680;color:var(--gold);line-height:1}
+  .deltacard .cap-sub{font-family:var(--mono);font-size:10px;color:var(--ink-mute)}
+  /* ============ GAUGE BAR (full-width) ============ */
+  .gaugebar{display:flex;flex-wrap:wrap;align-items:center;gap:14px 24px;
+    background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line2);
+    border-radius:var(--r);padding:15px 20px;box-shadow:var(--shadow);margin-bottom:12px}
+  .gb-left{flex:1;min-width:300px;display:flex;flex-direction:column;gap:9px}
+  .gaugebar .mini{margin:0;flex:1 1 300px}
+
+  /* ============ BUYING POWER ============ */
+  .bpbar{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line2);
+    border-radius:var(--r);padding:15px 20px;box-shadow:var(--shadow);margin-top:12px;
+    display:flex;flex-direction:column;gap:12px}
+  .bp-title{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--gold);display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+  .bp-title span{color:var(--ink-mute);font-size:10px;letter-spacing:.03em;text-transform:none}
+  .bp-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+  @media (max-width:700px){.bp-stats{grid-template-columns:repeat(2,1fr)}}
+  .bp-stats > div{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .bp-stats .l{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mute)}
+  .bp-stats .n{font-family:var(--mono);font-size:19px;font-weight:660;margin-top:4px}
+  .bp-stats .n.good{color:var(--good)}
+
+  .avail{display:inline-flex;align-items:center;gap:6px;margin-top:5px;font-family:var(--mono);
+    font-size:10.5px;color:var(--ink-soft);cursor:pointer}
+  .avail input{width:14px;height:14px;accent-color:var(--gold);cursor:pointer}
+  .avail b{color:var(--good);font-weight:660}
+  .avail.off{color:var(--ink-mute);cursor:default}
+  .avail.off em{color:var(--bad);font-style:normal}
+
+  .capcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 15px;
+    display:flex;flex-direction:column;gap:9px;height:100%;justify-content:space-between}
+  .capcard.june{border-left:3px solid var(--gold)}
+  .capcard.online{border-left:3px solid #7fb2ff}
+  .cap-t{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .cap-t .lab{font-weight:640;font-size:13px;display:flex;align-items:center;gap:7px}
+  .cap-t .lab .ic{font-size:14px}
+  .cap-t .ro{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink-mute);border:1px solid var(--line2);border-radius:5px;padding:2px 6px}
+  .cap-row{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-end}
+  .cap-f{display:flex;flex-direction:column;gap:2px}
+  .cap-f .k{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mute)}
+  .cap-f .val{font-family:var(--mono);font-size:19px;font-weight:640;color:var(--ink)}
+  .cap-f .val.time{font-size:13px;font-weight:600;color:var(--ink-soft)}
+  .instock{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+    padding:3px 8px;border-radius:6px;background:var(--good-bg);color:var(--good)}
+  .instock.out{background:var(--bad-bg);color:var(--bad)}
+  .online-req{font-size:11px;color:var(--warn);display:none}
+
+  .gauge-title{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--gold);display:flex;align-items:center;gap:8px}
+  .gauge-head{display:flex;justify-content:space-between;align-items:baseline}
+  .gauge-head .t{font-size:12.5px;color:var(--ink-soft);font-weight:600}
+  .gauge-head .v{font-family:var(--mono);font-size:12px;color:var(--ink-mute)}
+  .track{position:relative;height:12px;border-radius:999px;background:var(--bg2);
+    border:1px solid var(--line2);overflow:hidden}
+  .fill{position:absolute;inset:0 auto 0 0;border-radius:999px;transition:width .5s ease}
+  .fill.good{background:linear-gradient(90deg,var(--good),#7ef0c4)}
+  .fill.bad{background:linear-gradient(90deg,var(--bad),#f2a0a4)}
+  .verdict{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:13px;
+    border-radius:8px;padding:7px 11px;align-self:flex-start}
+  .verdict.go{background:var(--good-bg);color:var(--good)}
+  .verdict.no{background:var(--bad-bg);color:var(--bad)}
+  .mini{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:2px}
+  .mini div{background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:8px 9px}
+  .mini .l{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mute)}
+  .mini .n{font-family:var(--mono);font-size:14px;font-weight:600;margin-top:3px}
+  .mini .n.bad{color:var(--bad)} .mini .n.good{color:var(--good)}
+
+  /* ============ MATRIX ============ */
+  .sec-head{display:flex;align-items:baseline;gap:12px;margin:22px 4px 12px;flex-wrap:wrap}
+  .sec-head h3{margin:0;font-size:15px;font-weight:640;letter-spacing:.01em}
+  .sec-head span{font-size:11.5px;color:var(--ink-mute);font-family:var(--mono)}
+  .rail{flex:1;height:1px;background:var(--line);min-width:20px}
+  .matrix{display:flex;flex-direction:column;gap:9px}
+  .card{display:grid;grid-template-columns:22px 1.55fr .78fr .95fr .95fr 1.15fr;gap:13px;
+    align-items:center;background:var(--panel);border:1px solid var(--line);
+    border-radius:12px;padding:12px 15px;transition:border-color .15s,transform .1s}
+  .card:hover{border-color:var(--line2);transform:translateX(2px)}
+  .card.pinned{border-color:var(--gold-deep);background:linear-gradient(180deg,var(--panel2),var(--panel))}
+  .card.win{border-color:rgba(75,214,160,.32)}
+  .colhead{display:grid;grid-template-columns:22px 1.55fr .78fr .95fr .95fr 1.15fr;gap:13px;
+    padding:0 15px 2px;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--ink-mute)}
+  .colhead .r{text-align:right}
+  @media (max-width:760px){
+    .card,.colhead{grid-template-columns:20px 1fr auto auto}
+    .colhead{display:none}
+    .card .col-catch{grid-column:1/-1}
+    .card .col-eff{grid-column:2}
+  }
+  .rank{font-family:var(--mono);font-size:13px;color:var(--ink-mute);text-align:center}
+  .rank.medal{font-size:15px}
+  .cname{font-weight:620;font-size:14px;display:flex;flex-direction:column;gap:3px}
+  .cname small{font-weight:500;font-size:11px;color:var(--gold);font-family:var(--mono)}
+  .chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:2px}
+  .chip{font-family:var(--mono);font-size:9.5px;letter-spacing:.04em;padding:2px 7px;
+    border-radius:6px;border:1px solid var(--line2);color:var(--ink-soft);white-space:nowrap}
+  .chip.visa{color:#7fb2ff;border-color:rgba(127,178,255,.3)}
+  .chip.mc{color:#f2a05a;border-color:rgba(242,160,90,.3)}
+  .chip.tk{color:var(--gold);border-color:var(--line2)}
+  .chip.notk{color:var(--ink-mute)}
+  .chip.biz{color:#c3a4ff;border-color:rgba(195,164,255,.34);font-weight:600}
+  .chip.pers{color:#8fb3c9;border-color:rgba(143,179,201,.32);font-weight:600}
+  .col-eff{font-family:var(--mono);text-align:right}
+  .col-eff .big{font-size:16px;font-weight:640}
+  .col-eff .sm{font-size:9.5px;color:var(--ink-mute)}
+  .col-bar{font-family:var(--mono);text-align:right;font-size:17px;font-weight:660}
+  .col-bar.good{color:var(--good)} .col-bar.bad{color:var(--bad)}
+  .col-bar .u{display:block;font-size:9px;color:var(--ink-mute);font-weight:500;letter-spacing:.08em}
+  .col-catch{font-size:11px;color:var(--ink-mute);line-height:1.35}
+
+  .divider{display:flex;align-items:center;gap:12px;margin:6px 2px 2px;
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#f2a05a}
+  .divider::before,.divider::after{content:"";height:1px;flex:1;
+    background:repeating-linear-gradient(90deg,rgba(242,160,90,.4) 0 6px,transparent 6px 12px)}
+  .divider .lbl{white-space:nowrap;display:flex;align-items:center;gap:6px}
+  .divider .lbl b{color:var(--ink-soft);font-weight:500;text-transform:none;letter-spacing:0}
+
+  /* ============ BUYERS ============ */
+  .buyers{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:10px}
+  .buyer{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;
+    display:flex;flex-direction:column;gap:4px}
+  .buyer.best{border-color:rgba(75,214,160,.4);background:linear-gradient(180deg,var(--panel2),var(--panel))}
+  .bname{font-weight:620;font-size:12.5px;display:flex;align-items:center;gap:6px}
+  .tagbest{font-family:var(--mono);font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--good);
+    border:1px solid rgba(75,214,160,.4);border-radius:5px;padding:1px 5px}
+  .bsell{font-family:var(--mono);font-size:20px;font-weight:660;color:var(--gold);line-height:1}
+  .bsell.na{font-size:13px;color:var(--ink-mute)}
+  .boff{font-family:var(--mono);font-size:10px;color:var(--ink-soft)}
+  .bnote{font-size:10.5px;color:var(--ink-mute);line-height:1.3}
+  .buyer .stamp{font-size:9.5px}
+
+  .rules{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .rulechip{font-family:var(--mono);font-size:11px;color:var(--ink-soft);background:var(--panel);
+    border:1px solid var(--line);border-radius:8px;padding:7px 11px}
+  .rulechip b{color:var(--gold)}
+
+  .note{margin-top:20px;padding:14px 16px;background:var(--panel);border:1px solid var(--line);
+    border-left:3px solid var(--gold);border-radius:10px;font-size:12.5px;color:var(--ink-soft);line-height:1.6}
+  .note b{color:var(--ink)}
+  .foot{margin-top:16px;display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:space-between;
+    font-family:var(--mono);font-size:10.5px;color:var(--ink-mute)}
+  .theme-btn{cursor:pointer;background:var(--panel);border:1px solid var(--line2);color:var(--ink-soft);
+    border-radius:8px;padding:5px 10px;font-family:var(--mono);font-size:11px}
+</style>
+
+<div class="wrap">
+
+  <div class="top">
+    <div class="kicker">◆ Costco Gold Flip · Profit Engine</div>
+    <div class="spotbar">
+      <div class="spot-lead">
+        <span class="spot-lab">Gold spot $/oz</span>
+        <div class="spot-num"><span class="cur">$</span><input class="spot-in tnum" id="spot" value="4053.70" inputmode="decimal" aria-label="Gold spot price per ounce"></div>
+        <div class="stamp" id="spotStamp">spot pulled —</div>
+        <div class="mktnote" id="marketNote" style="display:none"></div>
+      </div>
+      <div class="spot-side">
+        <span class="spot-status" id="spotStatus">◉ manual · pull to sync</span>
+        <button class="pull big" id="pullBtn" title="Re-pull spot, recompute every figure, stamp the time">
+          <span class="dot"></span> PULL
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GOLD PRICE CHART (accordion) -->
+  <details class="chartbox" id="chartBox">
+    <summary class="chart-sum">
+      <span class="cs-l"><span class="cs-ic">📈</span> Gold price chart
+        <span class="cs-sub">COMEX futures · GC=F · tracks spot ±$15</span></span>
+      <span class="cs-r"><span class="cs-last" id="chartLast">—</span>
+        <span class="cs-toggle"><span class="cs-toggle-txt"></span><span class="cs-chev">▾</span></span></span>
+    </summary>
+    <div class="chart-body">
+      <div class="tfbar" id="tfbar" role="tablist" aria-label="Chart timeframe">
+        <button class="tfbtn" data-tf="5M" role="tab" aria-selected="false">5M</button>
+        <button class="tfbtn" data-tf="10M" role="tab" aria-selected="false">10M</button>
+        <button class="tfbtn" data-tf="30M" role="tab" aria-selected="false">30M</button>
+        <button class="tfbtn" data-tf="1H" role="tab" aria-selected="false">1H</button>
+        <button class="tfbtn" data-tf="6H" role="tab" aria-selected="false">6H</button>
+        <button class="tfbtn active" data-tf="1D" role="tab" aria-selected="true">1D</button>
+        <button class="tfbtn" data-tf="1W" role="tab" aria-selected="false">1W</button>
+        <span class="tf-src sample" id="chartSrc">sample data · not live · shown for shape only</span>
+      </div>
+      <div class="chartwrap">
+        <svg id="chartSvg" viewBox="0 0 1000 360" preserveAspectRatio="xMidYMid meet"
+             aria-label="Gold price candlestick chart"></svg>
+        <div class="chart-tip" id="chartTip" style="display:none"></div>
+      </div>
+      <div class="chart-foot">
+        <span id="chartRange">—</span>
+        <span id="chartStamp">—</span>
+      </div>
+    </div>
+  </details>
+
+  <!-- TRIO: June · Online · Costco→spot delta -->
+  <div class="trio">
+    <div class="capcard june">
+      <div class="cap-t"><div class="lab"><span class="ic">📝</span> June's in-store price</div><span class="ro">read-only</span></div>
+      <div class="cap-row">
+        <div class="cap-f"><span class="k">1oz price</span><span class="val" id="junePriceV">—</span></div>
+        <div class="cap-f"><span class="k">Captured · form submit</span><span class="val time" id="juneTimeV">—</span></div>
+      </div>
+    </div>
+    <div class="capcard online">
+      <div class="cap-t">
+        <div class="lab"><span class="ic">🌐</span> Online price</div>
+        <span class="instock" id="inStockV">in stock</span>
+      </div>
+      <div class="cap-row">
+        <div class="cap-f"><span class="k">Online 1oz price</span><span class="val" id="onlinePriceV">—</span></div>
+        <div class="cap-f"><span class="k">Checked · last lookup</span><span class="val time" id="onlineTimeV">—</span></div>
+      </div>
+      <button class="pull sm" id="onlinePullBtn" title="Ask Claude to look up the current Costco online price">
+        <span class="dot"></span> PULL ONLINE
+      </button>
+      <div class="online-req" id="onlineReq"></div>
+    </div>
+    <div class="capcard deltacard">
+      <div class="cap-t"><div class="lab"><span class="ic">📈</span> Costco → spot delta</div></div>
+      <div class="dv tnum" id="deltaV">—</div>
+      <div class="cap-sub">bar price over live spot</div>
+      <div class="stamp" id="deltaStamp">—</div>
+    </div>
+  </div>
+
+  <!-- ALERT GAUGE (full-width band) -->
+  <div class="gaugebar">
+    <div class="gb-left">
+      <div class="gauge-title">◎ Alert floor · Chase Ink 2.6% (no Taekus)</div>
+      <div class="gauge-head"><span class="t">Distance to $25/bar alert</span><span class="v" id="gaugeVal">—</span></div>
+      <div class="track"><div class="fill" id="gaugeFill" style="width:0%"></div></div>
+      <div class="verdict no" id="verdict">—</div>
+      <div class="stamp" id="heroStamp">—</div>
+    </div>
+    <div class="mini">
+      <div><div class="l">Buy Pamp</div><div class="n tnum" id="mBuy">—</div></div>
+      <div><div class="l" id="mSellLab">Sell · Elemetal</div><div class="n tnum" id="mSell">—</div></div>
+      <div><div class="l">NET</div><div class="n tnum" id="mLoss">—</div></div>
+    </div>
+  </div>
+
+  <!-- BUYING POWER (above the cards) -->
+  <div class="bpbar">
+    <div class="bp-title">💳 Buying power <span>available + profitable cards only · cost split across cards · fills best rate first</span></div>
+    <div class="bp-stats">
+      <div><div class="l">Credit available</div><div class="n tnum" id="bpCredit">—</div></div>
+      <div><div class="l">Whole bars</div><div class="n tnum" id="bpBars">—</div></div>
+      <div><div class="l">Capital deployed</div><div class="n tnum" id="bpDeployed">—</div></div>
+      <div><div class="l">Est. profit / cycle</div><div class="n good tnum" id="bpProfit">—</div></div>
+      <div><div class="l">Unused credit</div><div class="n tnum" id="bpUnused">—</div></div>
+    </div>
+  </div>
+
+  <!-- OWNED MATRIX -->
+  <div class="sec-head">
+    <h3>Your cards — profit per Elemetal bar</h3>
+    <span id="matrixStamp">—</span>
+    <div class="rail"></div>
+  </div>
+  <div class="colhead">
+    <div></div><div>Card</div><div class="r">Eff %</div><div class="r">Pamp $/bar</div><div class="r">Generic $/bar</div><div>Notes</div>
+  </div>
+  <div class="matrix" id="matrix"></div>
+
+  <!-- BUYERS -->
+  <div class="sec-head">
+    <h3>Where you sell — buyer offsets</h3>
+    <span id="buyerStamp">—</span>
+    <div class="rail"></div>
+  </div>
+  <div class="buyers" id="buyers"></div>
+
+  <div class="rules">
+    <span class="rulechip">Elemetal · Pamp <b>spot − $10</b></span>
+    <span class="rulechip">Elemetal · Generic <b>spot − $20</b></span>
+    <span class="rulechip">Alert floor <b>$25 / bar</b></span>
+    <span class="rulechip">Online = in-store <b>+ $10</b></span>
+  </div>
+
+  <div class="note">
+    <b>How to read it:</b> the alert floor is Chase Ink 2.6% with <b>no Taekus</b> — your worst case. When even THAT bar clears <b>+$25</b>, every card clears more. •
+    <b>BUY</b> = June's captured price (or online if in stock and higher). <b>SELL</b> = live spot − Elemetal's discount ($10 Pamp / $20 Generic). •
+    <b>Venmo = verified 3%</b> + Synchrony Taekus 2.13% = 5.13% → best per-bar card. •
+    <b>Citi Double Cash</b> (personal MC) takes <b>no Taekus</b> → 2% only. •
+    <b>Where you sell</b> compares each buyer's price (spot ± their offset); Elemetal is the default. •
+    <b>PULL</b> re-reads the live engine sheet (spot + prices); <b>PULL ONLINE</b> flags a Costco.com price refresh for Claude/June.
+  </div>
+
+  <div class="foot">
+    <span id="builtStamp">—</span>
+    <span id="dataSrc">data: seed values (connect Drive to go live)</span>
+    <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
+    <button class="theme-btn" id="themeBtn">◐ theme</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const CFG = {
+    junePrice:4159.99, juneTime:"2026-07-25T09:32",
+    onlinePrice:4169.99, onlineTime:"2026-07-25T10:15", inStock:true,
+    discPamp:10, discGen:20, floor:25, onlinePrem:10
+  };
+
+  // LIVE feed — the "Gold Flip — Engine" sheet (Drive: wc@adibs.com). Read-only, via the
+  // viewer's Google Drive connector. Everything falls back to the seed values above if the
+  // connector isn't available, so the dashboard always renders.
+  const ENGINE_ID = "1Rkn_DjkE0fcbIp8-8fyjv4DoQstzBWyN5hFL1DaGFTU";
+  const DRIVE_SERVER = "Google Drive";   // best-guess display name; auto-corrected via listTools()
+  let _liveServer = null;
+
+  // Buyers (sell price = spot + offset). Elemetal is the default/preferred buyer.
+  const BUYERS = [
+    {key:"elemetal_pamp",    name:"Elemetal · Pamp",    offset:-10,  note:"Local, call-in, ~1wk. Default buyer.", t:"2026-07-24"},
+    {key:"elemetal_generic", name:"Elemetal · Generic", offset:-20,  note:"Local, generic 1oz bar.", t:"2026-07-24"},
+    {key:"upstate",          name:"Upstate",            offset:7,    note:"Pays over spot; ship-in or drive.", t:"2026-07-24"},
+    {key:"amark",            name:"AMARK",              offset:null, note:"Las Vegas; no price-pull yet.", t:null},
+    {key:"collectpure",      name:"CollectPure",        offset:null, note:"Online marketplace; ship-in.", t:null},
+  ];
+
+  // OWNED cards in Medi's fixed order. Visa in-store first, then MC online-only below the divider.
+  // NOTE: Citi Double Cash = personal Mastercard → does NOT accept Taekus (tk:0).
+  const OWNED = [
+    {name:"Chase Ink Business", biller:"Chase", net:"visa", card:2.6, tk:0, type:"Business", hero:true, order:1, limit:20000,
+     catch:"Alert-floor card. Best as a sign-up-bonus min-spend, not steady flips."},
+    {name:"Costco Anywhere Visa Business", biller:"Citi", net:"visa", card:2.0, tk:1.8, type:"Business", order:2, limit:10000,
+     catch:"Your Costco Citi Business card. Reward paid once/yr as a Feb certificate. In-store OK."},
+    {name:"Venmo Credit Card", biller:"Synchrony", net:"visa", card:3.0, tk:2.13, type:"Personal", order:3, limit:12000,
+     catch:"Verified 3% at Costco + Synchrony Taekus — your best per-bar card. In-store OK."},
+    {name:"U.S. Bank Smartly (4%)", biller:"U.S. Bank", net:"visa", card:4.0, tk:0, type:"Personal", order:4, limit:10000,
+     catch:"Needs ~$100k parked at U.S. Bancorp; $10k/mo cap. In-store OK."},
+    {name:"Citi Double Cash", biller:"Citi", net:"mc", card:2.0, tk:0, type:"Personal", order:5, limit:8000,
+     catch:"Personal MC → no Taekus (2% only). Mastercard = Costco.com online only."},
+  ];
+  // credit-limit availability — default every card ON (balance available)
+  const avail={}; OWNED.forEach(c=>avail[c.name]=true);
+
+  const $ = id => document.getElementById(id);
+  const money = n => (n<0?"−$":"$") + Math.abs(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const signMoney = n => (n<0?"−$":"+$") + Math.abs(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const pct = n => n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})+"%";
+  const num = id => parseFloat($(id).value)||0;
+  function nowStr(){
+    const d=new Date();
+    return d.toLocaleDateString("en-US",{month:"short",day:"numeric"})+" · "+
+           d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",second:"2-digit"});
+  }
+  function fmtDT(v){
+    if(!v) return "—";
+    const d=new Date(v); if(isNaN(d)) return v;
+    return d.toLocaleDateString("en-US",{month:"short",day:"numeric"})+" · "+
+           d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+  }
+  let barType="pamp";
+  let _bp=null;   // cached {rows, buy, lossP} so avail toggles recompute the band only
+  let _pulse=false;      // set true by a live update that moved the spot → compute() ripples the figures
+
+  // FLASH PULSE: re-trigger a subtle pop (+ optional up/down color) by clearing & re-adding the class.
+  function flashPulse(el, dir){
+    if(!el) return;
+    el.classList.remove("flash","up","down");
+    void el.offsetWidth;                 // force reflow so the animation restarts
+    el.classList.add("flash"); if(dir) el.classList.add(dir);
+    setTimeout(()=>el.classList.remove("flash","up","down"),560);
+  }
+
+  // Costco split-tender spreads one bar's cost across cards → POOL total credit.
+  // Whole bars only: floor(pooled credit / buy). Profit fills highest-reward cards first.
+  function computeBP(rows, buy, lossP){
+    const pool=rows.filter(x=>x.barP>0 && avail[x.c.name]).sort((a,b)=>b.eff-a.eff);
+    let totCredit=0; pool.forEach(x=>totCredit+=x.c.limit);
+    const totBars=Math.floor(totCredit/buy);
+    const deployed=totBars*buy;
+    let spendLeft=deployed, reward=0;
+    for(const x of pool){ const use=Math.min(x.c.limit,spendLeft); reward+=use*(x.eff/100); spendLeft-=use; if(spendLeft<=0)break; }
+    const totProfit=reward-totBars*lossP, unused=totCredit-deployed;
+    $("bpCredit").textContent=money(totCredit);
+    $("bpBars").textContent=totBars+(totBars===1?" bar":" bars");
+    $("bpDeployed").textContent=money(deployed);
+    $("bpProfit").textContent=money(totProfit);
+    $("bpUnused").textContent=money(unused);
+  }
+
+  function rowHTML(c, rankTxt, eff, barP, barG, buy){
+    const netChip = c.net==="visa"
+      ? `<span class="chip visa">VISA · in-store+online</span>`
+      : `<span class="chip mc">MC · online only</span>`;
+    const tkChip = c.tk>0 ? `<span class="chip tk">+Taekus ${c.biller} ${c.tk}%</span>` : `<span class="chip notk">no Taekus</span>`;
+    const typeChip = c.type==="Business"
+      ? `<span class="chip biz">● BUSINESS</span>`
+      : `<span class="chip pers">● PERSONAL</span>`;
+    const profitable = barP>0;
+    const limK = "$"+(c.limit/1000)+"k";
+    const availHTML = profitable
+      ? `<label class="avail"><input type="checkbox" data-card="${c.name}" ${avail[c.name]?"checked":""}> ${limK} limit available</label>`
+      : `<label class="avail off"><input type="checkbox" disabled> ${limK} limit <em>excluded · no profit</em></label>`;
+    return `<div class="rank ${c.hero?'medal':''}">${rankTxt}</div>
+      <div class="cname">${c.name}${c.hero?' <small>★ floor</small>':''}
+        <div class="chips">${typeChip}${netChip}${tkChip}</div>
+        ${availHTML}</div>
+      <div class="col-eff"><div class="big">${pct(eff)}</div><div class="sm">${pct(c.card)}${c.tk?` + ${pct(c.tk)}`:''}</div></div>
+      <div class="col-bar ${barP>=0?'good':'bad'}">${money(barP)}<span class="u">PAMP</span></div>
+      <div class="col-bar ${barG>=0?'good':'bad'}">${money(barG)}<span class="u">GENERIC</span></div>
+      <div class="col-catch">${c.catch}</div>`;
+  }
+  function computeCard(c, buy, lossP, lossG){
+    const eff=c.card+c.tk;
+    return {c, eff, barP:(eff/100)*buy-lossP, barG:(eff/100)*buy-lossG};
+  }
+
+  function compute(){
+    const spot=num("spot");
+    const june=CFG.junePrice, online=CFG.onlinePrice, inStock=CFG.inStock;
+    const discP=CFG.discPamp, discG=CFG.discGen, floorV=CFG.floor;
+    const impliedInStore=online-(CFG.onlinePrem||10);
+    const overridden=inStock && impliedInStore>june+0.001;
+    const buy=overridden?impliedInStore:june;
+
+    const sellP=spot-discP, sellG=spot-discG;
+    const lossP=buy-sellP, lossG=buy-sellG;
+
+    // Costco -> spot delta = bar price over live spot
+    $("deltaV").textContent = signMoney(buy-spot);
+
+    // alert gauge uses Chase Ink floor
+    const hero=OWNED.find(c=>c.hero);
+    const h=computeCard(hero,buy,lossP,lossG);
+    const heroSel=barType==="pamp"?h.barP:h.barG;
+    const usedLoss=barType==="pamp"?lossP:lossG;
+    $("mBuy").textContent=money(buy);
+    $("mSellLab").textContent=`Sell · ${barType==="pamp"?"Pamp":"Generic"}`;
+    $("mSell").textContent=money(barType==="pamp"?sellP:sellG);
+    const net=-usedLoss;                      // sell − buy (negative = you lose on metal)
+    const netEl=$("mLoss");
+    netEl.textContent=money(net);
+    netEl.className="n tnum "+(net<0?"bad":"good");
+    const gp=Math.max(0,Math.min(1,heroSel/(floorV||1)));
+    const fill=$("gaugeFill"); fill.style.width=(gp*100)+"%";
+    fill.className="fill "+(heroSel>=floorV?"good":"bad");
+    $("gaugeVal").textContent=`${money(heroSel)} / ${money(floorV)}`;
+    const v=$("verdict");
+    if(heroSel>=floorV){v.className="verdict go";v.textContent="✓ ALERT — floor clears $25/bar";}
+    else{v.className="verdict no";v.textContent=`✗ No-go — need ${money(floorV-heroSel)} more/bar`;}
+
+    // matrix: fixed order, Visa group then MC divider then MC group
+    const rows=OWNED.slice().sort((a,b)=>a.order-b.order).map(c=>computeCard(c,buy,lossP,lossG));
+    const mx=$("matrix"); mx.innerHTML=""; let mcDone=false;
+    rows.forEach(x=>{
+      if(x.c.net==="mc" && !mcDone){
+        const d=document.createElement("div"); d.className="divider";
+        d.innerHTML=`<span class="lbl">🌐 Online only · Mastercard <b>— works on Costco.com, not the register</b></span>`;
+        mx.appendChild(d); mcDone=true;
+      }
+      const el=document.createElement("div");
+      const win=(barType==="pamp"?x.barP:x.barG)>=0;
+      el.className="card "+(x.c.hero?"pinned ":"")+(win?"win":"");
+      const rankTxt=x.c.hero?"★":String(x.c.order);
+      el.innerHTML=rowHTML(x.c, rankTxt, x.eff, x.barP, x.barG, buy);
+      mx.appendChild(el);
+    });
+
+    // BUYING POWER band — split into its own fn so an availability toggle recomputes
+    // ONLY the band (avail is its only input) and never rebuilds the matrix / drops focus.
+    _bp={rows, buy, lossP};
+    computeBP(rows, buy, lossP);
+
+    const sp=$("spotStamp").dataset.t||nowStr();
+    $("heroStamp").innerHTML=`spot <b>${sp}</b> · buy from <b>${overridden?"online lookup":"June "+fmtDT(CFG.juneTime)}</b>`;
+    $("matrixStamp").innerHTML=`spot ${sp} · June ${fmtDT(CFG.juneTime)}`;
+    $("deltaStamp").innerHTML=`vs spot <b>${sp}</b>`;
+
+    // FLASH PULSE ripple — only on a live update that moved spot, never while the user is typing.
+    if(_pulse && document.activeElement!==$("spot")){
+      flashPulse($("deltaV"));
+      ["mBuy","mSell","mLoss"].forEach(id=>flashPulse($(id)));
+      mx.querySelectorAll(".col-bar").forEach(el=>flashPulse(el));
+    }
+    _pulse=false;
+
+    renderBuyers(spot);
+  }
+
+  function renderBuyers(spot){
+    if(spot==null) spot=num("spot");
+    const box=$("buyers"); if(!box) return;
+    const known=BUYERS.filter(b=>b.offset!=null);
+    const bestSell=known.length?Math.max(...known.map(b=>spot+b.offset)):null;
+    box.innerHTML="";
+    BUYERS.forEach(b=>{
+      const has=b.offset!=null;
+      const sell=has?spot+b.offset:null;
+      const best=has && bestSell!=null && Math.abs(sell-bestSell)<0.001;
+      const off=has?(b.offset<0?`spot − $${Math.abs(b.offset)}`:`spot + $${b.offset}`):"—";
+      const el=document.createElement("div");
+      el.className="buyer"+(best?" best":"");
+      el.innerHTML=`<div class="bname">${b.name}${best?' <span class="tagbest">best price</span>':''}</div>
+        <div class="bsell ${has?'':'na'}">${has?money(sell):"needs pull"}</div>
+        <div class="boff">${off}</div>
+        <div class="bnote">${b.note}</div>
+        <div class="stamp">${b.t?('updated '+fmtDT(b.t)):'— not pulled'}</div>`;
+      box.appendChild(el);
+    });
+    $("buyerStamp").innerHTML=`sell = spot ± buyer offset · Elemetal is the default buyer`;
+  }
+
+  function renderCFG(){
+    $("junePriceV").textContent=money(CFG.junePrice);
+    $("juneTimeV").textContent=fmtDT(CFG.juneTime);
+    $("onlinePriceV").textContent=money(CFG.onlinePrice);
+    $("onlineTimeV").textContent=fmtDT(CFG.onlineTime);
+    const s=$("inStockV"); s.textContent=CFG.inStock?"in stock":"out of stock";
+    s.className="instock"+(CFG.inStock?"":" out");
+  }
+
+  // ---- LIVE feed (Google Drive connector → engine sheet) ----
+  // STALE guard (council must-fix): the feed writes a fresh timestamp every ~60s. We track the
+  // artifact's OWN Date.now() elapsed since the sheet timestamp last ADVANCED (never TZ-diff the
+  // sheet's clock string against the viewer's). If it stops advancing for STALE_MS, the feed is down.
+  const STALE_MS=180000;                 // 3 min = 3 missed 60s writes → clearly down
+  let _liveActive=false;                 // true once a live read has landed (stale only applies live)
+  let _lastSheetTS=null, _lastFreshAt=0, _stale=false, _sheetInit=false;
+  function markStale(){
+    if(_stale) return; _stale=true;
+    const el=$("spotStatus"), ds=$("dataSrc");
+    el.textContent="⚠ STALE — feed down"; el.className="spot-status stale";
+    $("spot").classList.add("stale");
+    if(ds) ds.textContent="data: STALE — spot feed stopped updating";
+  }
+  function clearStale(){
+    if(_stale){ _stale=false; $("spot").classList.remove("stale"); }
+    if(_liveActive) setStatus(true);
+  }
+  function checkStale(){
+    if(!_liveActive) return;
+    if(Date.now()-_lastFreshAt>STALE_MS) markStale();
+  }
+
+  function parseCSV(text){
+    const map={};
+    text.split(/\r?\n/).forEach((line,i)=>{
+      if(i===0 || !line.trim()) return;            // skip header + blanks
+      const c=line.split(",");
+      const key=(c[0]||"").trim();
+      if(key) map[key]={v:(c[1]||"").trim(), t:(c[2]||"").trim()};
+    });
+    return map;
+  }
+  function setStatus(on, code){
+    const el=$("spotStatus"), ds=$("dataSrc");
+    if(on){ el.textContent="● LIVE · engine sheet"; el.className="spot-status live";
+      if(ds) ds.textContent="data: LIVE from Gold Flip — Engine sheet"; }
+    else { el.textContent="◉ manual · pull to sync"; el.className="spot-status";
+      if(ds) ds.textContent = code
+        ? `data: seed values (live off: ${code})`
+        : "data: seed values (connect Drive to go live)"; }
+  }
+  function applySheet(map){
+    const setNum=(k,f)=>{ if(map[k]&&map[k].v!=="" && !isNaN(+map[k].v)) f(+map[k].v, map[k].t); };
+    const spotEl=$("spot");
+    const oldSpot=parseFloat(spotEl.value)||0;
+    let spotDir=0;
+    // spot — don't clobber the field while the user is typing in it
+    if(map.gold_spot && map.gold_spot.v!=="" && !isNaN(+map.gold_spot.v)){
+      const nv=+map.gold_spot.v;
+      if(document.activeElement!==spotEl){
+        spotEl.value=nv.toFixed(2);
+        // direction for the color flash — skip the very first sync so nothing pops on load
+        if(_sheetInit && oldSpot && Math.abs(nv-oldSpot)>0.001) spotDir = nv>oldSpot?1:-1;
+      }
+      if(map.gold_spot.t){ $("spotStamp").dataset.t=fmtDT(map.gold_spot.t);
+        $("spotStamp").innerHTML=`spot pulled <b>${fmtDT(map.gold_spot.t)}</b>`; }
+    }
+    setNum("june_price",(v)=>CFG.junePrice=v);
+    if(map.june_price&&map.june_price.t) CFG.juneTime=map.june_price.t;
+    setNum("online_price",(v)=>CFG.onlinePrice=v);
+    if(map.online_price&&map.online_price.t) CFG.onlineTime=map.online_price.t;
+    setNum("online_premium",(v)=>CFG.onlinePrem=v);
+    setNum("alert_floor",(v)=>CFG.floor=v);
+    if(map.online_instock&&map.online_instock.v) CFG.inStock=/^(true|yes|1|in ?stock)$/i.test(map.online_instock.v);
+    [["elemetal_pamp","elemetal_pamp"],["elemetal_generic","elemetal_generic"],
+     ["upstate","upstate"],["amark","amark"],["collectpure","collectpure"]].forEach(([k,bk])=>{
+      const b=BUYERS.find(x=>x.key===bk); if(!b||!map[k]) return;
+      if(map[k].v!=="" && !isNaN(+map[k].v)) b.offset=+map[k].v;
+      if(map[k].t) b.t=map[k].t;
+    });
+    // freshness / stale tracking — the sheet's OWN timestamp advancing proves the feed is alive.
+    const ts=(map.gold_spot&&map.gold_spot.t)?map.gold_spot.t:null;
+    let fresh=false;
+    if(ts==null) fresh=true;                          // no timestamp to compare → treat as fresh
+    else if(ts!==_lastSheetTS){ _lastSheetTS=ts; fresh=true; }
+    _liveActive=true;
+    if(fresh){ _lastFreshAt=Date.now(); clearStale(); }
+    if(!_stale) setStatus(true);                      // don't flip back to LIVE while genuinely stale
+    _pulse = spotDir!==0;                             // ripple the figures only if spot actually moved
+    _sheetInit=true;
+    renderCFG(); compute();
+    if(spotDir && document.activeElement!==spotEl) flashPulse(spotEl, spotDir>0?"up":"down");
+  }
+  function initLive(){
+    if(typeof window==="undefined" || !window.claude || window.claude.mcp===undefined){ setStatus(false); return; }
+    setStatus(false);
+    window.claude.mcp.listTools().then(res=>{
+      const servers=(res&&res.servers)||[];
+      const srv=servers.find(s=>s.tools&&s.tools.some(t=>t.name==="download_file_content"));
+      _liveServer = srv? srv.server : DRIVE_SERVER;
+      window.claude.mcp.watchTool(_liveServer, "download_file_content",
+        {fileId:ENGINE_ID, exportMimeType:"text/csv"},
+        ev=>{
+          if(ev.type==="data"){
+            try{
+              const p=ev.result&&ev.result.payload;
+              const b64=p&&(p.content||p.data);
+              if(b64){ applySheet(parseCSV(atob(b64))); }
+            }catch(e){ /* keep last-good */ }
+          } else if(ev.type==="error"){
+            setStatus(false, ev.error&&ev.error.code);
+          }
+        },
+        {refetchInterval:60000});
+      // candle feed (separate tiny sheet, 3-min refresh) — dormant until CANDLES_ID is set
+      if(CANDLES_ID){
+        window.claude.mcp.watchTool(_liveServer, "download_file_content",
+          {fileId:CANDLES_ID, exportMimeType:"text/csv"},
+          ev=>{ if(ev.type==="data"){ try{
+              const p=ev.result&&ev.result.payload, b64=p&&(p.content||p.data);
+              if(b64) applyCandles(atob(b64));
+            }catch(e){/* keep last-good candles */} } },
+          {refetchInterval:180000});
+      }
+    }).catch(err=>setStatus(false, err&&err.code));
+  }
+
+  const btn=$("pullBtn");
+  btn.addEventListener("click",()=>{ if(btn.disabled)return; btn.disabled=true;
+    // If live, force a fresh sheet read; the watch handler restamps from the sheet.
+    if(_liveServer && window.claude && window.claude.mcp){
+      window.claude.mcp.invalidate(_liveServer,"download_file_content").catch(()=>{});
+    } else {
+      $("spotStamp").dataset.t=nowStr();
+      $("spotStamp").innerHTML=`spot pulled <b>${$("spotStamp").dataset.t}</b>`;
+      compute();
+    }
+    setTimeout(()=>btn.disabled=false,650); });
+
+  const obtn=$("onlinePullBtn");
+  obtn.addEventListener("click",()=>{ if(obtn.disabled)return; obtn.disabled=true;
+    const t=nowStr(); const r=$("onlineReq");
+    r.textContent=`↻ New online price requested ${t} — tell Claude "pull online" and I'll fetch Costco.com, then update it here.`;
+    r.style.display="block";
+    setTimeout(()=>obtn.disabled=false,650); });
+
+  $("spot").addEventListener("input",compute);
+  $("matrix").addEventListener("change",e=>{
+    const cb=e.target.closest('input[type=checkbox][data-card]'); if(!cb)return;
+    avail[cb.dataset.card]=cb.checked;
+    if(_bp) computeBP(_bp.rows,_bp.buy,_bp.lossP);  // band only → keeps checkbox focus
+  });
+  $("themeBtn").addEventListener("click",()=>{
+    const cur=document.documentElement.getAttribute("data-theme");
+    document.documentElement.setAttribute("data-theme",cur==="light"?"dark":"light");
+  });
+
+  function marketStatus(){
+    // Gold (COMEX/CME Globex): trades Sun 6:00pm ET → Fri 5:00pm ET, with a daily 5–6pm ET break.
+    const et=new Date(new Date().toLocaleString("en-US",{timeZone:"America/New_York"}));
+    const d=et.getDay(), mins=et.getHours()*60+et.getMinutes(), OPEN=1080, CLOSE=1020;
+    let open;
+    if(d===6) open=false;                    // Saturday — closed all day
+    else if(d===0) open=mins>=OPEN;          // Sunday — opens 6:00pm ET
+    else if(d===5) open=mins<CLOSE;          // Friday — closes 5:00pm ET
+    else open=!(mins>=CLOSE&&mins<OPEN);     // Mon–Thu — closed 5–6pm ET
+    let note="";
+    if(!open){
+      const weekend = d===6 || d===5 || (d===0&&mins<OPEN);
+      note = weekend
+        ? "⏸ Gold market closed for the weekend · reopens Sunday 3:00 PM PT"
+        : "⏸ Daily maintenance break · reopens 3:00 PM PT";
+    }
+    return {open,note};
+  }
+  function applyMarket(){
+    const s=marketStatus(), n=$("marketNote");
+    $("spot").classList.toggle("closed",!s.open);
+    if(s.open){ n.style.display="none"; n.textContent=""; }
+    else { n.textContent=s.note; n.style.display="block"; }
+    // At a closed→open flip (e.g. Sun 3pm PT reopen) give the feed a grace window before the
+    // stale-guard can fire, so we never flash red in the ~5 min before the first live bar lands.
+    if(s.open && _mktOpenPrev===false){ _lastCandleAdvanceAt=Date.now(); _candleStale=false; }
+    _mktOpenPrev=s.open;
+    if(typeof setCandleSrc==="function") setCandleSrc();   // keep the chart pill honest as the market opens/closes
+  }
+
+  // ===== GOLD PRICE CHART (candlesticks) =====
+  // Data source: Yahoo Finance chart API for GC=F (COMEX gold futures), pulled server-side by the
+  // engine sheet's Apps Script into a tiny candles sheet, read here via the same Drive connector.
+  // Until that sheet exists (CANDLES_ID empty) the chart shows a labelled SAMPLE so it always renders.
+  const CANDLES_ID = "13lMjJpgE41kaArQ2ooi7M992gdu54kwgtbMVuM4wRsk"; // Gold Flip — Candles sheet (wc@adibs), Yahoo GC=F 5-min feed
+  let CANDLES = {intraday:[], weekly:[]};// each row {t:unixSec, o,h,l,c}
+  let _chartTF = "1D", _chartDrawn=false, _chartLive=false, _cg=null;
+  // CANDLE STALE-GUARD (council follow-up) — market-aware so it NEVER false-alarms on the
+  // weekend. We only warn if the market is OPEN and the newest candle stops advancing.
+  const CANDLE_STALE_MS=1800000;         // 30 min of no new bar while OPEN = feed is down
+  let _candleStale=false, _lastCandleMaxT=0, _lastCandleAdvanceAt=0, _mktOpenPrev=null;
+
+  // SAMPLE candles — a smooth pseudo-random walk near the current spot (placeholder until live).
+  function sampleCandles(){
+    const base = num("spot") || 4053;
+    const gen=(n,stepSec,vol)=>{
+      const out=[]; let px=base - vol*3;
+      let t=Math.floor(Date.now()/1000) - n*stepSec;
+      for(let i=0;i<n;i++){
+        const o=px;
+        const wave=Math.sin(i/6)*vol*0.5 + Math.sin(i/17)*vol*0.8;
+        const drift=(base-px)*0.03;
+        const c=o+drift+wave*0.15+((i%7)-3)/3*vol*0.25;
+        const hi=Math.max(o,c)+((i*7)%5)/5*vol*0.5;
+        const lo=Math.min(o,c)-((i*11)%5)/5*vol*0.5;
+        out.push({t, o:+o.toFixed(2), h:+hi.toFixed(2), l:+lo.toFixed(2), c:+c.toFixed(2)});
+        px=c; t+=stepSec;
+      }
+      return out;
+    };
+    CANDLES.intraday = gen(900,60,3);    // 900 × 1-min ≈ 15h (aggregated up for wider views)
+    CANDLES.weekly   = gen(120,3600,16); // 120 × 1h  ≈ 5 trading days
+  }
+
+  // timeframe → {win: window in minutes (null = use the hourly weekly feed), step: display candle size in min}
+  const TF = {
+    "5M":{win:5,    step:1},
+    "10M":{win:10,  step:1},
+    "30M":{win:30,  step:1},
+    "1H":{win:60,   step:1},
+    "6H":{win:360,  step:5},
+    "1D":{win:1440, step:15},
+    "1W":{win:null, step:60}
+  };
+  // roll fine 1-min candles up into bigger display candles (o=first, c=last, h=max, l=min)
+  function aggregate(rows, stepMin){
+    if(stepMin<=1) return rows.slice();
+    const bucket=stepMin*60, out=[]; let cur=null, key=null;
+    rows.forEach(d=>{
+      const k=Math.floor(d.t/bucket);
+      if(k!==key){ if(cur) out.push(cur); key=k; cur={t:d.t,o:d.o,h:d.h,l:d.l,c:d.c}; }
+      else { cur.h=Math.max(cur.h,d.h); cur.l=Math.min(cur.l,d.l); cur.c=d.c; }
+    });
+    if(cur) out.push(cur);
+    return out;
+  }
+  function candlesFor(tf){
+    const cfg=TF[tf]||TF["1D"];
+    if(cfg.win==null) return CANDLES.weekly;                  // 1W uses the hourly feed as-is
+    const arr=CANDLES.intraday; if(!arr.length) return [];
+    const cutoff=Math.floor(Date.now()/1000)-cfg.win*60;
+    let win=arr.filter(k=>k.t>=cutoff);
+    if(win.length<2) win=arr.slice(-Math.min(arr.length, Math.max(5,cfg.win))); // sample-tail fallback
+    return aggregate(win, cfg.step);
+  }
+
+  function drawChart(tf){
+    _chartTF=tf;
+    const svg=$("chartSvg"); if(!svg) return;
+    const data=candlesFor(tf);
+    const W=1000,H=360, padL=8,padR=60,padT=12,padB=24;
+    const cw=W-padL-padR, ch=H-padT-padB;
+    const setActive=()=>$("tfbar").querySelectorAll(".tfbtn").forEach(b=>{
+      const on=b.dataset.tf===tf; b.classList.toggle("active",on); b.setAttribute("aria-selected",on?"true":"false");});
+    setActive();
+    if(data.length<2){
+      svg.innerHTML=`<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#767d90" font-family="monospace" font-size="14">waiting for candle feed…</text>`;
+      _cg=null; return;
+    }
+    let lo=Math.min(...data.map(d=>d.l)), hi=Math.max(...data.map(d=>d.h));
+    const pd=(hi-lo)*0.08||1; lo-=pd; hi+=pd;
+    const x=i=> padL + (data.length===1? cw/2 : i*(cw/(data.length-1)));
+    const y=p=> padT + (hi-p)/(hi-lo)*ch;
+    const bw=Math.max(1.2, Math.min(11, cw/data.length*0.66));
+    const good="#4bd6a0", bad="#f2686f", grid="#262c3a", mute="#767d90", gold="#e8c46a";
+    let s="";
+    for(let g=0; g<=4; g++){
+      const p=hi-(hi-lo)*g/4, yy=y(p);
+      s+=`<line x1="${padL}" y1="${yy.toFixed(1)}" x2="${padL+cw}" y2="${yy.toFixed(1)}" stroke="${grid}" stroke-width="1"/>`;
+      s+=`<text x="${padL+cw+5}" y="${(yy+4).toFixed(1)}" fill="${mute}" font-family="monospace" font-size="11">$${Math.round(p)}</text>`;
+    }
+    data.forEach((d,i)=>{
+      const up=d.c>=d.o, col=up?good:bad, cx=x(i);
+      s+=`<line x1="${cx.toFixed(1)}" y1="${y(d.h).toFixed(1)}" x2="${cx.toFixed(1)}" y2="${y(d.l).toFixed(1)}" stroke="${col}" stroke-width="1"/>`;
+      const yo=y(d.o), yc=y(d.c), top=Math.min(yo,yc), bh=Math.max(1,Math.abs(yc-yo));
+      s+=`<rect x="${(cx-bw/2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" fill="${col}"/>`;
+    });
+    const last=data[data.length-1].c, ly=y(last);
+    s+=`<line x1="${padL}" y1="${ly.toFixed(1)}" x2="${padL+cw}" y2="${ly.toFixed(1)}" stroke="${gold}" stroke-width="1" stroke-dasharray="3 3" opacity="0.85"/>`;
+    s+=`<rect x="${padL+cw}" y="${(ly-9).toFixed(1)}" width="${padR}" height="18" rx="3" fill="${gold}"/>`;
+    s+=`<text x="${padL+cw+padR/2}" y="${(ly+4).toFixed(1)}" text-anchor="middle" fill="#1a1305" font-family="monospace" font-size="11" font-weight="700">${Math.round(last)}</text>`;
+    const tLab=t=>{const dt=new Date(t*1000); return tf==="1W"
+      ? dt.toLocaleDateString("en-US",{weekday:"short"})
+      : dt.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});};
+    [0,Math.floor(data.length/2),data.length-1].forEach((i,k)=>{
+      const anch=k===0?"start":k===2?"end":"middle";
+      s+=`<text x="${x(i).toFixed(1)}" y="${H-7}" text-anchor="${anch}" fill="${mute}" font-family="monospace" font-size="10">${tLab(data[i].t)}</text>`;
+    });
+    svg.innerHTML=s;
+    _cg={data,padL,cw,W};
+    // header + footer readouts
+    const first=data[0].o, chg=last-first, pctChg=first?chg/first*100:0;
+    const cl=$("chartLast"); if(cl){ cl.textContent=`$${last.toFixed(2)}`; cl.className="cs-last "+(chg>=0?"up":"down"); }
+    const rng=$("chartRange"); if(rng) rng.innerHTML=
+      `<span style="color:${chg>=0?good:bad}">${chg>=0?"▲":"▼"} ${money(Math.abs(chg))} (${(pctChg>=0?"+":"")}${pctChg.toFixed(2)}%)</span> · ${tf} window`;
+    const st=$("chartStamp"); if(st){ const lt=data[data.length-1].t;
+      st.textContent = _chartLive
+        ? `Updated ${fmtDT(lt*1000)}${_candleStale?" · ⚠ stale feed":" · live GC=F"}`
+        : "⚠ Sample data — not a live price"; }
+    _chartDrawn=true;
+  }
+
+  // hover tooltip (works in a real viewer; safely no-ops headless)
+  (function wireChartHover(){
+    const wrap=document.querySelector(".chartwrap"); if(!wrap) return;
+    wrap.addEventListener("mousemove",e=>{
+      if(!_cg||!_cg.data.length) return;
+      const svg=$("chartSvg"), r=svg.getBoundingClientRect(); if(!r.width) return;
+      const vx=(e.clientX-r.left)/r.width*_cg.W, n=_cg.data.length;
+      let i=n===1?0:Math.round((vx-_cg.padL)/(_cg.cw/(n-1)));
+      i=Math.max(0,Math.min(n-1,i));
+      const d=_cg.data[i], tip=$("chartTip"); if(!d||!tip) return;
+      const dt=new Date(d.t*1000).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+      tip.innerHTML=`<b>${dt}</b><br>O ${d.o.toFixed(2)} · H ${d.h.toFixed(2)}<br>L ${d.l.toFixed(2)} · C ${d.c.toFixed(2)}`;
+      tip.style.display="block";
+      const wr=wrap.getBoundingClientRect();
+      let lx=e.clientX-wr.left+12; if(lx>wr.width-140) lx=e.clientX-wr.left-128;
+      tip.style.left=lx+"px"; tip.style.top=(e.clientY-wr.top+10)+"px";
+    });
+    wrap.addEventListener("mouseleave",()=>{const t=$("chartTip"); if(t) t.style.display="none";});
+  })();
+
+  function parseCandles(text){
+    const intr=[], wk=[];
+    text.split(/\r?\n/).forEach((line,i)=>{
+      if(i===0||!line.trim()) return;                 // skip header
+      const c=line.split(","), tf=(c[0]||"").trim();
+      const row={t:+c[1], o:+c[2], h:+c[3], l:+c[4], c:+c[5]};
+      if(!isFinite(row.t)||!isFinite(row.c)) return;
+      (tf==="weekly"?wk:intr).push(row);
+    });
+    return {intraday:intr, weekly:wk};
+  }
+  // Chart-source pill — single source of truth for the "sample / live / stale / last-session" label.
+  function setCandleSrc(){
+    const sc=$("chartSrc"); if(!sc) return;
+    if(!_chartLive){ sc.textContent="sample data · not live · shown for shape only"; sc.className="tf-src sample"; return; }
+    const open=marketStatus().open;
+    if(_candleStale && open){ sc.textContent="⚠ candle feed stale · no new bars"; sc.className="tf-src stale"; }
+    else if(open){ sc.textContent="live · Yahoo GC=F · refreshes ~5 min"; sc.className="tf-src live"; }
+    else { sc.textContent="live · Yahoo GC=F · last session (market closed)"; sc.className="tf-src"; }
+  }
+  // Heartbeat: only flags stale while the market is OPEN and the newest candle hasn't advanced.
+  function checkCandleStale(){
+    if(!_chartLive) return;
+    const open=marketStatus().open;
+    const stale = open && _lastCandleAdvanceAt>0 && (Date.now()-_lastCandleAdvanceAt > CANDLE_STALE_MS);
+    if(stale!==_candleStale){ _candleStale=stale; setCandleSrc(); if(_chartDrawn) drawChart(_chartTF); }
+  }
+  function applyCandles(text){
+    const cd=parseCandles(text);
+    if(cd.intraday.length || cd.weekly.length){
+      CANDLES=cd; _chartLive=true;
+      // freshness: only a NEW newest-candle timestamp proves the feed delivered fresh data.
+      // (A dead trigger that keeps serving the SAME frozen CSV won't advance maxT → stale fires.)
+      let mt=0; cd.intraday.forEach(d=>{ if(d.t>mt) mt=d.t; }); cd.weekly.forEach(d=>{ if(d.t>mt) mt=d.t; });
+      if(mt>_lastCandleMaxT){ _lastCandleMaxT=mt; _lastCandleAdvanceAt=Date.now(); _candleStale=false; }
+      setCandleSrc();
+      drawChart(_chartTF);                             // refresh whether open or closed (keeps header live)
+    }
+  }
+
+  $("tfbar").addEventListener("click",e=>{const b=e.target.closest(".tfbtn"); if(b) drawChart(b.dataset.tf);});
+  $("chartBox").addEventListener("toggle",function(){ if(this.open && !_chartDrawn) drawChart(_chartTF); });
+
+  $("spotStamp").dataset.t=nowStr();
+  $("spotStamp").innerHTML=`spot pulled <b>${$("spotStamp").dataset.t}</b>`;
+  $("builtStamp").textContent="built "+nowStr();
+  applyMarket(); setInterval(applyMarket,60000);
+  setInterval(checkStale,30000);   // heartbeat: flips the pill red if the live feed stops advancing
+  setInterval(checkCandleStale,30000);   // candle heartbeat: red ONLY if market OPEN + no new bar in 30 min
+  sampleCandles(); drawChart(_chartTF); setCandleSrc();   // render sample immediately + honest "not live" label
+  renderCFG(); compute(); initLive();
+
+  window.__gfhIngest = applySheet;   // public-page ingest hook (build-injected; unused in the artifact)
+})();
+</script>
+<!-- ============================================================================
+     SUPABASE LIVE LAYER — brother's public page ONLY (never in Medi's artifact).
+     The artifact reads the Google Sheet via the Drive connector. This page has no
+     connector, so it reads the SAME prices from the gold-flip-hub Supabase project
+     with the PUBLISHABLE (read-only) key. Writes are impossible with this key (RLS).
+
+     It feeds Supabase rows through the dashboard's OWN applySheet(map) — exposed as
+     window.__gfhIngest by the build — so every figure + the council-tested 3-min
+     stale-guard recompute exactly as on Medi's side. This layer owns only:
+       • the confidence badge (auto · HH:MM  vs  ✅ confirmed by Medi)
+       • the "request a pull" button (logs to Supabase + refetches)
+     ============================================================================ -->
+<style>
+  /* pulse-on-change: numbers a live update moves glow gold then fade — text only, no block highlight */
+  @keyframes gfhPulse{ 0%{ color:#e6b325; text-shadow:0 0 12px rgba(230,179,37,.85); } 100%{ text-shadow:0 0 0 rgba(230,179,37,0); } }
+  .gfh-pulse{ animation:gfhPulse 1.2s ease-out; }
+</style>
+<script>
+(function(){
+  var SB_URL = "https://cuubqcxzvyiryxcygadh.supabase.co";
+  var SB_KEY = "sb_publishable_vuJ1bfkLjpPNbrouZb_3eQ_9dSJXlep";   // publishable/read key — safe to expose (gold-only project, RLS read-only)
+  var H = { apikey: SB_KEY, Authorization: "Bearer " + SB_KEY };
+
+  function p2(n){ return (n < 10 ? "0" : "") + n; }
+  function fmtT(iso){                       // ISO -> "yyyy-MM-dd HH:mm" (the format the dashboard's fmtDT expects)
+    try { var d = new Date(iso);
+      return d.getFullYear() + "-" + p2(d.getMonth()+1) + "-" + p2(d.getDate()) + " " + p2(d.getHours()) + ":" + p2(d.getMinutes());
+    } catch(e){ return ""; }
+  }
+  function el(id){ return document.getElementById(id); }
+
+  function newest(){                        // most recent timestamp across the given ISO strings
+    var t = 0;
+    for(var i=0;i<arguments.length;i++){ var v=arguments[i]; if(v){ var n=Date.parse(v); if(!isNaN(n) && n>t) t=n; } }
+    return t ? new Date(t).toISOString() : "";
+  }
+  function badge(spot, online){
+    // confidence: confirmed if Medi's own-eyes wrote online.source='confirmed'; else auto.
+    var src = (online && online.source) || "auto";
+    var when = (src === "confirmed" && online && online.confirmed_at)
+      ? online.confirmed_at
+      : newest(spot && spot.fetched_at, online && online.fetched_at);
+    var hhmm = when ? fmtT(when).slice(11) : "";
+    var s = el("spotStatus"); if(!s) return;
+    if(src === "confirmed"){ s.textContent = "✅ confirmed by Medi · " + hhmm; s.className = "spot-status live"; }
+    else { s.textContent = "● LIVE · auto · " + hhmm; s.className = "spot-status live"; }
+    var ds = el("dataSrc"); if(ds) ds.textContent = "data: LIVE from shared cloud feed (Supabase)";
+  }
+
+  // ---- pulse-on-change: flash every displayed number the update actually moved ----
+  var WATCH = ["spotStamp","junePriceV","juneTimeV","onlinePriceV","onlineTimeV","inStockV",
+               "deltaV","deltaStamp","gaugeVal","verdict","heroStamp","mBuy","mSell","mLoss",
+               "bpCredit","bpBars","bpDeployed","bpProfit","bpUnused","matrixStamp","chartLast"];
+  var firstPaint = true;                       // first fill after PIN: no flash-fest
+  function snapNums(){
+    var s = {};
+    WATCH.forEach(function(id){ var e = el(id); if(e) s[id] = e.textContent; });
+    var sp = el("spot"); if(sp) s.__spot = sp.value;      // #spot is an <input>
+    return s;
+  }
+  function flash(e){ e.classList.remove("gfh-pulse"); void e.offsetWidth; e.classList.add("gfh-pulse"); }
+  function pulseDiff(before){
+    if(firstPaint){ firstPaint = false; return; }
+    WATCH.forEach(function(id){
+      var e = el(id); if(e && before[id] !== undefined && e.textContent !== before[id]) flash(e);
+    });
+    var sp = el("spot"); if(sp && before.__spot !== undefined && sp.value !== before.__spot) flash(sp);
+  }
+
+  function apply(rows){
+    var spot = null, online = null, june = null;
+    rows.forEach(function(r){ if(r.id === "spot") spot = r; else if(r.id === "online") online = r; else if(r.id === "june") june = r; });
+    var map = {};
+    if(june && june.price != null)
+      map.june_price = { v: String(june.price), t: june.fetched_at ? fmtT(june.fetched_at) : "" };
+    if(spot && spot.price != null)
+      map.gold_spot = { v: String(spot.price), t: spot.fetched_at ? fmtT(spot.fetched_at) : "" };
+    if(online){
+      if(online.price   != null) map.online_price   = { v: String(online.price),   t: online.fetched_at ? fmtT(online.fetched_at) : "" };
+      if(online.premium != null) map.online_premium = { v: String(online.premium), t: "" };
+      if(online.in_stock != null) map.online_instock = { v: online.in_stock ? "yes" : "no", t: "" };
+    }
+    var before = snapNums();                          // snapshot every displayed number
+    if(window.__gfhIngest) window.__gfhIngest(map);   // recompute via the dashboard's own tested path
+    pulseDiff(before);                                // flash whatever the update moved
+    badge(spot, online);                              // then stamp the confidence badge (applySheet already ran)
+  }
+
+  // ---- refresh countdown: tiny "↻ 42s" chip next to the LIVE badge ----
+  var nextAt = 0;
+  function mountTimer(){
+    var s = el("spotStatus"); if(!s || el("gfhTimer")) return;
+    var t = document.createElement("span");
+    t.id = "gfhTimer";
+    t.title = "seconds until the next auto-refresh";
+    t.style.cssText = "margin-left:8px;font-size:.72em;opacity:.65;white-space:nowrap;";
+    s.parentNode.insertBefore(t, s.nextSibling);
+  }
+  function tickTimer(){
+    var t = el("gfhTimer"); if(!t) return;
+    var sLeft = Math.max(0, Math.round((nextAt - Date.now()) / 1000));
+    t.textContent = sLeft > 0 ? "↻ " + sLeft + "s" : "↻ now…";
+  }
+
+  // ---- live spot chart: real line from spot_history (the hub's own 1-min ticks) ----
+  var GFH_TFS = { "5M":5, "10M":10, "30M":30, "1H":60, "6H":360, "1D":1440, "1W":10080, "1M":43200 };  // window in minutes; 1M = 1 month
+  var gfhTf = "1D";
+  function mountSpotChart(){
+    if(el("gfhChart")) return;
+    var anchor = el("chartBox"); if(!anchor || !anchor.parentNode) return;
+    var d = document.createElement("details");        // same accordion pattern as the futures chart
+    d.className = "chartbox";
+    d.id = "gfhChart";
+    d.open = true;                                    // the live chart starts expanded
+    var btns = Object.keys(GFH_TFS).map(function(tf){
+      return '<button class="tfbtn' + (tf === gfhTf ? " active" : "") + '" data-gfhtf="' + tf + '"' +
+             (tf === "1M" ? ' title="1 month"' : '') + '>' + tf + '</button>';
+    }).join("");
+    d.innerHTML =
+      '<summary class="chart-sum">' +
+        '<span class="cs-l"><span class="cs-ic">📈</span> Gold Spot Price Chart — LIVE ' +
+          '<span class="cs-sub">hub feed · true spot · 1-min ticks</span></span>' +
+        '<span class="cs-r"><span class="cs-last" id="gfhChartLast">—</span>' +
+          '<span class="cs-toggle"><span class="cs-toggle-txt"></span><span class="cs-chev">▾</span></span></span>' +
+      '</summary>' +
+      '<div class="chart-body">' +
+        '<div class="tfbar" id="gfhTfbar">' + btns + '</div>' +
+        '<svg id="gfhChartSvg" viewBox="0 0 600 150" preserveAspectRatio="none" style="width:100%;height:150px;display:block"></svg>' +
+        '<div id="gfhChartTimes" style="display:flex;justify-content:space-between;font-family:monospace;font-size:10px;opacity:.55;margin-top:2px"></div>' +
+        '<div id="gfhChartNote" style="font-size:11px;opacity:.6;margin-top:4px">loading history…</div>' +
+      '</div>';
+    anchor.parentNode.insertBefore(d, anchor);
+    var bs = d.querySelectorAll("button[data-gfhtf]");
+    for(var i = 0; i < bs.length; i++){
+      bs[i].addEventListener("click", function(e){
+        e.preventDefault(); e.stopPropagation();
+        var tf = this.getAttribute("data-gfhtf"); if(!GFH_TFS[tf]) return;
+        gfhTf = tf;
+        var all = el("gfhTfbar").querySelectorAll(".tfbtn");
+        for(var j = 0; j < all.length; j++) all[j].classList.toggle("active", all[j] === this);
+        loadSpotChart();
+      });
+    }
+  }
+  // Public-page-only rename of the candle chart header (the shared dashboard source stays untouched).
+  function renameFuturesChart(){
+    var l = document.querySelector("#chartBox .cs-l"); if(!l) return;
+    for(var i = 0; i < l.childNodes.length; i++){
+      var n = l.childNodes[i];
+      if(n.nodeType === 3 && /Gold price chart/i.test(n.nodeValue)){ n.nodeValue = " Futures Gold Price Chart "; return; }
+    }
+  }
+  function drawSpotChart(pts){
+    var svg = el("gfhChartSvg"), note = el("gfhChartNote"); if(!svg) return;
+    if(!pts || pts.length < 2){
+      if(note) note.textContent = "building history — the hub saves one point per minute, line appears shortly";
+      return;
+    }
+    var min = Infinity, max = -Infinity;
+    pts.forEach(function(p){ var v = Number(p.price); if(v < min) min = v; if(v > max) max = v; });
+    var lo = min, hi = max, pad = (max - min) || 1;
+    min -= pad * 0.10; max += pad * 0.10;
+    var t0 = Date.parse(pts[0].t), t1 = Date.parse(pts[pts.length - 1].t) || (t0 + 1);
+    var W = 600, H = 150;
+    var line = pts.map(function(p, i){
+      var x = (Date.parse(p.t) - t0) / ((t1 - t0) || 1) * W;
+      var y = H - (Number(p.price) - min) / (max - min) * H;
+      return (i ? "L" : "M") + x.toFixed(1) + "," + y.toFixed(1);
+    }).join("");
+    svg.innerHTML =
+      '<path d="' + line + ' L' + W + ',' + H + ' L0,' + H + ' Z" fill="rgba(230,179,37,.10)" stroke="none"/>' +
+      '<path d="' + line + '" fill="none" stroke="#e6b325" stroke-width="2"/>';
+    var tl = el("gfhChartTimes");
+    if(tl){   // same 3 time marks as the futures chart: start · middle · end ("h:mm AM/PM"; day-based views show the date)
+      var wide = (GFH_TFS[gfhTf] || 0) >= 10080;
+      var fmt = function(iso){
+        var dd = new Date(iso);
+        return wide ? dd.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                    : dd.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+      };
+      var midIdx = Math.floor(pts.length / 2);
+      tl.innerHTML = "<span>" + fmt(pts[0].t) + "</span><span>" + fmt(pts[midIdx].t) + "</span><span>" + fmt(pts[pts.length - 1].t) + "</span>";
+    }
+    var last = Number(pts[pts.length - 1].price);
+    var lastEl = el("gfhChartLast");
+    if(lastEl) lastEl.textContent = "$" + last.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if(note) note.textContent = "last " + gfhTf + (gfhTf === "1M" ? " (month)" : "") + " · " + pts.length + " pts · low $" + lo.toFixed(2) + " · high $" + hi.toFixed(2) + " · data: this hub's own minute-by-minute spot saves";
+  }
+  function loadSpotChart(){
+    var win = GFH_TFS[gfhTf] || 1440;
+    var since = new Date(Date.now() - win * 60000).toISOString();
+    fetch(SB_URL + "/rest/v1/spot_history?select=t,price&t=gte." + since + "&order=t&limit=50000", { headers: H })
+      .then(function(r){ return r.json(); })
+      .then(function(rows){
+        if(!Array.isArray(rows)) return;
+        if(rows.length > 600){                       // thin long windows for drawing speed; always keep the newest point
+          var step = Math.ceil(rows.length / 600), thin = [];
+          for(var i = 0; i < rows.length; i += step) thin.push(rows[i]);
+          if(thin[thin.length - 1] !== rows[rows.length - 1]) thin.push(rows[rows.length - 1]);
+          rows = thin;
+        }
+        drawSpotChart(rows);
+      })
+      .catch(function(){ /* keep whatever is drawn */ });
+  }
+
+  function load(){
+    nextAt = Date.now() + 60000;
+    fetch(SB_URL + "/rest/v1/gold_prices?select=*", { headers: H })
+      .then(function(r){ return r.json(); })
+      .then(function(rows){ if(Array.isArray(rows)) apply(rows); })
+      .catch(function(){ /* keep last-good; applySheet's stale-guard greys after 3 min of no advance */ });
+  }
+
+  var FN_URL = SB_URL + "/functions/v1/refresh-prices?online=1";   // force a fresh spot+online fetch on demand
+  function wirePull(){
+    var b = el("onlinePullBtn"); if(!b) return;
+    var nb = b.cloneNode(true); b.parentNode.replaceChild(nb, b);   // strip the artifact's "tell Claude" handler
+    nb.addEventListener("click", function(){
+      if(nb.disabled) return; nb.disabled = true;
+      var r = el("onlineReq");
+      if(r){ r.textContent = "↻ Fetching a fresh price now…"; r.style.display = "block"; }
+      // log the request (audit) — fire and forget
+      fetch(SB_URL + "/rest/v1/pull_requests", {
+        method: "POST",
+        headers: Object.assign({ "Content-Type": "application/json", Prefer: "return=minimal" }, H),
+        body: JSON.stringify({ note: "brother page pull " + new Date().toISOString() })
+      }).catch(function(){});
+      // trigger a real fresh fetch on Supabase, then reload the displayed values
+      fetch(FN_URL, { method: "POST" })
+        .then(function(res){ return res.json(); })
+        .then(function(j){
+          if(Array.isArray(j && j.data)) apply(j.data);           // instant paint from the function's own return
+          if(r){ r.textContent = (j && j.wrote && j.wrote.length)
+            ? "✓ Fresh price pulled just now."
+            : "✓ Checked — no in-stock change; showing the last saved price."; }
+        })
+        .catch(function(){ if(r){ r.textContent = "↻ Couldn't reach the feed — showing the last saved price."; } load(); })
+        .then(function(){ setTimeout(function(){ nb.disabled = false; }, 1200); });
+    });
+  }
+
+  function start(){
+    var s = el("spotStatus"); if(s){ s.textContent = "● connecting…"; s.className = "spot-status"; }
+    wirePull(); mountTimer(); load(); setInterval(load, 60000); setInterval(tickTimer, 1000);
+    mountSpotChart(); renameFuturesChart(); loadSpotChart(); setInterval(loadSpotChart, 300000);   // chart refetches every 5 min
+  }
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
+})();
+</script>
