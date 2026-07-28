@@ -2834,7 +2834,7 @@
     }
   }
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
-  function drawSpotChart(pts){
+  function drawSpotChart(pts, capped){
     var svg = el("gfhChartSvg"), note = el("gfhChartNote"); if(!svg) return;
     if(!pts || pts.length < 2){
       if(note) note.textContent = "building history — the hub saves one point per minute, line appears shortly";
@@ -2903,8 +2903,13 @@
     if(rng) rng.innerHTML = '<span style="color:' + (chg >= 0 ? good : bad) + '">' + (chg >= 0 ? "▲" : "▼") +
       " $" + Math.abs(chg).toFixed(2) + " (" + (pct >= 0 ? "+" : "") + pct.toFixed(2) + "%)</span> · " +
       gfhTf + (gfhTf === "1M" ? " (month)" : "") + " window";
-    if(note) note.textContent = pts.length + " pts · low $" + rawLo.toFixed(2) + " · high $" + rawHi.toFixed(2) +
-      " · data: this hub's own minute-by-minute spot saves";
+    // State the span actually drawn, not the span the button asked for. The server row cap
+    // means a wide window can silently cover less than its label claims — say so.
+    var mins = Math.round((t1 - t0) / 60000);
+    var span = mins < 90 ? mins + " min" : mins < 2880 ? (mins / 60).toFixed(1) + " hrs" : (mins / 1440).toFixed(1) + " days";
+    if(note) note.textContent = pts.length + " pts · covering " + span + " · low $" + rawLo.toFixed(2) +
+      " · high $" + rawHi.toFixed(2) + (capped ? " · ⚠ window truncated by the server row cap" : "") +
+      " · this hub's own 1-min spot saves";
   }
   // Crosshair + tooltip, wired once. Snaps to the nearest real sample rather than
   // interpolating, so the number under the pointer is always a price we actually saved.
@@ -2939,20 +2944,41 @@
       if(dot) dot.setAttribute("opacity", "0");
     });
   }
+  // PostgREST caps EVERY response at 1000 rows no matter what `limit` says — a 24h window
+  // holds ~1262 ticks and the server answered `Content-Range: 0-999/1262`. The old query
+  // ordered ASCENDING, so it silently received the OLDEST 1000 and threw away everything
+  // newer: the chart sat ~4h in the past and would have drifted further every day as
+  // history grew. Fetch newest-first and page backwards instead.
+  var GFH_PAGE = 1000, GFH_MAXPAGES = 6;            // 6000 one-minute ticks ≈ 4 days
   function loadSpotChart(){
     var win = GFH_TFS[gfhTf] || 1440;
     var since = new Date(Date.now() - win * 60000).toISOString();
-    fetch(SB_URL + "/rest/v1/spot_history?select=t,price&t=gte." + since + "&order=t&limit=50000", { headers: H })
-      .then(function(r){ return r.json(); })
-      .then(function(rows){
-        if(!Array.isArray(rows)) return;
-        if(rows.length > 600){                       // thin long windows for drawing speed; always keep the newest point
-          var step = Math.ceil(rows.length / 600), thin = [];
-          for(var i = 0; i < rows.length; i += step) thin.push(rows[i]);
-          if(thin[thin.length - 1] !== rows[rows.length - 1]) thin.push(rows[rows.length - 1]);
-          rows = thin;
+    var url = SB_URL + "/rest/v1/spot_history?select=t,price&t=gte." + since + "&order=t.desc";
+    var all = [], page = 0, capped = false;
+    function grab(){
+      var from = page * GFH_PAGE;
+      return fetch(url, { headers: Object.assign({ Range: from + "-" + (from + GFH_PAGE - 1) }, H) })
+        .then(function(r){ return r.json(); })
+        .then(function(rows){
+          if(!Array.isArray(rows) || !rows.length) return;
+          all = all.concat(rows);
+          page++;
+          if(rows.length < GFH_PAGE) return;         // reached the start of the window
+          if(page < GFH_MAXPAGES) return grab();
+          capped = true;                              // hit our own page budget, not the window
+        });
+    }
+    grab()
+      .then(function(){
+        if(!all.length) return;
+        all.reverse();                                // back to oldest -> newest for drawing
+        if(all.length > 600){                         // thin for drawing speed; always keep the newest point
+          var step = Math.ceil(all.length / 600), thin = [];
+          for(var i = 0; i < all.length; i += step) thin.push(all[i]);
+          if(thin[thin.length - 1] !== all[all.length - 1]) thin.push(all[all.length - 1]);
+          all = thin;
         }
-        drawSpotChart(rows);
+        drawSpotChart(all, capped);
       })
       .catch(function(){ /* keep whatever is drawn */ });
   }
