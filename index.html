@@ -378,6 +378,20 @@
   .jb-tchip[data-tier="3"] .dotc{color:var(--t3)} .jb-tchip[data-tier="4"] .dotc{color:var(--t4)}
   .jb-tiernote{font-family:var(--mono);font-size:10px;color:var(--ink-mute)}
 
+  /* ---- stale-page watchdog ---- */
+  .vwbar{position:fixed;left:0;right:0;top:0;z-index:9999;display:none;
+    align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;
+    padding:10px 16px;font-family:var(--sans);font-size:13.5px;font-weight:660;
+    background:var(--gold-glow);color:var(--ink);
+    border-bottom:1px solid var(--gold-deep);
+    box-shadow:0 8px 24px -18px rgba(0,0,0,.6)}
+  .vwbar.on{display:flex}
+  .vwbar button{cursor:pointer;font-family:var(--sans);font-size:13px;font-weight:700;
+    color:var(--gold);background:var(--panel);border:1px solid var(--gold-deep);
+    border-radius:9px;padding:6px 14px}
+  .vwbar button:hover{background:var(--gold-glow)}
+  .vwbar .vw-x{border-color:var(--line2);color:var(--ink-mute)}
+
   /* ---- top tabs ---- */
   .tabbar{display:flex;gap:6px;margin:0 0 14px;flex-wrap:wrap;
     border-bottom:1px solid var(--line);padding-bottom:0}
@@ -3023,6 +3037,60 @@
 
   window.__gfhIngest = applySheet;   // public-page ingest hook (build-injected; unused in the artifact)
 })();
+</script>
+
+<script>
+/* =========================================================================
+   STALE-PAGE WATCHDOG
+   GitHub Pages serves this file with `Cache-Control: max-age=600`, so a browser
+   is entitled to keep showing a ten-minute-old copy after a push -- and nothing
+   on the page said which version you had. (The footer's "built ..." stamp is
+   just the clock at page load; it moves every refresh and proves nothing.)
+
+   This asks the server for the page's Last-Modified header, cheaply, with
+   cache:"no-store" so the answer is never the cached one. If it moves, a bar
+   offers a reload. It never reloads on its own -- a surprise reload mid-round
+   would throw away whatever June was typing.
+   ========================================================================= */
+!function(){
+  "use strict";
+  if(location.protocol === "file:") return;      // no headers to read locally
+  var url  = location.href.split("#")[0];
+  var seen = null;
+  var shown = false;
+
+  function bar(){
+    var b = document.getElementById("vwBar");
+    if(b) return b;
+    b = document.createElement("div");
+    b.className = "vwbar"; b.id = "vwBar";
+    b.setAttribute("role","status");
+    b.innerHTML = "<span>◆ A newer version of this page is live.</span>" +
+                  "<button type='button' id='vwGo'>Reload</button>" +
+                  "<button type='button' class='vw-x' id='vwNo'>Not now</button>";
+    document.body ? document.body.appendChild(b)
+                  : document.documentElement.appendChild(b);
+    b.querySelector("#vwGo").onclick = function(){ location.reload(); };
+    b.querySelector("#vwNo").onclick = function(){ b.classList.remove("on"); };
+    return b;
+  }
+
+  function probe(){
+    // HEAD, not GET: we only want the header, not another copy of a 200 KB page.
+    fetch(url, {method:"HEAD", cache:"no-store"}).then(function(r){
+      var v = r.headers.get("Last-Modified") || r.headers.get("ETag");
+      if(!v) return;                      // host does not send one -- give up quietly
+      if(seen === null){ seen = v; return; }   // first probe just records the baseline
+      if(v !== seen && !shown){ shown = true; bar().classList.add("on"); }
+    }).catch(function(){});                // offline is not an error worth shouting about
+  }
+
+  probe();
+  setInterval(probe, 300000);                                  // every 5 minutes
+  document.addEventListener("visibilitychange", function(){    // and on coming back to the tab
+    if(!document.hidden) probe();
+  });
+}();
 </script>
 <!-- ============================================================================
      SUPABASE LIVE LAYER — brother's public page ONLY (never in Medi's artifact).
