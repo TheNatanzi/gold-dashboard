@@ -129,6 +129,11 @@
   .sd-stamp{font-family:var(--mono);font-size:9.5px;color:var(--ink-mute);white-space:nowrap}
   @media (max-width:560px){.spot-delta{border-left:0;padding-left:0}}
   .spot-side{display:flex;align-items:center;gap:14px;margin-left:auto}
+  .spot-count{display:flex;flex-direction:column;align-items:flex-end;gap:1px}
+  .sc-lab{font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+    color:var(--ink-mute);white-space:nowrap}
+  .sc-v{font-family:var(--mono);font-size:clamp(24px,2.8vw,32px);font-weight:680;
+    color:var(--gold);line-height:1;min-width:96px;text-align:right}
   .elecard{border-left-color:var(--good)}
   .elecard .dv{color:var(--good)}
   .spot-status{color:var(--warn);font-size:9.5px;letter-spacing:.08em;border:1px solid var(--line2);
@@ -643,10 +648,15 @@
         <span class="sd-stamp" id="deltaStamp">—</span>
       </div>
       <div class="spot-side">
-        <span class="spot-status" id="spotStatus">◉ manual · pull to sync</span>
-        <button class="pull big" id="pullBtn" title="Re-pull spot, recompute every figure, stamp the time">
-          <span class="dot"></span> PULL
-        </button>
+        <span class="spot-status" id="spotStatus">◉ manual · auto-sync off</span>
+        <!-- The PULL button lived here. The live layer refreshes every 60s on its own, so
+             the button was a ritual, not a control. Its slot now shows the countdown big.
+             The id gfhTimer is claimed HERE so the live layer's mountTimer() skips its own
+             tiny fallback chip and its 1-second tick lands in this styled slot instead. -->
+        <div class="spot-count" title="seconds until the next automatic refresh">
+          <span class="sc-lab">next refresh</span>
+          <span class="sc-v tnum" id="gfhTimer">—</span>
+        </div>
       </div>
     </div>
   </div>
@@ -1060,7 +1070,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: ccc75f3 · built 2026-07-28 19:17 UTC</span>
+    <span id="verStamp" class="tnum">version: 8bdf124 · built 2026-07-28 19:26 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -1429,7 +1439,7 @@
     const el=$("spotStatus"), ds=$("dataSrc");
     if(on){ el.textContent="● LIVE · engine sheet"; el.className="spot-status live";
       if(ds) ds.textContent="data: LIVE from Gold Flip — Engine sheet"; }
-    else { el.textContent="◉ manual · pull to sync"; el.className="spot-status";
+    else { el.textContent="◉ manual · auto-sync off"; el.className="spot-status";
       if(ds) ds.textContent = code
         ? `data: seed values (live off: ${code})`
         : "data: seed values (connect Drive to go live)"; }
@@ -1528,8 +1538,10 @@
     el.innerHTML="<b>not a live price</b> — this is the number in the box above, edit it to match the market";
   }
 
+  // The PULL button is gone from the markup (the live layer auto-refreshes); the handler
+  // is kept behind a guard so the artifact build without a live layer still parses.
   const btn=$("pullBtn");
-  btn.addEventListener("click",()=>{ if(btn.disabled)return; btn.disabled=true;
+  if(btn) btn.addEventListener("click",()=>{ if(btn.disabled)return; btn.disabled=true;
     // If live, force a fresh sheet read; the watch handler restamps from the sheet.
     if(_liveServer && window.claude && window.claude.mcp){
       window.claude.mcp.invalidate(_liveServer,"download_file_content").catch(()=>{});
