@@ -84,6 +84,11 @@
     if(window.__gfhIngest) window.__gfhIngest(map);   // recompute via the dashboard's own tested path
     pulseDiff(before);                                // flash whatever the update moved
     badge(spot, online);                              // then stamp the confidence badge (applySheet already ran)
+    _gfhOnline = online;                              // the chart's Costco reference line reads this
+    // Prices refresh every 60s but the chart only refetches every 5 min. Redraw the last
+    // points now so the buy-zone and Costco lines never sit up to 5 minutes behind the
+    // numbers printed right above them. Cheap: same data, one SVG rebuild.
+    if(_gfhLast) drawSpotChart(_gfhLast.pts, _gfhLast.capped);
   }
 
   // ---- refresh countdown: tiny "↻ 42s" chip next to the LIVE badge ----
@@ -161,6 +166,43 @@
     }
   }
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
+  var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
+  var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
+
+  // "$4,159.99" / "−$12.34" -> Number.  money() prints a U+2212 minus, not a hyphen, and
+  // parseFloat would happily read "−$12.34" as NaN and "$12.34" as 12.34 either way — so
+  // pull the sign out first rather than trusting the number to carry it.
+  function pMoney(s){
+    if(!s) return NaN;
+    var neg = /[−-]\s*\$/.test(s);
+    var n = parseFloat(String(s).replace(/[^\d.]/g, ""));
+    return isFinite(n) ? (neg ? -n : n) : NaN;
+  }
+
+  // The two horizontal reference lines drawn across the spot chart.
+  //
+  // BUY ZONE — the spot price at which the hero card finally clears the $25/bar floor.
+  //   Profit per bar is  (eff% × buy) − buy + spot − buyerDiscount, and `buy` (Costco or
+  //   June) never depends on spot. So profit moves dollar-for-dollar with spot, and the
+  //   trigger is just today's spot plus whatever the gauge is still short by. That is read
+  //   off the gauge the dashboard already rendered rather than re-deriving the card table
+  //   here: one source of truth, and it automatically follows every override, buyer-offset
+  //   edit and stale-price fallback the engine applies.
+  // COSTCO — what a bar actually costs right now. There is no online_history table, so this
+  //   is a single current value, i.e. a flat line, not a curve. Drawn faint for that reason.
+  function gfhRefLines(){
+    var out = [], g = el("gaugeVal"), sp = el("spot");
+    if(g && sp && /\//.test(g.textContent)){
+      var parts = g.textContent.split("/");
+      var hero = pMoney(parts[0]), floor = pMoney(parts[1]), s = parseFloat(sp.value);
+      if(isFinite(hero) && isFinite(floor) && isFinite(s))
+        out.push({ key: "buy", v: s + (floor - hero), live: hero >= floor });   // live = already in the zone
+    }
+    if(_gfhOnline && isFinite(Number(_gfhOnline.price)))
+      out.push({ key: "costco", v: Number(_gfhOnline.price), stock: _gfhOnline.in_stock !== false });
+    return out;
+  }
+
   function drawSpotChart(pts, capped){
     var svg = el("gfhChartSvg"), note = el("gfhChartNote"); if(!svg) return;
     if(!pts || pts.length < 2){
@@ -181,6 +223,20 @@
     pts.forEach(function(p){ var v = Number(p.price); if(v < rawLo) rawLo = v; if(v > rawHi) rawHi = v; });
     var lo = rawLo, hi = rawHi, pd = (rawHi - rawLo) * 0.08 || 1; lo -= pd; hi += pd;
 
+    // Fit the reference lines into the frame — but not at any cost. Costco sits ~$110 above
+    // spot while a day of spot may only travel $40, so forcing it into view would squash the
+    // price line into a flat ribbon and destroy the thing the chart is for. Admit each line
+    // nearest-first, and only while the price line keeps at least 35% of the height. Anything
+    // that still doesn't fit is pinned to the edge with an arrow — you lose its exact position
+    // but never its value, which is printed on the label anyway. Net effect: on a 1D/1W view
+    // Costco usually does fit and you see the real spread; on a 5M view it correctly steps out.
+    var refs = gfhRefLines(), band0lo = lo, band0hi = hi, maxSpan = (hi - lo) / 0.35;
+    function refDist(r){ return r.v > band0hi ? r.v - band0hi : (r.v < band0lo ? band0lo - r.v : 0); }
+    refs.slice().sort(function(a, b){ return refDist(a) - refDist(b); }).forEach(function(r){
+      var nlo = Math.min(lo, r.v - pd), nhi = Math.max(hi, r.v + pd);
+      if(nhi - nlo <= maxSpan){ lo = nlo; hi = nhi; }
+    });
+
     var t0 = Date.parse(pts[0].t), t1 = Date.parse(pts[pts.length - 1].t) || (t0 + 1);
     function X(iso){ return padL + (Date.parse(iso) - t0) / ((t1 - t0) || 1) * cw; }
     function Y(v){ return padT + (hi - v) / (hi - lo) * ch; }
@@ -193,6 +249,24 @@
            '<text x="' + (padL + cw + 5) + '" y="' + (yy + 4).toFixed(1) + '" fill="' + mute +
            '" font-family="monospace" font-size="11">$' + Math.round(pv) + '</text>';
     }
+    // Reference-line geometry. A line outside the fitted domain is pinned to the nearest edge
+    // and flagged (off = +1 above / -1 below) so its label can say so instead of lying about
+    // where it sits.
+    var refDraw = refs.map(function(r){
+      var y = Y(r.v), off = 0;
+      if(r.v > hi){ y = padT + 0.5; off = 1; } else if(r.v < lo){ y = padT + ch - 0.5; off = -1; }
+      return { r: r, y: y, off: off };
+    });
+    // The buy zone is everything ABOVE the trigger: spot up there means the bar clears the
+    // $25/bar floor. Shade it under the price line so the line stays the brightest thing.
+    refDraw.forEach(function(o){
+      if(o.r.key !== "buy" || o.off === 1) return;                 // trigger off the top = nothing qualifies
+      var top = padT, bot = o.off === -1 ? padT + ch : o.y;        // trigger off the bottom = all of it qualifies
+      if(bot - top > 0.5)
+        s += '<rect x="' + padL + '" y="' + top + '" width="' + cw + '" height="' + (bot - top).toFixed(1) +
+             '" fill="' + good + '" opacity="0.07"/>';
+    });
+
     var d = pts.map(function(p, i){ return (i ? "L" : "M") + X(p.t).toFixed(1) + "," + Y(Number(p.price)).toFixed(1); }).join("");
     s += '<path d="' + d + ' L' + (padL + cw).toFixed(1) + ',' + (padT + ch) + ' L' + padL + ',' + (padT + ch) +
          ' Z" fill="rgba(230,179,37,.10)" stroke="none"/>' +
@@ -204,6 +278,28 @@
          '<rect x="' + (padL + cw) + '" y="' + (ly - 9).toFixed(1) + '" width="' + padR + '" height="18" rx="3" fill="' + gold + '"/>' +
          '<text x="' + (padL + cw + padR / 2) + '" y="' + (ly + 4).toFixed(1) + '" text-anchor="middle" fill="#1a1305" ' +
          'font-family="monospace" font-size="11" font-weight="700">' + Math.round(last) + '</text>';
+
+    // Reference lines + their labels, drawn on top of the price line so neither is lost under
+    // it. Labels sit inside on the left because the right gutter already belongs to the $ axis
+    // and the last-price tag. Two labels closer than 13px would overlap, so nudge the lower one.
+    var labY = [];
+    refDraw.slice().sort(function(a, b){ return a.y - b.y; }).forEach(function(o){
+      var isBuy = o.r.key === "buy";
+      var col = isBuy ? good : mute;
+      s += '<line x1="' + padL + '" y1="' + o.y.toFixed(1) + '" x2="' + (padL + cw) + '" y2="' + o.y.toFixed(1) +
+           '" stroke="' + col + '" stroke-width="' + (isBuy ? 1.5 : 1) + '" stroke-dasharray="' +
+           (isBuy ? "7 4" : "2 5") + '" opacity="' + (isBuy ? 0.95 : 0.45) + '"/>';
+      var ty = o.y - 5; if(ty < padT + 11) ty = o.y + 13;
+      for(var q = 0; q < labY.length; q++) if(Math.abs(ty - labY[q]) < 13) ty = labY[q] + 13;
+      labY.push(ty);
+      var arrow = o.off === 1 ? " ↑" : o.off === -1 ? " ↓" : "";
+      var txt = isBuy
+        ? "BUY ZONE ≥ $" + o.r.v.toFixed(2) + (o.r.live ? "  ✓ IN ZONE" : "") + arrow
+        : "COSTCO $" + o.r.v.toFixed(2) + (o.r.stock ? "" : " (out of stock)") + arrow;
+      s += '<text x="' + (padL + 6) + '" y="' + ty.toFixed(1) + '" fill="' + col + '" font-family="monospace" ' +
+           'font-size="10" font-weight="' + (isBuy ? 700 : 400) + '" opacity="' + (isBuy ? 1 : 0.7) + '">' +
+           txt + '</text>';
+    });
 
     var wide = (GFH_TFS[gfhTf] || 0) >= 10080;          // week/month views label by date, not clock time
     function tLab(iso){ var dd = new Date(iso);
@@ -219,6 +315,7 @@
          '<circle id="gfhCrossDot" r="3.5" fill="' + gold + '" opacity="0"/>';
     svg.innerHTML = s;
     _gfhGeom = { pts: pts, W: W, X: X, Y: Y };
+    _gfhLast = { pts: pts, capped: capped };
 
     var first = Number(pts[0].price), chg = last - first, pct = first ? chg / first * 100 : 0;
     var lastEl = el("gfhChartLast");
