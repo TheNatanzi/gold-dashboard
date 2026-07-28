@@ -257,6 +257,7 @@
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
+  var _gfhOnlineHist = [];                              // online_history rows in the current window
 
   // "$4,159.99" / "−$12.34" -> Number.  money() prints a U+2212 minus, not a hyphen, and
   // parseFloat would happily read "−$12.34" as NaN and "$12.34" as 12.34 either way — so
@@ -277,8 +278,11 @@
   //   off the gauge the dashboard already rendered rather than re-deriving the card table
   //   here: one source of truth, and it automatically follows every override, buyer-offset
   //   edit and stale-price fallback the engine applies.
-  // COSTCO — what a bar actually costs right now. There is no online_history table, so this
-  //   is a single current value, i.e. a flat line, not a curve. Drawn faint for that reason.
+  // COSTCO — what a bar actually costs. Drawn faint, and drawn as a real curve as soon as
+  //   online_history holds two or more points in the window; until then it is the single
+  //   current value as a flat line. History is collected by the `online-history-tick` pg_cron
+  //   job (every 5 min, deduped on t = gold_prices.fetched_at, so one row per genuine
+  //   refresh), and only while the bar is in stock — a gap means nothing was buyable.
   function gfhRefLines(){
     var out = [], g = el("gaugeVal"), sp = el("spot");
     if(g && sp && /\//.test(g.textContent)){
@@ -288,17 +292,36 @@
         out.push({ key: "buy", v: s + (floor - hero), live: hero >= floor });   // live = already in the zone
     }
     if(_gfhOnline && isFinite(Number(_gfhOnline.price))){
+      // Once online_history has two or more points in the window the Costco line becomes a
+      // real curve instead of a flat reference. Below two it stays flat — one point cannot
+      // describe a shape, and drawing a horizontal line through a single sample would imply
+      // a steadiness nobody measured. lo/hi are published so the domain fitter sizes the
+      // frame around the whole curve, not just its last value.
       // The engine disqualifies the online price at 2 days old (onlineOld) and when the bar is
       // out of stock — in either case it falls back to June's in-store number. Say so on the
       // label. A chart quietly drawing a price the engine has already thrown away is worse
       // than not drawing it: it looks like corroboration when it is actually contradiction.
       var ms = _gfhOnline.fetched_at ? (Date.now() - Date.parse(_gfhOnline.fetched_at)) : 0;
       var days = ms > 0 ? Math.floor(ms / 86400000) : 0;
-      out.push({ key: "costco", v: Number(_gfhOnline.price),
-                 stock: _gfhOnline.in_stock !== false, stale: days >= 2, days: days });
+      var ref = { key: "costco", v: Number(_gfhOnline.price),
+                  stock: _gfhOnline.in_stock !== false, stale: days >= 2, days: days };
+      if(_gfhOnlineHist && _gfhOnlineHist.length >= 2){
+        var ps = _gfhOnlineHist.map(function(p){ return Number(p.price); })
+                               .filter(function(n){ return isFinite(n); });
+        if(ps.length >= 2){
+          ref.series = _gfhOnlineHist;
+          ref.lo = Math.min.apply(null, ps);
+          ref.hi = Math.max.apply(null, ps);
+          ref.v  = ps[ps.length - 1];             // label the newest recorded price, not the row cache
+        }
+      }
+      out.push(ref);
     }
     return out;
   }
+  // A reference line's vertical extent: the whole curve when there is one, else the single value.
+  function refLo(r){ return r.lo != null ? r.lo : r.v; }
+  function refHi(r){ return r.hi != null ? r.hi : r.v; }
 
   function drawSpotChart(pts, capped){
     var svg = el("gfhChartSvg"), note = el("gfhChartNote"); if(!svg) return;
@@ -329,9 +352,11 @@
     // but never its value, which is printed on the label anyway. Net effect: on a 1D/1W view
     // Costco usually does fit and you see the real spread; on a 5M view it correctly steps out.
     var refs = gfhRefLines(), band0lo = lo, band0hi = hi, maxSpan = (hi - lo) / 0.35;
-    function refDist(r){ return r.v > band0hi ? r.v - band0hi : (r.v < band0lo ? band0lo - r.v : 0); }
+    function refDist(r){
+      return refLo(r) > band0hi ? refLo(r) - band0hi : (refHi(r) < band0lo ? band0lo - refHi(r) : 0);
+    }
     refs.slice().sort(function(a, b){ return refDist(a) - refDist(b); }).forEach(function(r){
-      var nlo = Math.min(lo, r.v - pd), nhi = Math.max(hi, r.v + pd);
+      var nlo = Math.min(lo, refLo(r) - pd), nhi = Math.max(hi, refHi(r) + pd);
       if(nhi - nlo <= maxSpan){ lo = nlo; hi = nhi; }
     });
 
@@ -384,9 +409,24 @@
     refDraw.slice().sort(function(a, b){ return a.y - b.y; }).forEach(function(o){
       var isBuy = o.r.key === "buy";
       var col = isBuy ? good : mute;
-      s += '<line x1="' + padL + '" y1="' + o.y.toFixed(1) + '" x2="' + (padL + cw) + '" y2="' + o.y.toFixed(1) +
-           '" stroke="' + col + '" stroke-width="' + (isBuy ? 1.5 : 1) + '" stroke-dasharray="' +
-           (isBuy ? "7 4" : "2 5") + '" opacity="' + (isBuy ? 0.95 : (o.r.stale ? 0.25 : 0.45)) + '"/>';
+      var op  = isBuy ? 0.95 : (o.r.stale ? 0.25 : 0.45);
+      if(o.r.series){
+        // Real recorded history. Clamp each point into the plot rather than dropping it, so a
+        // stretch that runs off the top still reads as "up there" instead of vanishing.
+        var dd = "", n = 0;
+        o.r.series.forEach(function(p){
+          var v = Number(p.price); if(!isFinite(v)) return;
+          var xx = Math.max(padL, Math.min(padL + cw, X(p.t)));
+          var yy = Math.max(padT, Math.min(padT + ch, Y(v)));
+          dd += (n++ ? "L" : "M") + xx.toFixed(1) + "," + yy.toFixed(1);
+        });
+        if(n >= 2) s += '<path d="' + dd + '" fill="none" stroke="' + col +
+                        '" stroke-width="1.4" stroke-dasharray="2 5" opacity="' + op + '"/>';
+      } else {
+        s += '<line x1="' + padL + '" y1="' + o.y.toFixed(1) + '" x2="' + (padL + cw) + '" y2="' + o.y.toFixed(1) +
+             '" stroke="' + col + '" stroke-width="' + (isBuy ? 1.5 : 1) + '" stroke-dasharray="' +
+             (isBuy ? "7 4" : "2 5") + '" opacity="' + op + '"/>';
+      }
       var ty = o.y - 5; if(ty < padT + 11) ty = o.y + 13;
       for(var q = 0; q < labY.length; q++) if(Math.abs(ty - labY[q]) < 13) ty = labY[q] + 13;
       labY.push(ty);
@@ -496,7 +536,16 @@
           capped = true;                              // hit our own page budget, not the window
         });
     }
-    grab()
+    // Costco history for the same window. Newest-first for the same 1000-row-cap reason as
+    // spot, then reversed. Far fewer rows than spot — the collector writes one per genuine
+    // online refresh (~8 min), not one a minute — so a single page covers any window we draw.
+    var histDone = fetch(SB_URL + "/rest/v1/online_history?select=t,price&t=gte." + since + "&order=t.desc",
+                         { headers: Object.assign({ Range: "0-999" }, H) })
+      .then(function(r){ return r.json(); })
+      .then(function(rows){ _gfhOnlineHist = Array.isArray(rows) ? rows.slice().reverse() : []; })
+      .catch(function(){ _gfhOnlineHist = []; });      // no history yet -> flat reference line
+
+    Promise.all([grab(), histDone])
       .then(function(){
         if(!all.length) return;
         all.reverse();                                // back to oldest -> newest for drawing
