@@ -2750,7 +2750,15 @@
       map.gold_spot = { v: String(spot.price), t: spot.fetched_at ? fmtT(spot.fetched_at) : "" };
     if(online){
       if(online.price   != null) map.online_price   = { v: String(online.price),   t: online.fetched_at ? fmtT(online.fetched_at) : "" };
-      if(online.premium != null) map.online_premium = { v: String(online.premium), t: "" };
+      // DELIBERATELY NOT MAPPED: gold_prices.premium is the scraper's premium over SPOT as a
+      // PERCENT (it parses `([\d.]+)%` off the listing — 2.9 means 2.9%). CFG.onlinePrem is a
+      // DOLLAR figure: how much cheaper the register is than the web listing, $10 by Medi's
+      // own measurement. Feeding the percent into the dollar field made the page compute
+      // implied-in-store as $4159.99 − 2.90 = $4157.09 instead of − $10 = $4149.99, which
+      // invented a $7.10 disagreement with June's quote, raised a ⚠ "they disagree" warning,
+      // and pushed BUY $7.10 too high — making every $/bar figure ~$6.86 too pessimistic.
+      // Leave CFG.onlinePrem at its $10 default. The premium-over-spot idea is already on the
+      // page in dollars as the "Costco → spot delta" card, so nothing is lost by dropping it.
       if(online.in_stock != null) map.online_instock = { v: online.in_stock ? "yes" : "no", t: "" };
     }
     var before = snapNums();                          // snapshot every displayed number
