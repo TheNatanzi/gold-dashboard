@@ -411,11 +411,8 @@
     // The buy zone is everything ABOVE the trigger: spot up there means the bar clears the
     // $25/bar floor. Shade it under the price line so the line stays the brightest thing.
     refDraw.forEach(function(o){
-      if(o.r.key !== "buy") return;
-      // Green = the gap between where spot IS and where the buy zone STARTS. The old
-      // top-down rectangle painted "every qualifying price", but what gets read off the
-      // chart is "how far is spot from the zone" - which is exactly this band. It follows
-      // the stepped zone when there is one, and closes to nothing where spot crosses in.
+      if(o.r.key !== "buy" || pts.length < 2) return;
+      // The zone's floor at any moment - steps with the bar price when a series exists.
       function zoneAt(tms){
         var sr = o.r.series;
         if(sr && sr.length){
@@ -427,16 +424,53 @@
         }
         return o.r.v;
       }
-      var fwd = "", n2 = 0;
-      pts.forEach(function(p2){
-        fwd += (n2++ ? "L" : "M") + X(p2.t).toFixed(1) + "," + Y(Number(p2.price)).toFixed(1);
-      });
+      function zoneY(tms){ return Math.max(padT, Math.min(padT + ch, Y(zoneAt(tms)))); }
+
+      // GREEN: everything ABOVE the zone line qualifies. Top edge of the frame across,
+      // then back along the (possibly stepped) zone line - so the shade follows every
+      // historical trigger move instead of only today's.
+      var x0 = X(pts[0].t), xN = X(pts[pts.length - 1].t);
       var back = "";
-      for(var bi = pts.length - 1; bi >= 0; bi--){
-        var zy = Math.max(padT, Math.min(padT + ch, Y(zoneAt(Date.parse(pts[bi].t)))));
-        back += "L" + X(pts[bi].t).toFixed(1) + "," + zy.toFixed(1);
+      for(var bi = pts.length - 1; bi >= 0; bi--)
+        back += "L" + X(pts[bi].t).toFixed(1) + "," + zoneY(Date.parse(pts[bi].t)).toFixed(1);
+      s += '<path d="M' + x0.toFixed(1) + ',' + padT + ' L' + xN.toFixed(1) + ',' + padT + ' ' +
+           back + ' Z" fill="' + good + '" opacity="0.07" stroke="none"/>';
+
+      // PURPLE: the stretches when spot actually SAT inside the zone - the times a buy
+      // cleared the $25 floor. Duration is the story here, so it is a full-height band
+      // per stretch, darker than the green so "was in" reads apart from "would qualify".
+      // The same walk collects the crossing moments for the trigger markers below.
+      var inz = false, bandX0 = 0, marks = [];
+      for(var ci = 0; ci < pts.length; ci++){
+        var tms2 = Date.parse(pts[ci].t);
+        var now2 = Number(pts[ci].price) >= zoneAt(tms2) - 1e-9;
+        if(now2 && !inz){ bandX0 = X(pts[ci].t); marks.push({ i: ci, dir: 1 }); }
+        if(!now2 && inz){
+          s += '<rect x="' + bandX0.toFixed(1) + '" y="' + padT + '" width="' +
+               (X(pts[ci].t) - bandX0).toFixed(1) + '" height="' + ch +
+               '" fill="#8a5cd6" opacity="0.14"/>';
+          marks.push({ i: ci, dir: -1 });
+        }
+        inz = now2;
       }
-      if(n2 >= 2) s += '<path d="' + fwd + back + ' Z" fill="' + good + '" opacity="0.10" stroke="none"/>';
+      if(inz) s += '<rect x="' + bandX0.toFixed(1) + '" y="' + padT + '" width="' +
+                   (xN - bandX0).toFixed(1) + '" height="' + ch + '" fill="#8a5cd6" opacity="0.14"/>';
+
+      // $25 TRIGGER POINTS: a dot and the clock time at every crossing. Skip the very
+      // first sample - starting inside the zone is a state, not a crossing. Cap at 12;
+      // more than that and the times shingle over each other.
+      marks.filter(function(m){ return m.i > 0; }).slice(-12).forEach(function(m){
+        var pt2 = pts[m.i];
+        var mx = X(pt2.t), my = Y(Number(pt2.price));
+        var tl = new Date(pt2.t).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+        var lab = (m.dir === 1 ? "\u25b2 $25 " : "\u25bd out ") + tl;
+        var tyy = my > padT + 26 ? my - 14 : my + 20;
+        s += '<circle cx="' + mx.toFixed(1) + '" cy="' + my.toFixed(1) + '" r="3.5" fill="#8a5cd6"/>' +
+             '<rect x="' + (mx - lab.length * 3 - 4).toFixed(1) + '" y="' + (tyy - 10).toFixed(1) +
+             '" width="' + (lab.length * 6 + 8) + '" height="13" rx="3" fill="' + panel + '" opacity="0.85"/>' +
+             '<text x="' + mx.toFixed(1) + '" y="' + tyy.toFixed(1) + '" text-anchor="middle" ' +
+             'fill="#a98ae0" font-family="monospace" font-size="9" font-weight="700">' + lab + '</text>';
+      });
     });
 
     var d = pts.map(function(p, i){ return (i ? "L" : "M") + X(p.t).toFixed(1) + "," + Y(Number(p.price)).toFixed(1); }).join("");
