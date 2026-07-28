@@ -337,6 +337,11 @@
   .jb-addr .pin{margin-right:4px;opacity:.75;font-size:10px}
   .jb-addr:hover{color:var(--gold)}
   .jb-addr:hover .pin{opacity:1}
+  .jb-tel{display:inline-block;margin-top:3px;font-size:10.5px;font-weight:600;
+    color:var(--gold);text-decoration:none;white-space:nowrap;
+    border:1px solid var(--line2);border-radius:6px;padding:2px 7px}
+  .jb-tel .pin{margin-right:4px;opacity:.85;font-size:10px}
+  .jb-tel:hover{border-color:var(--gold-deep);background:var(--gold-glow)}
   .jb-table td.namecell{white-space:normal;min-width:200px}
 
   /* ---- tiers ---- */
@@ -2003,6 +2008,7 @@
   function tierVisible(e){ return e.status==="unknown" || !!jbTiersOn[e.t]; }
 
   function jbFullAddr(s){ return s.a+", "+s.c+", CA"+(s.z?" "+s.z:""); }
+  function jbPhoneFmt(p){ return "("+p.slice(0,3)+") "+p.slice(3,6)+"-"+p.slice(6); }
   function jbMapsHref(s){
     return "https://www.google.com/maps/search/?api=1&query="+
            encodeURIComponent("Costco Wholesale, "+jbFullAddr(s));
@@ -2205,7 +2211,13 @@
         "title='Open in Google Maps'>"+esc(e.name)+"</a>"+tags+
         "<a class='jb-addr' href='"+jbMapsHref(e.store)+"' target='_blank' rel='noopener noreferrer' "+
         "aria-label='Open "+esc(e.name)+" Costco in Google Maps'>"+
-        "<span class='pin'>📍</span>"+esc(jbFullAddr(e.store))+"</a>"
+        "<span class='pin'>📍</span>"+esc(jbFullAddr(e.store))+"</a>"+
+        // tel: hands off to whatever dials on this device -- the phone app on a mobile,
+        // FaceTime/Skype/Teams on a desktop. No target=_blank: a new tab for a tel: link
+        // leaves an empty window behind on desktop browsers that do not handle it.
+        "<a class='jb-tel' href='tel:+1"+e.store.p+"' "+
+        "aria-label='Call "+esc(e.name)+" Costco at "+jbPhoneFmt(e.store.p)+"'>"+
+        "<span class='pin'>📞</span>"+jbPhoneFmt(e.store.p)+"</a>"
       : esc(e.name)+tags;
     return "<tr class=\""+cls+(e.t?" t"+e.t:"")+"\" aria-label=\""+esc(aria)+"\">"+
       "<td class='namecell'>"+nameCell+"</td>"+
