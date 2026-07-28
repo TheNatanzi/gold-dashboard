@@ -2796,11 +2796,21 @@
         '<span class="cs-r"><span class="cs-last" id="gfhChartLast">—</span>' +
           '<span class="cs-toggle"><span class="cs-toggle-txt"></span><span class="cs-chev">▾</span></span></span>' +
       '</summary>' +
+      // Same shell as the futures chart below it: .chartwrap + .chart-tip + .chart-foot, and a
+      // meet-fitted viewBox. The old chart used preserveAspectRatio="none", which stretches the
+      // SVG horizontally — fine for a bare line, but it would smear any axis text, which is why
+      // the price labels had to live outside. Matching geometry lets them live inside.
       '<div class="chart-body">' +
         '<div class="tfbar" id="gfhTfbar">' + btns + '</div>' +
-        '<svg id="gfhChartSvg" viewBox="0 0 600 150" preserveAspectRatio="none" style="width:100%;height:150px;display:block"></svg>' +
-        '<div id="gfhChartTimes" style="display:flex;justify-content:space-between;font-family:monospace;font-size:10px;opacity:.55;margin-top:2px"></div>' +
-        '<div id="gfhChartNote" style="font-size:11px;opacity:.6;margin-top:4px">loading history…</div>' +
+        '<div class="chartwrap" id="gfhChartWrap">' +
+          '<svg id="gfhChartSvg" viewBox="0 0 1000 360" preserveAspectRatio="xMidYMid meet"' +
+               ' aria-label="Live gold spot price chart"></svg>' +
+          '<div class="chart-tip" id="gfhChartTip" style="display:none"></div>' +
+        '</div>' +
+        '<div class="chart-foot">' +
+          '<span id="gfhChartRange">—</span>' +
+          '<span id="gfhChartNote">loading history…</span>' +
+        '</div>' +
       '</div>';
     anchor.parentNode.insertBefore(d, anchor);
     var bs = d.querySelectorAll("button[data-gfhtf]");
@@ -2823,41 +2833,111 @@
       if(n.nodeType === 3 && /Gold price chart/i.test(n.nodeValue)){ n.nodeValue = " Futures Gold Price Chart "; return; }
     }
   }
+  var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   function drawSpotChart(pts){
     var svg = el("gfhChartSvg"), note = el("gfhChartNote"); if(!svg) return;
     if(!pts || pts.length < 2){
       if(note) note.textContent = "building history — the hub saves one point per minute, line appears shortly";
-      return;
+      _gfhGeom = null; return;
     }
-    var min = Infinity, max = -Infinity;
-    pts.forEach(function(p){ var v = Number(p.price); if(v < min) min = v; if(v > max) max = v; });
-    var lo = min, hi = max, pad = (max - min) || 1;
-    min -= pad * 0.10; max += pad * 0.10;
+    // Geometry + palette copied from the futures chart so the two read as one system.
+    // Colours come from the live design tokens, not hardcoded hex: SVG attributes do not
+    // inherit CSS variables, and the old hardcoded gold kept a dark line on the cream theme.
+    var W = 1000, H = 360, padL = 8, padR = 60, padT = 12, padB = 24;
+    var cw = W - padL - padR, ch = H - padT - padB;
+    var tok = getComputedStyle(document.documentElement);
+    function T(n, fb){ var v = tok.getPropertyValue(n).trim(); return v || fb; }
+    var good = T("--good", "#4bd6a0"), bad = T("--bad", "#f2686f"),
+        grid = T("--line", "#262c3a"), mute = T("--ink-mute", "#767d90"), gold = T("--gold", "#e8c46a");
+
+    var rawLo = Infinity, rawHi = -Infinity;
+    pts.forEach(function(p){ var v = Number(p.price); if(v < rawLo) rawLo = v; if(v > rawHi) rawHi = v; });
+    var lo = rawLo, hi = rawHi, pd = (rawHi - rawLo) * 0.08 || 1; lo -= pd; hi += pd;
+
     var t0 = Date.parse(pts[0].t), t1 = Date.parse(pts[pts.length - 1].t) || (t0 + 1);
-    var W = 600, H = 150;
-    var line = pts.map(function(p, i){
-      var x = (Date.parse(p.t) - t0) / ((t1 - t0) || 1) * W;
-      var y = H - (Number(p.price) - min) / (max - min) * H;
-      return (i ? "L" : "M") + x.toFixed(1) + "," + y.toFixed(1);
-    }).join("");
-    svg.innerHTML =
-      '<path d="' + line + ' L' + W + ',' + H + ' L0,' + H + ' Z" fill="rgba(230,179,37,.10)" stroke="none"/>' +
-      '<path d="' + line + '" fill="none" stroke="#e6b325" stroke-width="2"/>';
-    var tl = el("gfhChartTimes");
-    if(tl){   // same 3 time marks as the futures chart: start · middle · end ("h:mm AM/PM"; day-based views show the date)
-      var wide = (GFH_TFS[gfhTf] || 0) >= 10080;
-      var fmt = function(iso){
-        var dd = new Date(iso);
-        return wide ? dd.toLocaleDateString("en-US", { month: "short", day: "numeric" })
-                    : dd.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-      };
-      var midIdx = Math.floor(pts.length / 2);
-      tl.innerHTML = "<span>" + fmt(pts[0].t) + "</span><span>" + fmt(pts[midIdx].t) + "</span><span>" + fmt(pts[pts.length - 1].t) + "</span>";
+    function X(iso){ return padL + (Date.parse(iso) - t0) / ((t1 - t0) || 1) * cw; }
+    function Y(v){ return padT + (hi - v) / (hi - lo) * ch; }
+
+    var s = "";
+    for(var g = 0; g <= 4; g++){                        // 5 price gridlines + the right-hand $ axis
+      var pv = hi - (hi - lo) * g / 4, yy = Y(pv);
+      s += '<line x1="' + padL + '" y1="' + yy.toFixed(1) + '" x2="' + (padL + cw) + '" y2="' + yy.toFixed(1) +
+           '" stroke="' + grid + '" stroke-width="1"/>' +
+           '<text x="' + (padL + cw + 5) + '" y="' + (yy + 4).toFixed(1) + '" fill="' + mute +
+           '" font-family="monospace" font-size="11">$' + Math.round(pv) + '</text>';
     }
-    var last = Number(pts[pts.length - 1].price);
+    var d = pts.map(function(p, i){ return (i ? "L" : "M") + X(p.t).toFixed(1) + "," + Y(Number(p.price)).toFixed(1); }).join("");
+    s += '<path d="' + d + ' L' + (padL + cw).toFixed(1) + ',' + (padT + ch) + ' L' + padL + ',' + (padT + ch) +
+         ' Z" fill="rgba(230,179,37,.10)" stroke="none"/>' +
+         '<path d="' + d + '" fill="none" stroke="' + gold + '" stroke-width="2"/>';
+
+    var last = Number(pts[pts.length - 1].price), ly = Y(last);
+    s += '<line x1="' + padL + '" y1="' + ly.toFixed(1) + '" x2="' + (padL + cw) + '" y2="' + ly.toFixed(1) +
+         '" stroke="' + gold + '" stroke-width="1" stroke-dasharray="3 3" opacity="0.85"/>' +
+         '<rect x="' + (padL + cw) + '" y="' + (ly - 9).toFixed(1) + '" width="' + padR + '" height="18" rx="3" fill="' + gold + '"/>' +
+         '<text x="' + (padL + cw + padR / 2) + '" y="' + (ly + 4).toFixed(1) + '" text-anchor="middle" fill="#1a1305" ' +
+         'font-family="monospace" font-size="11" font-weight="700">' + Math.round(last) + '</text>';
+
+    var wide = (GFH_TFS[gfhTf] || 0) >= 10080;          // week/month views label by date, not clock time
+    function tLab(iso){ var dd = new Date(iso);
+      return wide ? dd.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                  : dd.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }); }
+    [0, Math.floor(pts.length / 2), pts.length - 1].forEach(function(i, k){
+      var anch = k === 0 ? "start" : k === 2 ? "end" : "middle";
+      s += '<text x="' + X(pts[i].t).toFixed(1) + '" y="' + (H - 7) + '" text-anchor="' + anch + '" fill="' + mute +
+           '" font-family="monospace" font-size="10">' + tLab(pts[i].t) + '</text>';
+    });
+    s += '<line id="gfhCrossX" x1="0" y1="' + padT + '" x2="0" y2="' + (padT + ch) + '" stroke="' + mute +
+         '" stroke-width="1" stroke-dasharray="2 3" opacity="0"/>' +
+         '<circle id="gfhCrossDot" r="3.5" fill="' + gold + '" opacity="0"/>';
+    svg.innerHTML = s;
+    _gfhGeom = { pts: pts, W: W, X: X, Y: Y };
+
+    var first = Number(pts[0].price), chg = last - first, pct = first ? chg / first * 100 : 0;
     var lastEl = el("gfhChartLast");
-    if(lastEl) lastEl.textContent = "$" + last.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    if(note) note.textContent = "last " + gfhTf + (gfhTf === "1M" ? " (month)" : "") + " · " + pts.length + " pts · low $" + lo.toFixed(2) + " · high $" + hi.toFixed(2) + " · data: this hub's own minute-by-minute spot saves";
+    if(lastEl){
+      lastEl.textContent = "$" + last.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      lastEl.className = "cs-last " + (chg >= 0 ? "up" : "down");
+    }
+    var rng = el("gfhChartRange");
+    if(rng) rng.innerHTML = '<span style="color:' + (chg >= 0 ? good : bad) + '">' + (chg >= 0 ? "▲" : "▼") +
+      " $" + Math.abs(chg).toFixed(2) + " (" + (pct >= 0 ? "+" : "") + pct.toFixed(2) + "%)</span> · " +
+      gfhTf + (gfhTf === "1M" ? " (month)" : "") + " window";
+    if(note) note.textContent = pts.length + " pts · low $" + rawLo.toFixed(2) + " · high $" + rawHi.toFixed(2) +
+      " · data: this hub's own minute-by-minute spot saves";
+  }
+  // Crosshair + tooltip, wired once. Snaps to the nearest real sample rather than
+  // interpolating, so the number under the pointer is always a price we actually saved.
+  function wireSpotHover(){
+    var wrap = el("gfhChartWrap"); if(!wrap || wrap.__gfhWired) return;
+    wrap.__gfhWired = true;
+    wrap.addEventListener("mousemove", function(e){
+      if(!_gfhGeom) return;
+      var svg = el("gfhChartSvg"), r = svg.getBoundingClientRect(); if(!r.width) return;
+      var vx = (e.clientX - r.left) / r.width * _gfhGeom.W;
+      var pts = _gfhGeom.pts, best = 0, bd = Infinity;
+      for(var i = 0; i < pts.length; i++){
+        var dx = Math.abs(_gfhGeom.X(pts[i].t) - vx);
+        if(dx < bd){ bd = dx; best = i; }
+      }
+      var p = pts[best], px = _gfhGeom.X(p.t), py = _gfhGeom.Y(Number(p.price));
+      var cx = el("gfhCrossX"), dot = el("gfhCrossDot");
+      if(cx){ cx.setAttribute("x1", px.toFixed(1)); cx.setAttribute("x2", px.toFixed(1)); cx.setAttribute("opacity", "0.7"); }
+      if(dot){ dot.setAttribute("cx", px.toFixed(1)); dot.setAttribute("cy", py.toFixed(1)); dot.setAttribute("opacity", "1"); }
+      var tip = el("gfhChartTip"); if(!tip) return;
+      tip.innerHTML = "<b>$" + Number(p.price).toFixed(2) + "</b><br>" +
+        new Date(p.t).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+      tip.style.display = "block";
+      var wr = wrap.getBoundingClientRect();
+      var lx = e.clientX - wr.left + 12; if(lx > wr.width - 140) lx = e.clientX - wr.left - 128;
+      tip.style.left = lx + "px"; tip.style.top = (e.clientY - wr.top + 10) + "px";
+    });
+    wrap.addEventListener("mouseleave", function(){
+      var t = el("gfhChartTip"); if(t) t.style.display = "none";
+      var cx = el("gfhCrossX"), dot = el("gfhCrossDot");
+      if(cx) cx.setAttribute("opacity", "0");
+      if(dot) dot.setAttribute("opacity", "0");
+    });
   }
   function loadSpotChart(){
     var win = GFH_TFS[gfhTf] || 1440;
@@ -2916,7 +2996,7 @@
   function start(){
     var s = el("spotStatus"); if(s){ s.textContent = "● connecting…"; s.className = "spot-status"; }
     wirePull(); mountTimer(); load(); setInterval(load, 60000); setInterval(tickTimer, 1000);
-    mountSpotChart(); renameFuturesChart(); loadSpotChart(); setInterval(loadSpotChart, 300000);   // chart refetches every 5 min
+    mountSpotChart(); wireSpotHover(); renameFuturesChart(); loadSpotChart(); setInterval(loadSpotChart, 300000);   // chart refetches every 5 min
   }
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
 })();
