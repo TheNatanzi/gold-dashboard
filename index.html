@@ -333,7 +333,10 @@
     font-weight:600}
   .jb-name:hover{color:var(--gold);border-bottom-color:var(--gold-deep)}
   .jb-addr{display:block;margin-top:2px;font-size:10px;color:var(--ink-mute);
-    white-space:normal;max-width:34ch}
+    white-space:normal;max-width:34ch;text-decoration:none}
+  .jb-addr .pin{margin-right:4px;opacity:.75;font-size:10px}
+  .jb-addr:hover{color:var(--gold)}
+  .jb-addr:hover .pin{opacity:1}
   .jb-table td.namecell{white-space:normal;min-width:200px}
 
   /* ---- tiers ---- */
@@ -2195,10 +2198,14 @@
                       : !c.stock ? "sold out"
                       : (barsOf(c)>0 ? barsOf(c)+" bars" : "has bars, count not recorded"));
     // An unknown-id row has no store record, so it gets a plain name and no map link.
+    // Both the name and the address open Google Maps. The address carries a visible 📍
+    // because a dotted underline on its own did not read as clickable.
     const nameCell = e.store
       ? "<a class='jb-name' href='"+jbMapsHref(e.store)+"' target='_blank' rel='noopener noreferrer' "+
         "title='Open in Google Maps'>"+esc(e.name)+"</a>"+tags+
-        "<span class='jb-addr'>"+esc(jbFullAddr(e.store))+"</span>"
+        "<a class='jb-addr' href='"+jbMapsHref(e.store)+"' target='_blank' rel='noopener noreferrer' "+
+        "aria-label='Open "+esc(e.name)+" Costco in Google Maps'>"+
+        "<span class='pin'>📍</span>"+esc(jbFullAddr(e.store))+"</a>"
       : esc(e.name)+tags;
     return "<tr class=\""+cls+(e.t?" t"+e.t:"")+"\" aria-label=\""+esc(aria)+"\">"+
       "<td class='namecell'>"+nameCell+"</td>"+
