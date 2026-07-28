@@ -1045,9 +1045,12 @@
         </div>
         <div class="rb-rule rb-warn">
           <span class="rb-n">11</span>
-          <div><b>Elemetal pays spot − $10 for Pamp Fortuna. NOT VERIFIED.</b>
-            <span class="rb-why">This number is hardcoded in the alert engine and nothing checks
-              it. If Elemetal has changed it, every profit figure here is wrong.</span></div>
+          <div><b>Elemetal pays spot − $20 for Pamp Fortuna, − $30 for any-brand bars
+              (verified 2026-07-28 price sheet).</b>
+            <span class="rb-why">The old − $10 ran unverified for weeks and overstated every
+              profit figure by $10/bar. Condition: the Pamp rate needs Veriscan + green foot,
+              or the bar counts as any-brand at − $30. Re-verify against each morning's
+              emailed sheet — the rate is typed in, not fetched.</span></div>
         </div>
       </div>
 
@@ -1057,7 +1060,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 479cc30 · built 2026-07-28 18:56 UTC</span>
+    <span id="verStamp" class="tnum">version: ccc75f3 · built 2026-07-28 19:05 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -1070,7 +1073,7 @@
   const CFG = {
     junePrice:4159.99, juneTime:"2026-07-25T09:32",
     onlinePrice:4169.99, onlineTime:"2026-07-25T10:15", inStock:true,
-    discPamp:10, discGen:20, floor:25, onlinePrem:10
+    discPamp:20, discGen:30, floor:25, onlinePrem:10
   };
   // The built-in starting price, captured before anything can overwrite it. CFG.junePrice
   // used to be written and never reverted, so a price that expired — or one Medi explicitly
@@ -1089,8 +1092,8 @@
 
   // Buyers (sell price = spot + offset). Elemetal is the default/preferred buyer.
   const BUYERS = [
-    {key:"elemetal_pamp",    name:"Elemetal · Pamp",    offset:-10,  note:"Local, call-in, ~1wk. Default buyer.", t:"2026-07-24"},
-    {key:"elemetal_generic", name:"Elemetal · Generic", offset:-20,  note:"Local, generic 1oz bar.", t:"2026-07-24"},
+    {key:"elemetal_pamp",    name:"Elemetal · Pamp",    offset:-20,  note:"Verified 7/28 price sheet (GB1PAMPF). Must be Veriscan + green foot, else any-brand −$30.", t:"2026-07-28"},
+    {key:"elemetal_generic", name:"Elemetal · Generic", offset:-30,  note:"Verified 7/28 price sheet (GB1C, sealed/carded any brand).", t:"2026-07-28"},
     {key:"upstate",          name:"Upstate",            offset:7,    note:"Pays over spot; ship-in or drive.", t:"2026-07-24"},
     {key:"amark",            name:"AMARK",              offset:null, note:"Las Vegas; no price-pull yet.", t:null},
     {key:"collectpure",      name:"CollectPure",        offset:null, note:"Online marketplace; ship-in.", t:null},
@@ -1287,6 +1290,12 @@
     const fill=$("gaugeFill"); fill.style.width=(gp*100)+"%";
     fill.className="fill "+(heroSel>=floorV?"good":"bad");
     $("gaugeVal").textContent=`${money(heroSel)} / ${money(floorV)}`;
+    // Published for the live layer's chart: enough to reconstruct where the buy-zone
+    // trigger sat at any historical bar price. effFrac is the hero card's total reward
+    // rate; profit moves by (1 - effFrac) per dollar of buy.
+    try{ window.__gfhZone = { trigger: spot + (floorV - heroSel),
+                              effFrac: (hero.card + hero.tk) / 100,
+                              buyNow: buy, onlineBased: overridden }; }catch(e){}
     const v=$("verdict");
     if(heroSel>=floorV){v.className="verdict go";v.textContent="✓ ALERT — floor clears "+money(floorV)+"/bar";}
     else{v.className="verdict no";v.textContent=`✗ No-go — need ${money(floorV-heroSel)} more/bar`;}
@@ -3493,8 +3502,29 @@
     if(g && sp && /\//.test(g.textContent)){
       var parts = g.textContent.split("/");
       var hero = pMoney(parts[0]), floor = pMoney(parts[1]), s = parseFloat(sp.value);
-      if(isFinite(hero) && isFinite(floor) && isFinite(s))
-        out.push({ key: "buy", v: s + (floor - hero), live: hero >= floor });   // live = already in the zone
+      if(isFinite(hero) && isFinite(floor) && isFinite(s)){
+        var bz = { key: "buy", v: s + (floor - hero), live: hero >= floor };   // live = already in the zone
+        // When BUY is online-based, the trigger moved every time the bar price moved:
+        // profit changes by (1 - eff%) per dollar of buy, so trigger(t) shifts by
+        // (1 - eff%) x (bar(t) - 10 - buyNow). The engine publishes those constants
+        // (__gfhZone) precisely so this stays its arithmetic, not a re-derivation here.
+        // When BUY is June's phoned price, bar moves never moved the trigger - flat is honest.
+        var z = (typeof window !== "undefined") && window.__gfhZone;
+        if(z && z.onlineBased && isFinite(z.effFrac) && isFinite(z.buyNow) &&
+           _gfhOnlineHist && _gfhOnlineHist.length >= 2){
+          var f = 1 - z.effFrac, ser = [];
+          _gfhOnlineHist.forEach(function(pt){
+            var pv = Number(pt.price);
+            if(isFinite(pv)) ser.push({ t: pt.t, price: bz.v + f * ((pv - 10) - z.buyNow) });
+          });
+          if(ser.length >= 2){
+            var vs = ser.map(function(q){ return q.price; });
+            bz.series = ser;
+            bz.lo = Math.min.apply(null, vs); bz.hi = Math.max.apply(null, vs);
+          }
+        }
+        out.push(bz);
+      }
     }
     if(_gfhOnline && isFinite(Number(_gfhOnline.price))){
       // Once online_history has two or more points in the window the Costco line becomes a
@@ -3627,6 +3657,28 @@
         });
         if(n >= 2) s += '<path d="' + dd + '" fill="none" stroke="' + col +
                         '" stroke-width="1.4" stroke-dasharray="2 5" opacity="' + op + '"/>';
+        // Mark each moment the recorded price actually CHANGED - a dot on the curve and the
+        // clock time under it. Costco only: the buy-zone curve is derived from these same
+        // moments, so marking both would print every timestamp twice. Cap at 14 labels;
+        // past that the clock times overlap into noise, and the accordion below has them all.
+        if(o.r.key === "costco"){
+          var chg = [], pv0 = null;
+          o.r.series.forEach(function(p2){
+            var v2 = Number(p2.price); if(!isFinite(v2)) return;
+            if(pv0 !== null && Math.abs(v2 - pv0) > 0.001) chg.push(p2);
+            pv0 = v2;
+          });
+          chg.slice(-14).forEach(function(p2){
+            var cx = Math.max(padL, Math.min(padL + cw, X(p2.t)));
+            var cy = Math.max(padT, Math.min(padT + ch, Y(Number(p2.price))));
+            var tl = new Date(p2.t).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+            var tyy = cy < padT + ch - 24 ? cy + 15 : cy - 8;   // below the dot unless near the floor
+            s += '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="3" fill="' + col +
+                 '" opacity="0.9"/>' +
+                 '<text x="' + cx.toFixed(1) + '" y="' + tyy.toFixed(1) + '" text-anchor="middle" fill="' + col +
+                 '" font-family="monospace" font-size="9" opacity="0.8">' + tl + '</text>';
+          });
+        }
       } else {
         s += '<line x1="' + padL + '" y1="' + o.y.toFixed(1) + '" x2="' + (padL + cw) + '" y2="' + o.y.toFixed(1) +
              '" stroke="' + col + '" stroke-width="' + (isBuy ? 1.5 : 1) + '" stroke-dasharray="' +
@@ -3635,6 +3687,18 @@
       var ty = o.y - 5; if(ty < padT + 11) ty = o.y + 13;
       for(var q = 0; q < labY.length; q++) if(Math.abs(ty - labY[q]) < 13) ty = labY[q] + 13;
       labY.push(ty);
+      if(o.r.key === "costco"){
+        // The bar's dollar amount on the right edge, same treatment as the spot tag so the
+        // two prices read as peers. Clamped into the frame; nudged if it would sit on the
+        // spot tag. Muted fill = reference, gold fill = the live line - hierarchy by colour.
+        var cty = Math.max(padT + 9, Math.min(padT + ch - 9, o.y));
+        if(Math.abs(cty - ly) < 20) cty = ly + (cty >= ly ? 20 : -20);
+        s += '<rect x="' + (padL + cw) + '" y="' + (cty - 9).toFixed(1) + '" width="' + padR +
+             '" height="18" rx="3" fill="' + mute + '"/>' +
+             '<text x="' + (padL + cw + padR / 2) + '" y="' + (cty + 4).toFixed(1) +
+             '" text-anchor="middle" fill="' + panel + '" font-family="monospace" font-size="11" font-weight="700">' +
+             Math.round(o.r.v) + '</text>';
+      }
       var arrow = o.off === 1 ? " ↑" : o.off === -1 ? " ↓" : "";
       var txt = isBuy
         ? "BUY ZONE ≥ $" + o.r.v.toFixed(2) + (o.r.live ? "  ✓ IN ZONE" : "") + arrow
@@ -3744,7 +3808,7 @@
     // Costco history for the same window. Newest-first for the same 1000-row-cap reason as
     // spot, then reversed. Far fewer rows than spot — the collector writes one per genuine
     // online refresh (~8 min), not one a minute — so a single page covers any window we draw.
-    var histDone = fetch(SB_URL + "/rest/v1/online_history?select=t,price&t=gte." + since + "&order=t.desc",
+    var histDone = fetch(SB_URL + "/rest/v1/online_history?select=t,price,bar_name,in_stock&t=gte." + since + "&order=t.desc",
                          { headers: Object.assign({ Range: "0-999" }, H) })
       .then(function(r){ return r.json(); })
       .then(function(rows){ _gfhOnlineHist = Array.isArray(rows) ? rows.slice().reverse() : []; })
@@ -3761,8 +3825,71 @@
           all = thin;
         }
         drawSpotChart(all, capped);
+        renderHistBox();
       })
       .catch(function(){ /* keep whatever is drawn */ });
+  }
+
+  // ---- accordion: every recorded bar-price change in the chart's window ----
+  // Built from the same online_history rows the chart draws, so the two can never
+  // disagree. Grouped by bar so a product swap (Argor -> Pamp etc.) reads as its own
+  // "first seen" line instead of a fake price jump inside one bar's story.
+  function renderHistBox(){
+    var host = el("gfhHistRows"), cnt = el("gfhHistCount");
+    if(!host){
+      var anchor = el("chartBox"); if(!anchor) return;
+      var d = document.createElement("details");
+      d.className = "chartbox"; d.id = "gfhHistBox";
+      d.innerHTML =
+        '<summary class="chart-sum">' +
+          '<span class="cs-l"><span class="cs-ic">\ud83e\uddfe</span> Costco bar price history' +
+            '<span class="cs-sub">every recorded change \u00b7 window follows the chart timeframe</span></span>' +
+          '<span class="cs-r"><span class="cs-last" id="gfhHistCount">\u2014</span>' +
+            '<span class="cs-toggle"><span class="cs-chev">\u25be</span></span></span>' +
+        '</summary>' +
+        '<div class="chart-body"><div id="gfhHistRows" ' +
+          'style="font-family:monospace;font-size:12px;line-height:1.5;overflow-x:auto"></div></div>';
+      anchor.parentNode.insertBefore(d, anchor.nextSibling);
+      host = el("gfhHistRows"); cnt = el("gfhHistCount");
+    }
+    if(!host) return;
+    var rows = _gfhOnlineHist || [];
+    if(rows.length < 1){
+      host.innerHTML = '<div style="opacity:.6">No recorded history in this window yet. ' +
+        'The collector writes one row per genuine Costco refresh (~8 min), only while in stock.</div>';
+      if(cnt) cnt.textContent = "0 changes";
+      return;
+    }
+    var ev = [], lastByBar = {};
+    rows.forEach(function(r){
+      var v = Number(r.price); if(!isFinite(v)) return;
+      var barName = r.bar_name || "(bar not recorded)";
+      var prev = lastByBar[barName];
+      if(prev === undefined) ev.push({ t: r.t, bar: barName, from: null, to: v });
+      else if(Math.abs(v - prev) > 0.001) ev.push({ t: r.t, bar: barName, from: prev, to: v });
+      lastByBar[barName] = v;
+    });
+    function f2(n){ return "$" + n.toFixed(2); }
+    var html = "";
+    ev.slice().reverse().slice(0, 120).forEach(function(e){
+      var d2 = new Date(e.t);
+      var when = d2.toLocaleDateString("en-US",{month:"short",day:"numeric"}) + " " +
+                 d2.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+      var delta = e.from == null ? "first seen"
+        : (e.to > e.from ? "\u25b2 +" : "\u25bc \u2212") + Math.abs(e.to - e.from).toFixed(2);
+      var col = e.from == null ? "inherit" : (e.to > e.from ? "var(--bad,#d23b45)" : "var(--good,#0f9d6b)");
+      html += '<div style="display:flex;gap:14px;flex-wrap:wrap;padding:3px 0;border-bottom:1px solid var(--line,#333)">' +
+        '<span style="opacity:.6;min-width:110px">' + when + '</span>' +
+        '<span style="min-width:80px;font-weight:700">' + f2(e.to) + '</span>' +
+        '<span style="min-width:110px;color:' + col + '">' + delta +
+          (e.from != null ? ' <span style="opacity:.5">(was ' + f2(e.from) + ')</span>' : '') + '</span>' +
+        '<span style="opacity:.55">' + e.bar + '</span>' +
+      '</div>';
+    });
+    host.innerHTML = html;
+    var nchg = 0;
+    ev.forEach(function(e){ if(e.from != null) nchg++; });
+    if(cnt) cnt.textContent = nchg + " change" + (nchg === 1 ? "" : "s");
   }
 
   function load(){
