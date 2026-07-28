@@ -337,12 +337,12 @@
   .jb-table td.namecell{white-space:normal;min-width:200px}
 
   /* ---- tiers ---- */
-  :root{ --t1:#0f9d6b; --t2:#3b82c4; --t3:#b08b17; --t4:#a06bd0; --t5:#8a8a8a; }
+  :root{ --t1:#0f9d6b; --t2:#3b82c4; --t3:#b08b17; --t4:#a06bd0; }
   @media (prefers-color-scheme:dark){
-    :root{ --t1:#4bd6a0; --t2:#6ea8e8; --t3:#e0bb4e; --t4:#c294f0; --t5:#9aa0ae; }
+    :root{ --t1:#4bd6a0; --t2:#6ea8e8; --t3:#e0bb4e; --t4:#c294f0; }
   }
-  :root[data-theme="light"]{ --t1:#0f9d6b; --t2:#3b82c4; --t3:#b08b17; --t4:#a06bd0; --t5:#8a8a8a; }
-  :root[data-theme="dark"]{  --t1:#4bd6a0; --t2:#6ea8e8; --t3:#e0bb4e; --t4:#c294f0; --t5:#9aa0ae; }
+  :root[data-theme="light"]{ --t1:#0f9d6b; --t2:#3b82c4; --t3:#b08b17; --t4:#a06bd0; }
+  :root[data-theme="dark"]{  --t1:#4bd6a0; --t2:#6ea8e8; --t3:#e0bb4e; --t4:#c294f0; }
 
   /* The wash is a background-IMAGE so it layers over the freshness background-colour
      above rather than erasing it. Declared after the tr.day / tr.stale rules on purpose. */
@@ -350,10 +350,9 @@
   .jb-table tr.t2 td{background-image:linear-gradient(rgba(59,130,196,.055),rgba(59,130,196,.055))}
   .jb-table tr.t3 td{background-image:linear-gradient(rgba(176,139,23,.055),rgba(176,139,23,.055))}
   .jb-table tr.t4 td{background-image:linear-gradient(rgba(160,107,208,.055),rgba(160,107,208,.055))}
-  .jb-table tr.t5 td{background-image:linear-gradient(rgba(138,138,138,.07),rgba(138,138,138,.07))}
   .jb-tag.tier{border-color:currentColor;font-weight:800}
   .jb-tag.tier.t1{color:var(--t1)} .jb-tag.tier.t2{color:var(--t2)} .jb-tag.tier.t3{color:var(--t3)}
-  .jb-tag.tier.t4{color:var(--t4)} .jb-tag.tier.t5{color:var(--t5)}
+  .jb-tag.tier.t4{color:var(--t4)}
 
   .jb-tierbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
   .jb-tchip{cursor:pointer;font-family:var(--mono);font-size:11px;font-weight:700;
@@ -367,10 +366,8 @@
   .jb-tchip[aria-pressed="true"][data-tier="2"]{border-color:var(--t2);background:rgba(59,130,196,.12)}
   .jb-tchip[aria-pressed="true"][data-tier="3"]{border-color:var(--t3);background:rgba(176,139,23,.12)}
   .jb-tchip[aria-pressed="true"][data-tier="4"]{border-color:var(--t4);background:rgba(160,107,208,.12)}
-  .jb-tchip[aria-pressed="true"][data-tier="5"]{border-color:var(--t5);background:rgba(138,138,138,.14)}
   .jb-tchip[data-tier="1"] .dotc{color:var(--t1)} .jb-tchip[data-tier="2"] .dotc{color:var(--t2)}
   .jb-tchip[data-tier="3"] .dotc{color:var(--t3)} .jb-tchip[data-tier="4"] .dotc{color:var(--t4)}
-  .jb-tchip[data-tier="5"] .dotc{color:var(--t5)}
   .jb-tiernote{font-family:var(--mono);font-size:10px;color:var(--ink-mute)}
 
   /* ---- sort bar (ported from June's call sheet so both pages sort identically) ---- */
@@ -773,7 +770,6 @@
         <button class="jb-tchip" type="button" data-tier="2" aria-pressed="true"><span class="dotc"></span>2 <span class="cnt" id="jbtc2">0</span></button>
         <button class="jb-tchip" type="button" data-tier="3" aria-pressed="true"><span class="dotc"></span>3 <span class="cnt" id="jbtc3">0</span></button>
         <button class="jb-tchip" type="button" data-tier="4" aria-pressed="false"><span class="dotc"></span>4 <span class="cnt" id="jbtc4">0</span></button>
-        <button class="jb-tchip" type="button" data-tier="5" aria-pressed="false"><span class="dotc"></span>5 <span class="cnt" id="jbtc5">0</span></button>
         <button class="jb-tchip" type="button" data-tier="all">Show all</button>
         <span class="jb-tiernote" id="jbTierNote">—</span>
       </div>
@@ -1566,7 +1562,7 @@
      parking lot with no signal, so the list cannot live in Supabase. A drift check
      (scripts/check-store-drift.py) diffs the two lists before every commit.
      "mi" = Costco's own locator distance from Walnut Creek (straight line).
-     "t" = tier, 1 is call-first. "r" = Costco's rank. See the long note in
+     "t" = tier 1-4, 1 is call-first. "r" = Costco's rank. See the long note in
      june-call-sheet.html for why Business Centers and the 74-mile+ stores are gone.
      ============================================================ */
   const JSTORES = [
@@ -1618,8 +1614,11 @@
     {id:"santacruz",   n:"Santa Cruz",                  a:"220 Sylvania Ave",          c:"Santa Cruz",          z:"95060", p:"8314690961", mi:62.5, t:4, r:49},
     {id:"ranchocordova",n:"Rancho Cordova",             a:"11260 White Rock Rd",       c:"Rancho Cordova",      z:"95742", p:"9167242240", mi:64,   t:4, r:50},
     {id:"gilroy",      n:"Gilroy",                      a:"7251 Camino Arroyo",        c:"Gilroy",              z:"95020", p:"4088480700", mi:74.2, t:4, r:51},
-    /* ---- TIER 5 · kept for review, hidden by default ---- */
-    {id:"morganhill",  n:"Morgan Hill",                 a:"820 E Dunne Ave #100",      c:"Morgan Hill",         z:"95037", p:"4087822131", mi:57,   t:5, r:99}
+    /* Morgan Hill has no Costco rank because it does not appear on Costco's locator
+       output at all -- it is a normal warehouse at roughly 57 miles, well inside the
+       band, that the list simply omits. It gets r:52 so it sorts last in tier 4, and
+       its "mi" is an estimate rather than a measured locator figure. */
+    {id:"morganhill",  n:"Morgan Hill",                 a:"820 E Dunne Ave #100",      c:"Morgan Hill",         z:"95037", p:"4087822131", mi:57,   t:4, r:52}
   ];
   const SMAP = (function(){ const m={}; JSTORES.forEach(function(s){ m[s.id]=s; }); return m; })();
   // Name → store, so a pasted round (which carries names, not ids) still joins onto the 45.
@@ -1985,15 +1984,15 @@
 
   /* ---- tier menu ---- */
   const DASH_TIERS_KEY="alchemy_dash_tiers";
-  const TIERS_DEFAULT="1,2,3";     // tier 4 is the long-drive tail, tier 5 the flagged one
+  const TIERS_DEFAULT="1,2,3";     // tier 4 is the long-drive tail
   const JB_TIER_COUNTS=(function(){
-    const m={1:0,2:0,3:0,4:0,5:0}; JSTORES.forEach(function(s){ m[s.t]++; }); return m;
+    const m={1:0,2:0,3:0,4:0}; JSTORES.forEach(function(s){ m[s.t]++; }); return m;
   })();
   let jbTiersOn=(function(){
     let raw=null; try{ raw=localStorage.getItem(DASH_TIERS_KEY); }catch(e){}
     const src=(raw==null||raw==="")?TIERS_DEFAULT:raw;
     const m={};
-    src.split(",").forEach(function(n){ n=parseInt(n,10); if(n>=1&&n<=5) m[n]=true; });
+    src.split(",").forEach(function(n){ n=parseInt(n,10); if(n>=1&&n<=4) m[n]=true; });
     return Object.keys(m).length?m:{1:true,2:true,3:true};
   })();
   // A row whose store id isn't in the list has no tier, so it can never be filtered out
@@ -2008,11 +2007,11 @@
 
   function jbToggleTier(which){
     if(which==="all"){
-      const allOn=[1,2,3,4,5].every(function(n){ return jbTiersOn[n]; });
-      jbTiersOn = allOn ? {1:true,2:true,3:true} : {1:true,2:true,3:true,4:true,5:true};
+      const allOn=[1,2,3,4].every(function(n){ return jbTiersOn[n]; });
+      jbTiersOn = allOn ? {1:true,2:true,3:true} : {1:true,2:true,3:true,4:true};
     } else {
       const n=parseInt(which,10);
-      if(!(n>=1&&n<=5)) return;
+      if(!(n>=1&&n<=4)) return;
       if(jbTiersOn[n]) delete jbTiersOn[n]; else jbTiersOn[n]=true;
       if(!Object.keys(jbTiersOn).length) jbTiersOn[n]=true;   // never leave an empty table
     }
@@ -2021,19 +2020,18 @@
   }
 
   function renderJbTierBar(){
-    for(let n=1;n<=5;n++){
+    for(let n=1;n<=4;n++){
       const b=document.querySelector('.jb-tchip[data-tier="'+n+'"]');
       if(b) b.setAttribute("aria-pressed", jbTiersOn[n]?"true":"false");
       const c=$("jbtc"+n);
       if(c) c.textContent=JB_TIER_COUNTS[n];
     }
-    const on=[1,2,3,4,5].filter(function(n){ return jbTiersOn[n]; });
+    const on=[1,2,3,4].filter(function(n){ return jbTiersOn[n]; });
     const shown=on.reduce(function(a,n){ return a+JB_TIER_COUNTS[n]; },0);
     const allb=document.querySelector('.jb-tchip[data-tier="all"]');
-    if(allb) allb.textContent=(on.length===5)?"Back to 1-3":"Show all";
+    if(allb) allb.textContent=(on.length===4)?"Back to 1-3":"Show all";
     const note=$("jbTierNote");
-    if(note) note.textContent=shown+" of "+JSTORES.length+" warehouses showing · tier "+on.join(", ")+
-      (jbTiersOn[5]?" · tier 5 is Morgan Hill only, kept for review":"");
+    if(note) note.textContent=shown+" of "+JSTORES.length+" warehouses showing · tier "+on.join(", ");
   }
 
   function barsOf(call){ return (call && call.stock) ? nnum(call.pamp)+nnum(call.generic) : 0; }
@@ -2097,7 +2095,7 @@
       // it were unknown too — and in "most bars first" a bogus row would lead the list.
       const au=a.status==="unknown", bu=b.status==="unknown";
       if(au!==bu) return au?1:-1;
-      if(jbSortBy==="tier")     return (a.t||9)-(b.t||9) || (a.r||999)-(b.r||999);
+      if(jbSortBy==="tier")     return (a.t||9)-(b.t||9) || (a.r||999)-(b.r||999);   // unknown rows have no tier -> 9, always last
       if(jbSortBy==="distance") return mi(a)-mi(b) || a.name.localeCompare(b.name);
       if(jbSortBy==="name")     return a.name.localeCompare(b.name);
       if(jbSortBy==="bars"){
