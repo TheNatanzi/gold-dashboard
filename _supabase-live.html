@@ -462,6 +462,14 @@
     var s = el("spotStatus"); if(s){ s.textContent = "● connecting…"; s.className = "spot-status"; }
     wirePull(); mountTimer(); load(); setInterval(load, 60000); setInterval(tickTimer, 1000);
     mountSpotChart(); wireSpotHover(); renameFuturesChart(); loadSpotChart(); setInterval(loadSpotChart, 300000);   // chart refetches every 5 min
+    // SVG attributes cannot inherit CSS variables, so the palette is baked in at draw time.
+    // Flipping the theme therefore left the chart in the old theme's colours until the next
+    // redraw — briefly painting a near-black label plate onto the cream page. Redraw on the
+    // toggle instead of waiting for the 60s price tick to clean it up.
+    var tb = el("themeBtn");
+    if(tb) tb.addEventListener("click", function(){
+      setTimeout(function(){ if(_gfhLast) drawSpotChart(_gfhLast.pts, _gfhLast.capped); }, 60);
+    });
   }
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
 })();
