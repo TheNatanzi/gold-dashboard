@@ -2740,6 +2740,83 @@
     var sp = el("spot"); if(sp && before.__spot !== undefined && sp.value !== before.__spot) flash(sp);
   }
 
+  // ==========================================================================================
+  // UNITS CONTRACT — the guard against the 2026-07-28 class of bug.
+  //
+  // A bare number does not describe itself. 2.9 is a perfectly plausible DOLLAR amount and a
+  // perfectly plausible PERCENT, which is exactly how gold_prices.premium (a percent over
+  // spot) got piped into CFG.onlinePrem (dollars off the register) and quietly moved BUY by
+  // $7.10 with no error anywhere. A range check could never have caught it — $2.90 sits
+  // comfortably inside any sane dollar band.
+  //
+  // So the rule is not "check the value", it is "declare the unit". Every key handed to the
+  // dashboard must appear below with its unit and its exact source column. Anything NOT
+  // declared here is refused rather than guessed at, and refusals are shown on the page —
+  // silence is what made both of this project's expensive bugs expensive.
+  // ==========================================================================================
+  var INGEST_CONTRACT = {
+    june_price:     { unit: "usd",  from: "gold_prices.june.price",      min: 500, max: 20000 },
+    gold_spot:      { unit: "usd",  from: "gold_prices.spot.price",      min: 500, max: 20000 },
+    online_price:   { unit: "usd",  from: "gold_prices.online.price",    min: 500, max: 20000 },
+    online_instock: { unit: "bool", from: "gold_prices.online.in_stock" }
+  };
+  // Named explicitly so the next person gets the reason, not just "unknown key".
+  var INGEST_FORBIDDEN = {
+    online_premium: "wants DOLLARS off the register; the only premium Supabase has is " +
+                    "gold_prices.premium, a PERCENT over spot. No dollar source exists — " +
+                    "leave CFG.onlinePrem at its $10 default."
+  };
+
+  function guardIngest(map){
+    var bad = [];
+    Object.keys(map).forEach(function(k){
+      if(INGEST_FORBIDDEN[k]){ bad.push(k + " is forbidden: " + INGEST_FORBIDDEN[k]); delete map[k]; return; }
+      var c = INGEST_CONTRACT[k];
+      if(!c){ bad.push(k + " has no declared unit — add it to INGEST_CONTRACT before sending it"); delete map[k]; return; }
+      if(c.unit === "usd"){
+        var n = Number(map[k].v);
+        if(!isFinite(n) || n < c.min || n > c.max){
+          bad.push(k + " = " + map[k].v + " is outside $" + c.min + "–$" + c.max + " (from " + c.from + ")");
+          delete map[k];
+        }
+      }
+    });
+    return bad;
+  }
+
+  // End-to-end assertion on the one number that actually moves money. BUY can only ever be
+  // June's register price or the online listing minus the $10 in-store premium — there is no
+  // third possibility. In the bug BUY silently became online − $2.90 and nothing objected.
+  function checkBuyPrice(online, june){
+    var e = el("mBuy"); if(!e || !online || online.price == null) return null;
+    var shown = Number(String(e.textContent).replace(/[^\d.]/g, ""));
+    if(!isFinite(shown) || shown === 0) return null;
+    var legal = [];
+    if(june && june.price != null) legal.push(Number(june.price));
+    legal.push(Number(online.price) - 10);
+    if(legal.some(function(v){ return isFinite(v) && Math.abs(v - shown) < 0.02; })) return null;
+    return "BUY shows $" + shown.toFixed(2) + " but the only legal values are " +
+           legal.map(function(v){ return "$" + v.toFixed(2); }).join(" or ");
+  }
+
+  // Violations must be impossible to miss. Both bugs this project has paid for were invisible.
+  function showGuardFailures(msgs){
+    var b = el("gfhGuard");
+    if(!msgs.length){ if(b) b.style.display = "none"; return; }
+    if(!b){
+      b = document.createElement("div");
+      b.id = "gfhGuard";
+      b.style.cssText = "margin:10px 0;padding:10px 12px;border:1px solid var(--bad,#f2686f);" +
+        "border-radius:8px;background:var(--bad-bg,rgba(242,104,111,.12));color:var(--bad,#f2686f);" +
+        "font:600 13px/1.5 var(--mono,monospace);white-space:pre-wrap;";
+      document.body.insertBefore(b, document.body.firstChild);
+    }
+    b.style.display = "block";
+    b.textContent = "⚠ DATA GUARD BLOCKED A BAD VALUE — the figures below may be incomplete:\n• " +
+                    msgs.join("\n• ");
+    try { console.error("[gfh units guard]", msgs); } catch(e){}
+  }
+
   function apply(rows){
     var spot = null, online = null, june = null;
     rows.forEach(function(r){ if(r.id === "spot") spot = r; else if(r.id === "online") online = r; else if(r.id === "june") june = r; });
@@ -2761,8 +2838,12 @@
       // page in dollars as the "Costco → spot delta" card, so nothing is lost by dropping it.
       if(online.in_stock != null) map.online_instock = { v: online.in_stock ? "yes" : "no", t: "" };
     }
+    var failures = guardIngest(map);                  // refuse anything whose unit is not declared
     var before = snapNums();                          // snapshot every displayed number
     if(window.__gfhIngest) window.__gfhIngest(map);   // recompute via the dashboard's own tested path
+    var buyErr = checkBuyPrice(online, june);         // and re-check BUY after the engine has run
+    if(buyErr) failures.push(buyErr);
+    showGuardFailures(failures);
     pulseDiff(before);                                // flash whatever the update moved
     badge(spot, online);                              // then stamp the confidence badge (applySheet already ran)
     _gfhOnline = online;                              // the chart's Costco reference line reads this
