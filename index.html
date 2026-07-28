@@ -2890,7 +2890,8 @@
     var tok = getComputedStyle(document.documentElement);
     function T(n, fb){ var v = tok.getPropertyValue(n).trim(); return v || fb; }
     var good = T("--good", "#4bd6a0"), bad = T("--bad", "#f2686f"),
-        grid = T("--line", "#262c3a"), mute = T("--ink-mute", "#767d90"), gold = T("--gold", "#e8c46a");
+        grid = T("--line", "#262c3a"), mute = T("--ink-mute", "#767d90"), gold = T("--gold", "#e8c46a"),
+        panel = T("--panel", "#141824");                // backing plate for the reference-line labels
 
     var rawLo = Infinity, rawHi = -Infinity;
     pts.forEach(function(p){ var v = Number(p.price); if(v < rawLo) rawLo = v; if(v > rawHi) rawHi = v; });
@@ -2969,6 +2970,11 @@
       var txt = isBuy
         ? "BUY ZONE ≥ $" + o.r.v.toFixed(2) + (o.r.live ? "  ✓ IN ZONE" : "") + arrow
         : "COSTCO $" + o.r.v.toFixed(2) + (o.r.stock ? "" : " (out of stock)") + arrow;
+      // Backing pill. The price line wanders straight through where these labels sit and was
+      // slicing the digits in half; a panel-coloured plate behind the text keeps it readable
+      // without hiding the line. 6px/char is the advance width of this monospace face at 10px.
+      s += '<rect x="' + (padL + 3) + '" y="' + (ty - 10).toFixed(1) + '" width="' + (txt.length * 6 + 8) +
+           '" height="14" rx="3" fill="' + panel + '" opacity="0.82"/>';
       s += '<text x="' + (padL + 6) + '" y="' + ty.toFixed(1) + '" fill="' + col + '" font-family="monospace" ' +
            'font-size="10" font-weight="' + (isBuy ? 700 : 400) + '" opacity="' + (isBuy ? 1 : 0.7) + '">' +
            txt + '</text>';
