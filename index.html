@@ -378,6 +378,29 @@
   .jb-tchip[data-tier="3"] .dotc{color:var(--t3)} .jb-tchip[data-tier="4"] .dotc{color:var(--t4)}
   .jb-tiernote{font-family:var(--mono);font-size:10px;color:var(--ink-mute)}
 
+  /* ---- top tabs ---- */
+  .tabbar{display:flex;gap:6px;margin:0 0 14px;flex-wrap:wrap;
+    border-bottom:1px solid var(--line);padding-bottom:0}
+  .tabbtn{cursor:pointer;font-family:var(--sans);font-size:13.5px;font-weight:660;
+    color:var(--ink-mute);background:transparent;border:1px solid transparent;
+    border-bottom:2px solid transparent;border-radius:10px 10px 0 0;padding:9px 15px;
+    display:inline-flex;align-items:center;gap:8px;margin-bottom:-1px}
+  .tabbtn:hover{color:var(--ink);background:var(--gold-glow)}
+  .tabbtn[aria-selected="true"]{color:var(--gold);border-color:var(--line);
+    border-bottom-color:var(--gold-deep);background:var(--panel)}
+  .tb-chip{font-family:var(--mono);font-size:9px;font-weight:800;letter-spacing:.09em;
+    text-transform:uppercase;border-radius:999px;padding:2px 7px;
+    border:1px solid var(--line2);color:var(--ink-mute)}
+  .tb-chip.go{border-color:var(--good);color:var(--good);background:var(--good-bg)}
+  .tb-chip.maybe{border-color:var(--day-line);color:var(--day);background:var(--day-bg)}
+  .tabpanel[hidden]{display:none}
+  .rb-top{margin-bottom:16px}
+  .rb-t{font-size:19px;font-weight:700;letter-spacing:-.01em;color:var(--ink)}
+  .rb-s{margin-top:4px;font-size:12.5px;color:var(--ink-mute);line-height:1.5;max-width:62ch}
+  @media (max-width:560px){
+    .tabbtn{font-size:12.5px;padding:8px 11px;flex:1 1 auto;justify-content:center}
+  }
+
   /* ---- rule sheet ---- */
   .rb-verdict{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;
     border:1px solid var(--line2);background:var(--bg2)}
@@ -596,6 +619,16 @@
       </div>
     </div>
   </div>
+
+
+  <!-- TOP TABS -->
+  <nav class="tabbar" role="tablist" aria-label="Dashboard sections">
+    <button class="tabbtn" role="tab" data-tab="dash"  aria-selected="true"  id="tabBtnDash">◆ Dashboard</button>
+    <button class="tabbtn" role="tab" data-tab="rules" aria-selected="false" id="tabBtnRules">📋 Rules
+      <span class="tb-chip" id="tabRuleChip">—</span></button>
+  </nav>
+
+  <div class="tabpanel" id="tab-dash" role="tabpanel" aria-labelledby="tabBtnDash">
 
   <!-- GOLD PRICE CHART (accordion) -->
   <details class="chartbox" id="chartBox">
@@ -824,19 +857,79 @@
     </div>
   </details>
 
-  <!-- RULE SHEET — the standing rules of the operation, in one place -->
-  <details class="junebox rulebox" id="ruleBox">
-    <summary class="jb-sum">
-      <div class="jb-l">
-        <span>📋 Rule sheet</span>
-        <span class="jb-sub">the standing rules · call days, pricing, what counts as stock</span>
-      </div>
-      <div class="jb-r">
-        <span class="jb-cov" id="rbToday">—</span>
-        <span class="jb-chev" aria-hidden="true">⌄</span>
-      </div>
-    </summary>
-    <div class="jb-body">
+
+  <!-- ALERT GAUGE (full-width band) -->
+  <div class="gaugebar">
+    <div class="gb-left">
+      <div class="gauge-title">◎ Alert floor · Chase Ink 2.6% (no Taekus)</div>
+      <div class="gauge-head"><span class="t">Distance to $25/bar alert</span><span class="v" id="gaugeVal">—</span></div>
+      <div class="track"><div class="fill" id="gaugeFill" style="width:0%"></div></div>
+      <div class="verdict no" id="verdict">—</div>
+      <div class="stamp" id="heroStamp">—</div>
+    </div>
+    <div class="mini">
+      <div><div class="l">Buy Pamp</div><div class="n tnum" id="mBuy">—</div></div>
+      <div><div class="l" id="mSellLab">Sell · Elemetal</div><div class="n tnum" id="mSell">—</div></div>
+      <div><div class="l">NET</div><div class="n tnum" id="mLoss">—</div></div>
+    </div>
+  </div>
+
+  <!-- BUYING POWER (above the cards) -->
+  <div class="bpbar">
+    <div class="bp-title">💳 Buying power <span>available + profitable cards only · cost split across cards · fills best rate first</span></div>
+    <div class="bp-stats">
+      <div><div class="l">Credit available</div><div class="n tnum" id="bpCredit">—</div></div>
+      <div><div class="l">Whole bars</div><div class="n tnum" id="bpBars">—</div></div>
+      <div><div class="l">Capital deployed</div><div class="n tnum" id="bpDeployed">—</div></div>
+      <div><div class="l">Est. profit / cycle</div><div class="n good tnum" id="bpProfit">—</div></div>
+      <div><div class="l">Unused credit</div><div class="n tnum" id="bpUnused">—</div></div>
+    </div>
+  </div>
+
+  <!-- OWNED MATRIX -->
+  <div class="sec-head">
+    <h3>Your cards — profit per Elemetal bar</h3>
+    <span id="matrixStamp">—</span>
+    <div class="rail"></div>
+  </div>
+  <div class="colhead">
+    <div></div><div>Card</div><div class="r">Eff %</div><div class="r">Pamp $/bar</div><div class="r">Generic $/bar</div><div>Notes</div>
+  </div>
+  <div class="matrix" id="matrix"></div>
+
+  <!-- BUYERS -->
+  <div class="sec-head">
+    <h3>Where you sell — buyer offsets</h3>
+    <span id="buyerStamp">—</span>
+    <div class="rail"></div>
+  </div>
+  <div class="buyers" id="buyers"></div>
+
+  <div class="rules">
+    <span class="rulechip">Elemetal · Pamp <b>spot − $10</b></span>
+    <span class="rulechip">Elemetal · Generic <b>spot − $20</b></span>
+    <span class="rulechip">Alert floor <b>$25 / bar</b></span>
+    <span class="rulechip">Online = in-store <b>+ $10</b></span>
+  </div>
+
+  <div class="note">
+    <b>How to read it:</b> the alert floor is Chase Ink 2.6% with <b>no Taekus</b> — your worst case. When even THAT bar clears <b>+$25</b>, every card clears more. •
+    <b>BUY</b> = June's captured price (or online if in stock and higher). <b>SELL</b> = live spot − Elemetal's discount ($10 Pamp / $20 Generic). •
+    <b>Venmo = verified 3%</b> + Synchrony Taekus 2.13% = 5.13% → best per-bar card. •
+    <b>Citi Double Cash</b> (personal MC) takes <b>no Taekus</b> → 2% only. •
+    <b>Where you sell</b> compares each buyer's price (spot ± their offset); Elemetal is the default. •
+    <b>PULL</b> re-reads the live engine sheet (spot + prices); <b>PULL ONLINE</b> flags a Costco.com price refresh for Claude/June.
+  </div>
+
+  </div><!-- /tab-dash -->
+
+  <div class="tabpanel" id="tab-rules" role="tabpanel" aria-labelledby="tabBtnRules" hidden>
+    <div class="rb-top">
+      <div class="rb-t">📋 Rule sheet</div>
+      <div class="rb-s">The standing rules of the operation. Every rule carries the reason it exists,
+        so it can be argued with instead of just obeyed.</div>
+    </div>
+
 
       <!-- today's verdict, the one thing worth seeing at a glance -->
       <div class="rb-verdict" id="rbVerdict">
@@ -910,71 +1003,7 @@
         </div>
       </div>
 
-    </div>
-  </details>
-
-  <!-- ALERT GAUGE (full-width band) -->
-  <div class="gaugebar">
-    <div class="gb-left">
-      <div class="gauge-title">◎ Alert floor · Chase Ink 2.6% (no Taekus)</div>
-      <div class="gauge-head"><span class="t">Distance to $25/bar alert</span><span class="v" id="gaugeVal">—</span></div>
-      <div class="track"><div class="fill" id="gaugeFill" style="width:0%"></div></div>
-      <div class="verdict no" id="verdict">—</div>
-      <div class="stamp" id="heroStamp">—</div>
-    </div>
-    <div class="mini">
-      <div><div class="l">Buy Pamp</div><div class="n tnum" id="mBuy">—</div></div>
-      <div><div class="l" id="mSellLab">Sell · Elemetal</div><div class="n tnum" id="mSell">—</div></div>
-      <div><div class="l">NET</div><div class="n tnum" id="mLoss">—</div></div>
-    </div>
-  </div>
-
-  <!-- BUYING POWER (above the cards) -->
-  <div class="bpbar">
-    <div class="bp-title">💳 Buying power <span>available + profitable cards only · cost split across cards · fills best rate first</span></div>
-    <div class="bp-stats">
-      <div><div class="l">Credit available</div><div class="n tnum" id="bpCredit">—</div></div>
-      <div><div class="l">Whole bars</div><div class="n tnum" id="bpBars">—</div></div>
-      <div><div class="l">Capital deployed</div><div class="n tnum" id="bpDeployed">—</div></div>
-      <div><div class="l">Est. profit / cycle</div><div class="n good tnum" id="bpProfit">—</div></div>
-      <div><div class="l">Unused credit</div><div class="n tnum" id="bpUnused">—</div></div>
-    </div>
-  </div>
-
-  <!-- OWNED MATRIX -->
-  <div class="sec-head">
-    <h3>Your cards — profit per Elemetal bar</h3>
-    <span id="matrixStamp">—</span>
-    <div class="rail"></div>
-  </div>
-  <div class="colhead">
-    <div></div><div>Card</div><div class="r">Eff %</div><div class="r">Pamp $/bar</div><div class="r">Generic $/bar</div><div>Notes</div>
-  </div>
-  <div class="matrix" id="matrix"></div>
-
-  <!-- BUYERS -->
-  <div class="sec-head">
-    <h3>Where you sell — buyer offsets</h3>
-    <span id="buyerStamp">—</span>
-    <div class="rail"></div>
-  </div>
-  <div class="buyers" id="buyers"></div>
-
-  <div class="rules">
-    <span class="rulechip">Elemetal · Pamp <b>spot − $10</b></span>
-    <span class="rulechip">Elemetal · Generic <b>spot − $20</b></span>
-    <span class="rulechip">Alert floor <b>$25 / bar</b></span>
-    <span class="rulechip">Online = in-store <b>+ $10</b></span>
-  </div>
-
-  <div class="note">
-    <b>How to read it:</b> the alert floor is Chase Ink 2.6% with <b>no Taekus</b> — your worst case. When even THAT bar clears <b>+$25</b>, every card clears more. •
-    <b>BUY</b> = June's captured price (or online if in stock and higher). <b>SELL</b> = live spot − Elemetal's discount ($10 Pamp / $20 Generic). •
-    <b>Venmo = verified 3%</b> + Synchrony Taekus 2.13% = 5.13% → best per-bar card. •
-    <b>Citi Double Cash</b> (personal MC) takes <b>no Taekus</b> → 2% only. •
-    <b>Where you sell</b> compares each buyer's price (spot ± their offset); Elemetal is the default. •
-    <b>PULL</b> re-reads the live engine sheet (spot + prices); <b>PULL ONLINE</b> flags a Costco.com price refresh for Claude/June.
-  </div>
+      </div><!-- /tab-rules -->
 
   <div class="foot">
     <span id="builtStamp">—</span>
@@ -2134,7 +2163,7 @@
     const dow = d.getDay();
     const name = d.toLocaleDateString("en-US",{weekday:"long"});
     const kind = RULE_DAYS[dow] || "stop";
-    const box = $("rbVerdict"), day = $("rbVDay"), txt = $("rbVTxt"), chip = $("rbToday");
+    const box = $("rbVerdict"), day = $("rbVDay"), txt = $("rbVTxt"), chip = $("tabRuleChip");
     if(!box) return;
     box.className = "rb-verdict " + kind;
     if(day) day.textContent = name;
@@ -2142,9 +2171,35 @@
       kind === "go"    ? "Restock day — June calls today."
     : kind === "maybe" ? "Sometimes a restock day. Worth a round if Wednesday came up short."
     :                    "Not a restock day. June does not call.";
-    if(chip) chip.textContent =
-      kind === "go" ? "call day" : kind === "maybe" ? "maybe" : "no calls today";
+    // The chip rides on the Rules TAB, so the call-day answer is readable without
+    // opening the tab at all — the whole point of promoting it out of the accordion.
+    if(chip){
+      chip.textContent = kind === "go" ? "call day" : kind === "maybe" ? "maybe" : "no calls";
+      chip.className = "tb-chip " + (kind === "stop" ? "" : kind);
+    }
   }
+
+  /* ---- top tabs ---- */
+  const TAB_KEY = "alchemy_dash_tab";
+  function showTab(name){
+    const tabs = document.querySelectorAll(".tabbtn");
+    let matched = false;
+    tabs.forEach(function(b){
+      const on = b.dataset.tab === name;
+      if(on) matched = true;
+      b.setAttribute("aria-selected", on ? "true" : "false");
+      const panel = $("tab-" + b.dataset.tab);
+      if(panel) panel.hidden = !on;
+    });
+    // A remembered tab that no longer exists would leave every panel hidden and the page
+    // looking broken. Fall back to the dashboard rather than showing nothing.
+    if(!matched){ showTab("dash"); return; }
+    try{ localStorage.setItem(TAB_KEY, name); }catch(e){}
+  }
+  document.querySelector(".tabbar").addEventListener("click", function(ev){
+    const b = ev.target.closest(".tabbtn");
+    if(b) showTab(b.dataset.tab);
+  });
 
   function jbFullAddr(s){ return s.a+", "+s.c+", CA"+(s.z?" "+s.z:""); }
   function jbPhoneFmt(p){ return "("+p.slice(0,3)+") "+p.slice(3,6)+"-"+p.slice(6); }
@@ -2960,6 +3015,7 @@
   // The verdict is a date, so it has to survive a page left open overnight. Re-check on
   // the hour rather than trusting the value painted at load.
   setInterval(renderRuleDay, 3600000);
+  showTab((function(){ try{ return localStorage.getItem(TAB_KEY) || "dash"; }catch(e){ return "dash"; } })());
   // Same order as applyJune(): compute() decides the override, renderCFG() paints it.
   renderJune(); compute(); renderCFG(); initLive();
   pullJune(false).then(checkPriceRise);   // June's phone writes straight into this list
