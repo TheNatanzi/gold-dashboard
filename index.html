@@ -325,9 +325,53 @@
     padding:1px 5px;border:1px solid var(--gold-deep);color:var(--gold);margin-left:6px}
   .jb-tag.old{border-color:var(--day-line);color:var(--day);background:var(--day-bg);font-weight:700}
   .jb-tag.veryold{border-color:var(--closed);color:var(--closed)}
-  .jb-tag.bc{border-color:var(--line2);color:var(--ink-mute)}
   .jb-tag.warnid{border-color:var(--bad);color:var(--bad)}
   .jb-mi{color:var(--ink-mute);font-size:10px;margin-left:6px}
+
+  /* ---- warehouse name + address cell ---- */
+  .jb-name{color:var(--ink);text-decoration:none;border-bottom:1px dotted var(--line2);
+    font-weight:600}
+  .jb-name:hover{color:var(--gold);border-bottom-color:var(--gold-deep)}
+  .jb-addr{display:block;margin-top:2px;font-size:10px;color:var(--ink-mute);
+    white-space:normal;max-width:34ch}
+  .jb-table td.namecell{white-space:normal;min-width:200px}
+
+  /* ---- tiers ---- */
+  :root{ --t1:#0f9d6b; --t2:#3b82c4; --t3:#b08b17; --t4:#a06bd0; --t5:#8a8a8a; }
+  @media (prefers-color-scheme:dark){
+    :root{ --t1:#4bd6a0; --t2:#6ea8e8; --t3:#e0bb4e; --t4:#c294f0; --t5:#9aa0ae; }
+  }
+  :root[data-theme="light"]{ --t1:#0f9d6b; --t2:#3b82c4; --t3:#b08b17; --t4:#a06bd0; --t5:#8a8a8a; }
+  :root[data-theme="dark"]{  --t1:#4bd6a0; --t2:#6ea8e8; --t3:#e0bb4e; --t4:#c294f0; --t5:#9aa0ae; }
+
+  /* The wash is a background-IMAGE so it layers over the freshness background-colour
+     above rather than erasing it. Declared after the tr.day / tr.stale rules on purpose. */
+  .jb-table tr.t1 td{background-image:linear-gradient(rgba(15,157,107,.055),rgba(15,157,107,.055))}
+  .jb-table tr.t2 td{background-image:linear-gradient(rgba(59,130,196,.055),rgba(59,130,196,.055))}
+  .jb-table tr.t3 td{background-image:linear-gradient(rgba(176,139,23,.055),rgba(176,139,23,.055))}
+  .jb-table tr.t4 td{background-image:linear-gradient(rgba(160,107,208,.055),rgba(160,107,208,.055))}
+  .jb-table tr.t5 td{background-image:linear-gradient(rgba(138,138,138,.07),rgba(138,138,138,.07))}
+  .jb-tag.tier{border-color:currentColor;font-weight:800}
+  .jb-tag.tier.t1{color:var(--t1)} .jb-tag.tier.t2{color:var(--t2)} .jb-tag.tier.t3{color:var(--t3)}
+  .jb-tag.tier.t4{color:var(--t4)} .jb-tag.tier.t5{color:var(--t5)}
+
+  .jb-tierbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .jb-tchip{cursor:pointer;font-family:var(--mono);font-size:11px;font-weight:700;
+    color:var(--ink-mute);background:var(--bg2);border:1px solid var(--line2);
+    border-radius:999px;padding:5px 10px;display:inline-flex;align-items:center;gap:5px}
+  .jb-tchip .dotc{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.9}
+  .jb-tchip .cnt{font-size:10px;opacity:.7;font-weight:600}
+  .jb-tchip:hover{border-color:var(--gold-deep)}
+  .jb-tchip[aria-pressed="true"]{color:var(--ink)}
+  .jb-tchip[aria-pressed="true"][data-tier="1"]{border-color:var(--t1);background:rgba(15,157,107,.12)}
+  .jb-tchip[aria-pressed="true"][data-tier="2"]{border-color:var(--t2);background:rgba(59,130,196,.12)}
+  .jb-tchip[aria-pressed="true"][data-tier="3"]{border-color:var(--t3);background:rgba(176,139,23,.12)}
+  .jb-tchip[aria-pressed="true"][data-tier="4"]{border-color:var(--t4);background:rgba(160,107,208,.12)}
+  .jb-tchip[aria-pressed="true"][data-tier="5"]{border-color:var(--t5);background:rgba(138,138,138,.14)}
+  .jb-tchip[data-tier="1"] .dotc{color:var(--t1)} .jb-tchip[data-tier="2"] .dotc{color:var(--t2)}
+  .jb-tchip[data-tier="3"] .dotc{color:var(--t3)} .jb-tchip[data-tier="4"] .dotc{color:var(--t4)}
+  .jb-tchip[data-tier="5"] .dotc{color:var(--t5)}
+  .jb-tiernote{font-family:var(--mono);font-size:10px;color:var(--ink-mute)}
 
   /* ---- sort bar (ported from June's call sheet so both pages sort identically) ---- */
   .jb-sortbar{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
@@ -649,7 +693,7 @@
     <summary class="jb-sum">
       <div class="jb-l">
         <span>📞 June's Costco round</span>
-        <span class="jb-sub" id="jbSub">45 warehouses within 100 miles · nearest to Walnut Creek first</span>
+        <span class="jb-sub" id="jbSub">45 warehouses within 75 miles · tiered, tier 1 first</span>
       </div>
       <div class="jb-r">
         <span class="jb-live" id="jbLive">◉ connecting</span>
@@ -714,6 +758,7 @@
       <div class="jb-sortbar">
         <label class="jb-sortlab" for="jbSort">Sort</label>
         <select id="jbSort">
+          <option value="tier">Tier — 1 first, then 2, 3, 4</option>
           <option value="distance">Distance — nearest to Walnut Creek</option>
           <option value="smart">Called today first, nearest — day-old at the bottom</option>
           <option value="name">Name — A to Z</option>
@@ -722,11 +767,22 @@
         <span class="jb-sortnote" id="jbSortNote">—</span>
       </div>
 
+      <div class="jb-tierbar" id="jbTierBar" role="group" aria-label="Show or hide tiers">
+        <span class="jb-sortlab">Tiers</span>
+        <button class="jb-tchip" type="button" data-tier="1" aria-pressed="true"><span class="dotc"></span>1 <span class="cnt" id="jbtc1">0</span></button>
+        <button class="jb-tchip" type="button" data-tier="2" aria-pressed="true"><span class="dotc"></span>2 <span class="cnt" id="jbtc2">0</span></button>
+        <button class="jb-tchip" type="button" data-tier="3" aria-pressed="true"><span class="dotc"></span>3 <span class="cnt" id="jbtc3">0</span></button>
+        <button class="jb-tchip" type="button" data-tier="4" aria-pressed="false"><span class="dotc"></span>4 <span class="cnt" id="jbtc4">0</span></button>
+        <button class="jb-tchip" type="button" data-tier="5" aria-pressed="false"><span class="dotc"></span>5 <span class="cnt" id="jbtc5">0</span></button>
+        <button class="jb-tchip" type="button" data-tier="all">Show all</button>
+        <span class="jb-tiernote" id="jbTierNote">—</span>
+      </div>
+
       <div class="jb-wrap" id="jbWrap">
         <table class="jb-table">
           <thead>
             <tr>
-              <th>Warehouse</th><th class="r">Miles</th><th class="r">Pamp</th><th class="r">Generic</th>
+              <th>Warehouse &amp; address</th><th class="r">Miles</th><th class="r">Pamp</th><th class="r">Generic</th>
               <th class="r">Total</th><th>Called</th><th>By</th><th>Notes</th>
             </tr>
           </thead>
@@ -1505,59 +1561,65 @@
   let JUNEROUND=null;
 
   /* ============================================================
-     THE 45 WAREHOUSES — byte-for-byte the same list as june-call-sheet.html:403.
+     THE 45 WAREHOUSES — byte-for-byte the same list as june-call-sheet.html.
      Both files carry their own copy on purpose: June's page has to work in a Costco
      parking lot with no signal, so the list cannot live in Supabase. A drift check
      (scripts/check-store-drift.py) diffs the two lists before every commit.
-     "mi" = approximate DRIVING miles from Walnut Creek. "bc" = Business Center,
-     which stocks differently from a regular warehouse.
+     "mi" = Costco's own locator distance from Walnut Creek (straight line).
+     "t" = tier, 1 is call-first. "r" = Costco's rank. See the long note in
+     june-call-sheet.html for why Business Centers and the 74-mile+ stores are gone.
      ============================================================ */
   const JSTORES = [
-    {id:"concord",     n:"Concord",                  a:"2400 Monument Blvd",        c:"Concord",              p:"9255664003", mi:5},
-    {id:"danville",    n:"Danville",                 a:"3150 Fostoria Way",         c:"Danville",             p:"9252770407", mi:12},
-    {id:"richmond",    n:"Richmond",                 a:"4801 Central Ave",          c:"Richmond",             p:"5108982003", mi:18},
-    {id:"brentwood",   n:"Brentwood",                a:"5151 Heidorn Ranch Rd",     c:"Brentwood",            p:"9256660223", mi:22},
-    {id:"livermore",   n:"Livermore",                a:"2800 Independence Dr",      c:"Livermore",            p:"9254436306", mi:25},
-    {id:"sanleandro",  n:"San Leandro",              a:"1900 Davis St",             c:"San Leandro",          p:"5105626708", mi:26},
-    {id:"antioch",     n:"Antioch",                  a:"2201 Verne Roberts Cir",    c:"Antioch",              p:"9257577130", mi:27},
-    {id:"vallejo",     n:"Vallejo",                  a:"198 Plaza Dr",              c:"Vallejo",              p:"7075536400", mi:28},
-    {id:"sf",          n:"San Francisco",            a:"450 10th St",               c:"San Francisco",        p:"4156264388", mi:29},
-    {id:"haywardbc",   n:"Hayward Business Center",  a:"22330 Hathaway Ave",        c:"Hayward",              p:"5102596600", mi:30, bc:true},
-    {id:"hayward",     n:"Hayward",                  a:"28505 Hesperian Blvd",      c:"Hayward",              p:"5109213126", mi:33},
-    {id:"ssfbc",       n:"S. San Francisco Business Center", a:"900 Dubuque Ave",   c:"South San Francisco",  p:"6507844047", mi:33, bc:true},
-    {id:"ssf",         n:"South San Francisco",      a:"1600 El Camino Real",       c:"South San Francisco",  p:"6507573003", mi:35},
-    {id:"fremont",     n:"Fremont",                  a:"43621 Pacific Commons Blvd",c:"Fremont",              p:"5108971092", mi:36},
-    {id:"novato",      n:"Novato",                   a:"300 Vintage Way",           c:"Novato",               p:"4158991332", mi:38},
-    {id:"fairfield",   n:"Fairfield",                a:"5101 Business Center Dr",   c:"Fairfield",            p:"7078643816", mi:39},
-    {id:"fostercity",  n:"Foster City",              a:"1001 Metro Center Blvd",    c:"Foster City",          p:"6502860739", mi:42},
-    {id:"tracy",       n:"Tracy",                    a:"3250 W Grant Line Rd",      c:"Tracy",                p:"2098305340", mi:42},
-    {id:"napa",        n:"Napa",                     a:"280 Riversound Way",        c:"Napa",                 p:"7078195900", mi:43},
-    {id:"santaclara",  n:"Santa Clara",              a:"1601 Coleman Ave",          c:"Santa Clara",          p:"4085679000", mi:44},
-    {id:"sjne",        n:"San Jose — Automation Pkwy",a:"1709 Automation Pkwy",     c:"San Jose",             p:"4086782150", mi:45},
-    {id:"redwoodcity", n:"Redwood City",             a:"2300 Middlefield Rd",       c:"Redwood City",         p:"6505684040", mi:46},
-    {id:"sunnyvale",   n:"Sunnyvale",                a:"150 Lawrence Station Rd",   c:"Sunnyvale",            p:"4087301892", mi:47},
-    {id:"mountainview",n:"Mountain View",            a:"1000 N Rengstorff Ave",     c:"Mountain View",        p:"6509881841", mi:48},
-    {id:"vacaville",   n:"Vacaville",                a:"1051 Hume Way",             c:"Vacaville",            p:"7074537343", mi:48},
-    {id:"sjsenter",    n:"San Jose — Senter Rd",     a:"2201 Senter Rd",            c:"San Jose",             p:"4082750199", mi:50},
-    {id:"sjalmaden",   n:"San Jose — Almaden",       a:"5301 Almaden Expy",         c:"San Jose",             p:"4087230964", mi:55},
-    {id:"stockton",    n:"Stockton",                 a:"1616 E Hammer Ln",          c:"Stockton",             p:"2094782040", mi:57},
-    {id:"manteca",     n:"Manteca",                  a:"2440 Daniels St",           c:"Manteca",              p:"2098258200", mi:58},
-    {id:"rohnertpark", n:"Rohnert Park",             a:"5901 Redwood Dr",           c:"Rohnert Park",         p:"7075409113", mi:62},
-    {id:"lodi",        n:"Lodi",                     a:"2680 Reynolds Ranch Pkwy",  c:"Lodi",                 p:"2093667300", mi:65},
-    {id:"santarosa",   n:"Santa Rosa",               a:"1900 Santa Rosa Ave",       c:"Santa Rosa",           p:"7075783775", mi:68},
-    {id:"morganhill",  n:"Morgan Hill",              a:"820 E Dunne Ave #100",      c:"Morgan Hill",          p:"4087822131", mi:68},
-    {id:"modesto",     n:"Modesto",                  a:"3801 Pelandale Ave",        c:"Modesto",              p:"2093424903", mi:72},
-    {id:"elkgrove",    n:"Elk Grove",                a:"7400 Elk Grove Blvd",       c:"Elk Grove",            p:"9164656050", mi:72},
-    {id:"sacflorin",   n:"Sacramento — Florin Rd",   a:"8484 Florin Rd",            c:"Sacramento",           p:"9167391045", mi:75},
-    {id:"gilroy",      n:"Gilroy",                   a:"7251 Camino Arroyo",        c:"Gilroy",               p:"4088480700", mi:78},
-    {id:"saccalexpo",  n:"Sacramento — Cal Expo",    a:"1600 Expo Pkwy",            c:"Sacramento",           p:"9168301078", mi:78},
-    {id:"sacbc",       n:"Sacramento Business Center",a:"3360 El Camino Ave",       c:"Sacramento",           p:"9164264556", mi:80, bc:true},
-    {id:"sacnatomas",  n:"Sacramento — Natomas",     a:"3881 E Commerce Way",       c:"Sacramento",           p:"9162659594", mi:80},
-    {id:"woodland",    n:"Woodland",                 a:"2299 Bronze Star Dr",       c:"Woodland",             p:"5304062120", mi:82},
-    {id:"roseville",   n:"Roseville",                a:"6750 Stanford Ranch Rd",    c:"Roseville",            p:"9167891485", mi:92},
-    {id:"salinas",     n:"Salinas",                  a:"1339 N Davis Rd",           c:"Salinas",              p:"8314244242", mi:93},
-    {id:"folsom",      n:"Folsom",                   a:"1800 Cavitt Dr",            c:"Folsom",               p:"9168501000", mi:95},
-    {id:"sandcity",    n:"Sand City (Monterey)",     a:"801 Tioga Ave",             c:"Sand City",            p:"8318991255", mi:100}
+    /* ---- TIER 1 · closest, call these first ---- */
+    {id:"antioch",     n:"Antioch",                     a:"2201 Verne Roberts Cir",    c:"Antioch",             z:"94509", p:"9257577130", mi:13.5, t:1, r:1},
+    {id:"vallejo",     n:"Vallejo",                     a:"198 Plaza Dr",              c:"Vallejo",             z:"94591", p:"7075536400", mi:19.4, t:1, r:2},
+    {id:"richmond",    n:"Richmond",                    a:"4801 Central Ave",          c:"Richmond",            z:"94804", p:"5108982003", mi:15.4, t:1, r:3},
+    {id:"pleasanton",  n:"Pleasanton",                  a:"7200 Johnson Dr",           c:"Pleasanton",          z:"94588", p:"9254754000", mi:15,   t:1, r:4},
+    {id:"livermore",   n:"Livermore",                   a:"2800 Independence Dr",      c:"Livermore",           z:"94551", p:"9254436306", mi:17.8, t:1, r:5},
+    {id:"concord",     n:"Concord",                     a:"2400 Monument Blvd",        c:"Concord",             z:"94520", p:"9255664003", mi:4.7,  t:1, r:6},
+    {id:"hayward",     n:"Hayward",                     a:"28505 Hesperian Blvd",      c:"Hayward",             z:"94545", p:"5109213126", mi:19.1, t:1, r:7},
+    /* ---- TIER 2 ---- */
+    {id:"danville",    n:"Danville",                    a:"3150 Fostoria Way",         c:"Danville",            z:"94526", p:"9252770407", mi:8.2,  t:2, r:8},
+    {id:"sjalmaden",   n:"San Jose — Almaden",          a:"5301 Almaden Expy",         c:"San Jose",            z:"95118", p:"4087230964", mi:44.8, t:2, r:9},
+    {id:"modesto",     n:"Modesto",                     a:"3801 Pelandale Ave",        c:"Modesto",             z:"95356", p:"2093424903", mi:54.6, t:2, r:10},
+    {id:"sanleandro",  n:"San Leandro",                 a:"1900 Davis St",             c:"San Leandro",         z:"94577", p:"5105626708", mi:14,   t:2, r:11},
+    {id:"brentwood",   n:"Brentwood",                   a:"5151 Heidorn Ranch Rd",     c:"Brentwood",           z:"94513", p:"9256660223", mi:16.4, t:2, r:12},
+    /* ---- TIER 3 ---- */
+    {id:"sf",          n:"San Francisco",               a:"450 10th St",               c:"San Francisco",       z:"94103", p:"4156264388", mi:22,   t:3, r:20},
+    {id:"fairfield",   n:"Fairfield",                   a:"5101 Business Center Dr",   c:"Fairfield",           z:"94534", p:"7078643816", mi:23.3, t:3, r:21},
+    {id:"newark",      n:"Newark",                      a:"350 Newpark Mall",          c:"Newark",              z:"94560", p:"5104932945", mi:25.2, t:3, r:22},
+    {id:"fostercity",  n:"Foster City",                 a:"1001 Metro Center Blvd",    c:"Foster City",         z:"94404", p:"6502860739", mi:26.1, t:3, r:23},
+    {id:"ssfairport",  n:"S. San Francisco — Airport",  a:"451 S Airport Blvd",        c:"South San Francisco", z:"94080", p:"6508722021", mi:26.3, t:3, r:24},
+    {id:"fremont",     n:"Fremont",                     a:"43621 Pacific Commons Blvd",c:"Fremont",             z:"94538", p:"5108971092", mi:27,   t:3, r:25},
+    {id:"ssf",         n:"S. San Francisco — El Camino",a:"1600 El Camino Real",       c:"South San Francisco", z:"94080", p:"6507573003", mi:27.3, t:3, r:26},
+    {id:"napa",        n:"Napa",                        a:"280 Riversound Way",        c:"Napa",                z:"94558", p:"7078195900", mi:28.2, t:3, r:27},
+    {id:"redwoodcity", n:"Redwood City",                a:"2300 Middlefield Rd",       c:"Redwood City",        z:"94063", p:"6505684040", mi:30,   t:3, r:28},
+    {id:"novato",      n:"Novato",                      a:"300 Vintage Way",           c:"Novato",              z:"94945", p:"4158991332", mi:31.2, t:3, r:29},
+    {id:"vacaville",   n:"Vacaville",                   a:"1051 Hume Way",             c:"Vacaville",           z:"95687", p:"7074537343", mi:32,   t:3, r:30},
+    /* ---- TIER 4 ---- */
+    {id:"tracy",       n:"Tracy",                       a:"3250 W Grant Line Rd",      c:"Tracy",               z:"95304", p:"2098305340", mi:32.2, t:4, r:31},
+    {id:"mountainview",n:"Mountain View",               a:"1000 N Rengstorff Ave",     c:"Mountain View",       z:"94043", p:"6509881841", mi:32.5, t:4, r:32},
+    {id:"sjne",        n:"San Jose — Automation Pkwy",  a:"1709 Automation Pkwy",      c:"San Jose",            z:"95131", p:"4086782150", mi:35.4, t:4, r:33},
+    {id:"sunnyvale",   n:"Sunnyvale",                   a:"150 Lawrence Station Rd",   c:"Sunnyvale",           z:"94086", p:"4087301892", mi:35.8, t:4, r:34},
+    {id:"santaclara",  n:"Santa Clara",                 a:"1601 Coleman Ave",          c:"Santa Clara",         z:"95050", p:"4085679000", mi:37.2, t:4, r:35},
+    {id:"sjsenter",    n:"San Jose — Senter Rd",        a:"2201 Senter Rd",            c:"San Jose",            z:"95112", p:"4082750199", mi:41.3, t:4, r:36},
+    {id:"stockton",    n:"Stockton",                    a:"1616 E Hammer Ln",          c:"Stockton",            z:"95210", p:"2094782040", mi:41.6, t:4, r:37},
+    {id:"manteca",     n:"Manteca",                     a:"2440 Daniels St",           c:"Manteca",             z:"95337", p:"2098258200", mi:43,   t:4, r:38},
+    {id:"lodi",        n:"Lodi",                        a:"2680 Reynolds Ranch Pkwy",  c:"Lodi",                z:"95240", p:"2093667300", mi:44.6, t:4, r:39},
+    {id:"sjgreatoaks", n:"San Jose — Great Oaks",       a:"6898 Raleigh Rd",           c:"San Jose",            z:"95119", p:"4089087929", mi:46.7, t:4, r:40},
+    {id:"rohnertpark", n:"Rohnert Park",                a:"5901 Redwood Dr",           c:"Rohnert Park",        z:"94928", p:"7075409113", mi:48.9, t:4, r:41},
+    {id:"elkgrove",    n:"Elk Grove",                   a:"7400 Elk Grove Blvd",       c:"Elk Grove",           z:"95757", p:"9164656050", mi:49.2, t:4, r:42},
+    {id:"santarosa",   n:"Santa Rosa",                  a:"1900 Santa Rosa Ave",       c:"Santa Rosa",          z:"95407", p:"7075783775", mi:51.8, t:4, r:43},
+    {id:"sacstockton", n:"Sacramento — E Stockton Blvd",a:"7981 E Stockton Blvd",      c:"Sacramento",          z:"95823", p:"9166823569", mi:52.4, t:4, r:44},
+    {id:"woodland",    n:"Woodland",                    a:"2299 Bronze Star Dr",       c:"Woodland",            z:"95776", p:"5304062120", mi:56.8, t:4, r:45},
+    {id:"saccalexpo",  n:"Sacramento — Cal Expo",       a:"1600 Expo Pkwy",            c:"Sacramento",          z:"95815", p:"9168301078", mi:58.3, t:4, r:46},
+    {id:"sacnatomas",  n:"Sacramento — Natomas",        a:"3881 E Commerce Way",       c:"Sacramento",          z:"95834", p:"9162659594", mi:59,   t:4, r:47},
+    {id:"riverbank",   n:"Riverbank",                   a:"2015 Claribel Rd",          c:"Riverbank",           z:"95367", p:"2094585587", mi:59.9, t:4, r:48},
+    {id:"santacruz",   n:"Santa Cruz",                  a:"220 Sylvania Ave",          c:"Santa Cruz",          z:"95060", p:"8314690961", mi:62.5, t:4, r:49},
+    {id:"ranchocordova",n:"Rancho Cordova",             a:"11260 White Rock Rd",       c:"Rancho Cordova",      z:"95742", p:"9167242240", mi:64,   t:4, r:50},
+    {id:"gilroy",      n:"Gilroy",                      a:"7251 Camino Arroyo",        c:"Gilroy",              z:"95020", p:"4088480700", mi:74.2, t:4, r:51},
+    /* ---- TIER 5 · kept for review, hidden by default ---- */
+    {id:"morganhill",  n:"Morgan Hill",                 a:"820 E Dunne Ave #100",      c:"Morgan Hill",         z:"95037", p:"4087822131", mi:57,   t:5, r:99}
   ];
   const SMAP = (function(){ const m={}; JSTORES.forEach(function(s){ m[s.id]=s; }); return m; })();
   // Name → store, so a pasted round (which carries names, not ids) still joins onto the 45.
@@ -1638,7 +1700,6 @@
       store: known ? known.n : (r.store_name?String(r.store_name):id),
       city:  known ? known.c : (r.city?String(r.city):""),
       mi:    known ? known.mi : (num(r.miles)==null?null:num(r.miles)),
-      bc:    !!(known&&known.bc),
       known: !!known,
       stock: !!r.in_stock,
       pamp:  num(r.pamp), generic:num(r.generic),
@@ -1883,7 +1944,7 @@
       // correctly instead of falling back to the anonymous "the price on file".
       rows.push({id: known?known.id:("paste:"+nm.toLowerCase().replace(/\s+/g,"")),
                  store:nm, city:g("city"),
-                 mi: known?known.mi:null, bc:!!(known&&known.bc), known:!!known,
+                 mi: known?known.mi:null, known:!!known,
                  stock:/^y/i.test(g("in_stock")),
                  pamp:g("pamp")===""?null:Number(g("pamp")),
                  generic:g("generic")===""?null:Number(g("generic")),
@@ -1905,13 +1966,15 @@
   let _cov={called:0, today:0, total:JSTORES.length, bars:0, pamp:0, gen:0,
             recall:0, stocked:0, near:[], skipped:0, unknown:0};
 
-  // Sort tiers — identical to june-call-sheet.html so both screens agree on "smart".
+  // Freshness ranking used by the "smart" sort — identical to june-call-sheet.html so both
+  // screens agree. Nothing to do with a store's TIER (s.t), which is a separate idea.
   const JB_TIER={done:0, todo:1, day:2, stale:3, unknown:4};
   const JB_SORTNOTE={
     smart:"Called today at the top · never-called next · day-old and older at the bottom · nearest first inside each group",
     distance:"Straight distance order — closest Costco to Walnut Creek first",
     name:"Alphabetical by warehouse name",
-    bars:"Most bars on hand first · counts older than 2 days don't count · never-called and sold-out last"
+    bars:"Most bars on hand first · counts older than 2 days don't count · never-called and sold-out last",
+    tier:"Tier 1 first, then 2, 3, 4 — Costco's own ranking order inside each tier"
   };
   const DASH_SORT_KEY="alchemy_dash_sort";
   // Distance is the default: the first question is always "where do I drive?".
@@ -1919,6 +1982,59 @@
     let v="distance"; try{ v=localStorage.getItem(DASH_SORT_KEY)||"distance"; }catch(e){}
     return JB_SORTNOTE[v]?v:"distance";
   })();
+
+  /* ---- tier menu ---- */
+  const DASH_TIERS_KEY="alchemy_dash_tiers";
+  const TIERS_DEFAULT="1,2,3";     // tier 4 is the long-drive tail, tier 5 the flagged one
+  const JB_TIER_COUNTS=(function(){
+    const m={1:0,2:0,3:0,4:0,5:0}; JSTORES.forEach(function(s){ m[s.t]++; }); return m;
+  })();
+  let jbTiersOn=(function(){
+    let raw=null; try{ raw=localStorage.getItem(DASH_TIERS_KEY); }catch(e){}
+    const src=(raw==null||raw==="")?TIERS_DEFAULT:raw;
+    const m={};
+    src.split(",").forEach(function(n){ n=parseInt(n,10); if(n>=1&&n<=5) m[n]=true; });
+    return Object.keys(m).length?m:{1:true,2:true,3:true};
+  })();
+  // A row whose store id isn't in the list has no tier, so it can never be filtered out
+  // by the tier menu — an unknown id has to stay visible however the menu is set.
+  function tierVisible(e){ return e.status==="unknown" || !!jbTiersOn[e.t]; }
+
+  function jbFullAddr(s){ return s.a+", "+s.c+", CA"+(s.z?" "+s.z:""); }
+  function jbMapsHref(s){
+    return "https://www.google.com/maps/search/?api=1&query="+
+           encodeURIComponent("Costco Wholesale, "+jbFullAddr(s));
+  }
+
+  function jbToggleTier(which){
+    if(which==="all"){
+      const allOn=[1,2,3,4,5].every(function(n){ return jbTiersOn[n]; });
+      jbTiersOn = allOn ? {1:true,2:true,3:true} : {1:true,2:true,3:true,4:true,5:true};
+    } else {
+      const n=parseInt(which,10);
+      if(!(n>=1&&n<=5)) return;
+      if(jbTiersOn[n]) delete jbTiersOn[n]; else jbTiersOn[n]=true;
+      if(!Object.keys(jbTiersOn).length) jbTiersOn[n]=true;   // never leave an empty table
+    }
+    try{ localStorage.setItem(DASH_TIERS_KEY, Object.keys(jbTiersOn).sort().join(",")); }catch(e){}
+    renderJbTierBar(); renderJune();
+  }
+
+  function renderJbTierBar(){
+    for(let n=1;n<=5;n++){
+      const b=document.querySelector('.jb-tchip[data-tier="'+n+'"]');
+      if(b) b.setAttribute("aria-pressed", jbTiersOn[n]?"true":"false");
+      const c=$("jbtc"+n);
+      if(c) c.textContent=JB_TIER_COUNTS[n];
+    }
+    const on=[1,2,3,4,5].filter(function(n){ return jbTiersOn[n]; });
+    const shown=on.reduce(function(a,n){ return a+JB_TIER_COUNTS[n]; },0);
+    const allb=document.querySelector('.jb-tchip[data-tier="all"]');
+    if(allb) allb.textContent=(on.length===5)?"Back to 1-3":"Show all";
+    const note=$("jbTierNote");
+    if(note) note.textContent=shown+" of "+JSTORES.length+" warehouses showing · tier "+on.join(", ")+
+      (jbTiersOn[5]?" · tier 5 is Morgan Hill only, kept for review":"");
+  }
 
   function barsOf(call){ return (call && call.stock) ? nnum(call.pamp)+nnum(call.generic) : 0; }
   function statusOf(call){
@@ -1960,13 +2076,14 @@
     });
     const out=JSTORES.map(function(s){
       const call=byId[s.id]||null;
-      return {id:s.id, name:s.n, mi:s.mi, bc:!!s.bc, call:call, status:statusOf(call)};
+      return {id:s.id, name:s.n, mi:s.mi, t:s.t, r:s.r, store:s, call:call, status:statusOf(call)};
     });
     // Rows the database has that no longer match a warehouse we know about. They get their
     // own group instead of quietly inflating the coverage count.
     ((JUNEROUND&&JUNEROUND.rows)||[]).forEach(function(r){
       if(r && r.id && !SMAP[r.id]){
-        out.push({id:r.id, name:r.store||r.id, mi:r.mi, bc:false, call:r, status:"unknown"});
+        out.push({id:r.id, name:r.store||r.id, mi:r.mi, t:null, r:999, store:null,
+                  call:r, status:"unknown"});
       }
     });
     return out;
@@ -1980,6 +2097,7 @@
       // it were unknown too — and in "most bars first" a bogus row would lead the list.
       const au=a.status==="unknown", bu=b.status==="unknown";
       if(au!==bu) return au?1:-1;
+      if(jbSortBy==="tier")     return (a.t||9)-(b.t||9) || (a.r||999)-(b.r||999);
       if(jbSortBy==="distance") return mi(a)-mi(b) || a.name.localeCompare(b.name);
       if(jbSortBy==="name")     return a.name.localeCompare(b.name);
       if(jbSortBy==="bars"){
@@ -2002,6 +2120,8 @@
     const all=joinStores();
 
     // ---- coverage tallies ----
+    // Deliberately over ALL 45, never over the tier menu. These feed _cov, the verdict
+    // and the BUY price. A display toggle must not be able to move a money number.
     let called=0, today=0, stocked=0, pamp=0, gen=0, recall=0, unknownCount=0;
     const near=[];
     all.forEach(function(e){
@@ -2028,11 +2148,13 @@
       ? "showing the last list this device saw"
       : (JUNEROUND&&JUNEROUND.live ? "live list · read "+fmtDT(JUNEROUND.at)
         : (JUNEROUND ? "live list + pasted round imported "+fmtDT(JUNEROUND.pasteAt||JUNEROUND.at)
-                     : JSTORES.length+" warehouses within 100 miles · nearest to Walnut Creek first"));
+                     : JSTORES.length+" warehouses within 75 miles · tiered, tier 1 first"));
     if(note) note.textContent=JB_SORTNOTE[jbSortBy]||"";
 
     // ---- rows ----
-    const rows=jbSorted(all);
+    // The tier menu is display-only and applies HERE and nowhere else, so the coverage
+    // band above and the BUY engine below still see every warehouse.
+    const rows=jbSorted(all).filter(tierVisible);
     let html="", unknownOpen=false;
     rows.forEach(function(e){
       if(e.status==="unknown" && !unknownOpen){
@@ -2062,19 +2184,26 @@
               : st==="todo"    ? "todo"
               : isLiveStock(c) ? "best" : "";   // "in stock, zero bars" is not a best pick
     let tags="";
-    if(e.bc)          tags+="<span class='jb-tag bc'>Business</span>";
+    if(e.t)           tags+="<span class='jb-tag tier t"+e.t+"'>T"+e.t+"</span>";
     if(st==="day")    tags+="<span class='jb-tag old'>day old</span>";
     if(st==="stale")  tags+="<span class='jb-tag veryold'>2d+</span>";
     if(st==="unknown")tags+="<span class='jb-tag warnid'>unknown id</span>";
     const total = !c ? "not called"
                 : !c.stock ? "sold out"
                 : (barsOf(c)>0 ? String(barsOf(c)) : "yes · no count");
-    const aria = e.name+", "+(e.mi==null?"distance unknown":e.mi+" miles")+", "+
+    const aria = e.name+", "+(e.t?"tier "+e.t+", ":"")+
+                 (e.mi==null?"distance unknown":e.mi+" miles")+", "+
                  (!c ? "not called yet"
                       : !c.stock ? "sold out"
                       : (barsOf(c)>0 ? barsOf(c)+" bars" : "has bars, count not recorded"));
-    return "<tr class=\""+cls+"\" aria-label=\""+esc(aria)+"\">"+
-      "<td>"+esc(e.name)+tags+"</td>"+
+    // An unknown-id row has no store record, so it gets a plain name and no map link.
+    const nameCell = e.store
+      ? "<a class='jb-name' href='"+jbMapsHref(e.store)+"' target='_blank' rel='noopener noreferrer' "+
+        "title='Open in Google Maps'>"+esc(e.name)+"</a>"+tags+
+        "<span class='jb-addr'>"+esc(jbFullAddr(e.store))+"</span>"
+      : esc(e.name)+tags;
+    return "<tr class=\""+cls+(e.t?" t"+e.t:"")+"\" aria-label=\""+esc(aria)+"\">"+
+      "<td class='namecell'>"+nameCell+"</td>"+
       "<td class='r'>"+(e.mi==null?"—":e.mi)+"</td>"+
       "<td class='r'>"+(c&&c.stock?nnum(c.pamp):"—")+"</td>"+
       "<td class='r'>"+(c&&c.stock?nnum(c.generic):"—")+"</td>"+
@@ -2440,8 +2569,10 @@
   /* ---- wiring ---- */
   (function fillSelfStores(){
     const sel=$("jsStore"); if(!sel) return;
+    // Every warehouse, tier menu or not — Medi has to be able to log a call for a store
+    // he has merely hidden from the table.
     sel.innerHTML=JSTORES.map(function(s){
-      return '<option value="'+s.id+'">'+esc(s.n)+(s.bc?" (Business)":"")+' — '+s.mi+' mi</option>';
+      return '<option value="'+s.id+'">T'+s.t+' · '+esc(s.n)+' — '+s.mi+' mi</option>';
     }).join("");
   })();
 
@@ -2449,6 +2580,11 @@
     jbSortBy=e.target.value;
     try{ localStorage.setItem(DASH_SORT_KEY, jbSortBy); }catch(err){}
     renderJune();
+  });
+
+  $("jbTierBar").addEventListener("click",function(ev){
+    const b=ev.target.closest(".jb-tchip");
+    if(b) jbToggleTier(b.dataset.tier);
   });
 
   $("jbRefresh").addEventListener("click",function(){
@@ -2653,7 +2789,7 @@
         r.rows=r.rows.map(function(row){
           if(row && !row.id){
             const k=NAME2STORE[String(row.store||"").toLowerCase()];
-            if(k){ row.id=k.id; row.mi=k.mi; row.bc=!!k.bc; row.known=true; }
+            if(k){ row.id=k.id; row.mi=k.mi; row.known=true; }
             else { row.id="legacy:"+String(row.store||"?").toLowerCase().replace(/\s+/g,""); row.known=false; }
           } else if(row && row.known===undefined){ row.known=!!SMAP[row.id]; }
           return row;
@@ -2663,6 +2799,7 @@
     }catch(e){}
   })();
   $("jbSort").value=jbSortBy;      // restore the remembered sort before the first paint
+  renderJbTierBar();               // and the remembered tier menu
   // Same order as applyJune(): compute() decides the override, renderCFG() paints it.
   renderJune(); compute(); renderCFG(); initLive();
   pullJune(false).then(checkPriceRise);   // June's phone writes straight into this list
