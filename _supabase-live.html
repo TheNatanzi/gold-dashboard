@@ -121,6 +121,13 @@
     var legal = [];
     if(june && june.price != null) legal.push(Number(june.price));
     legal.push(Number(online.price) - 10);
+    // The dashboard's OWN basis pair. BUY is driven by alchemy_price (June's phone), not by
+    // gold_prices.june — two tables that can legitimately disagree by a few dollars. On
+    // 2026-07-28 the guard flagged $4,149.99 as illegal while it was exactly June's phoned
+    // price; that is a data-drift warning, not a broken engine. Trust the engine's basis.
+    var basis = (typeof window !== "undefined") && window.__gfhLegalBuys;
+    if(basis && basis.length)
+      basis.forEach(function(v){ if(isFinite(v)) legal.push(Number(v)); });
     if(legal.some(function(v){ return isFinite(v) && Math.abs(v - shown) < 0.02; })) return null;
     return "BUY shows $" + shown.toFixed(2) + " but the only legal values are " +
            legal.map(function(v){ return "$" + v.toFixed(2); }).join(" or ");

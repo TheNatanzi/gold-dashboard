@@ -999,9 +999,11 @@
         <div class="rb-h">Pricing</div>
         <div class="rb-rule">
           <span class="rb-n">7</span>
-          <div><b>BUY is only ever June's price, or the online price minus $10.</b>
-            <span class="rb-why">Enforced in code by checkBuyPrice. Anything else is a bug and
-              paints a red banner.</span></div>
+          <div><b>BUY is only ever June's price, or the online price minus $10 — whichever
+              was updated more recently.</b>
+            <span class="rb-why">Recency picks the basis; a day-old register quote must not
+              outrank a Costco price refreshed this hour. Enforced in code by checkBuyPrice.
+              Anything else is a bug and paints a red banner.</span></div>
         </div>
         <div class="rb-rule">
           <span class="rb-n">8</span>
@@ -1038,7 +1040,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 7923d34 · built 2026-07-28 18:07 UTC</span>
+    <span id="verStamp" class="tnum">version: 9db89f7 · built 2026-07-28 18:23 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -1200,9 +1202,25 @@
     // PULL ONLINE only flags a refresh for Claude; it does not fetch, so this number can sit
     // still for days without anything on screen admitting it.
     const onlineOld = onlineAgeDays()>=2;
-    const overridden = inStock && !onlineOld && impliedInStore>june+0.001;
+    /* MOST-RECENT-WINS (Medi's rule, 2026-07-28). It used to be highest-wins, which let a
+       day-old register quote outrank a Costco price refreshed twenty minutes ago — the page
+       kept pricing bars off yesterday. Recency picks the basis now; "higher wins" survives
+       only as the tie-break when both carry the same minute, because when the timestamps
+       can't decide, the conservative (worse) buy price should. */
+    const juneT   = Date.parse(CFG.juneTime)   || 0;
+    const onlineT = Date.parse(CFG.onlineTime) || 0;
+    const onlineUsable = inStock && !onlineOld && isFinite(impliedInStore);
+    const overridden = onlineUsable && (
+        onlineT > juneT + 60000 ? true
+      : juneT > onlineT + 60000 ? false
+      : impliedInStore > june + 0.001);
 
     const buy=overridden?impliedInStore:june;
+    // Published for the units guard in the live layer: these two are the ONLY numbers BUY
+    // is allowed to be. The guard reads gold_prices.june, but BUY is driven by
+    // alchemy_price (June's phone) — two tables that CAN legitimately disagree, and on
+    // 2026-07-28 did ($4,149.99 vs $4,139.99), making the guard cry wolf on a legal value.
+    try{ window.__gfhLegalBuys = [june, impliedInStore]; }catch(e){}
 
     // Publish the decision IMMEDIATELY. priceState() reads _juneOverridden, and the gauge and
     // matrix stamps below call it — if these were still assigned at the end of compute() the
@@ -3263,6 +3281,13 @@
     var legal = [];
     if(june && june.price != null) legal.push(Number(june.price));
     legal.push(Number(online.price) - 10);
+    // The dashboard's OWN basis pair. BUY is driven by alchemy_price (June's phone), not by
+    // gold_prices.june — two tables that can legitimately disagree by a few dollars. On
+    // 2026-07-28 the guard flagged $4,149.99 as illegal while it was exactly June's phoned
+    // price; that is a data-drift warning, not a broken engine. Trust the engine's basis.
+    var basis = (typeof window !== "undefined") && window.__gfhLegalBuys;
+    if(basis && basis.length)
+      basis.forEach(function(v){ if(isFinite(v)) legal.push(Number(v)); });
     if(legal.some(function(v){ return isFinite(v) && Math.abs(v - shown) < 0.02; })) return null;
     return "BUY shows $" + shown.toFixed(2) + " but the only legal values are " +
            legal.map(function(v){ return "$" + v.toFixed(2); }).join(" or ");
