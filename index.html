@@ -2871,8 +2871,16 @@
       if(isFinite(hero) && isFinite(floor) && isFinite(s))
         out.push({ key: "buy", v: s + (floor - hero), live: hero >= floor });   // live = already in the zone
     }
-    if(_gfhOnline && isFinite(Number(_gfhOnline.price)))
-      out.push({ key: "costco", v: Number(_gfhOnline.price), stock: _gfhOnline.in_stock !== false });
+    if(_gfhOnline && isFinite(Number(_gfhOnline.price))){
+      // The engine disqualifies the online price at 2 days old (onlineOld) and when the bar is
+      // out of stock — in either case it falls back to June's in-store number. Say so on the
+      // label. A chart quietly drawing a price the engine has already thrown away is worse
+      // than not drawing it: it looks like corroboration when it is actually contradiction.
+      var ms = _gfhOnline.fetched_at ? (Date.now() - Date.parse(_gfhOnline.fetched_at)) : 0;
+      var days = ms > 0 ? Math.floor(ms / 86400000) : 0;
+      out.push({ key: "costco", v: Number(_gfhOnline.price),
+                 stock: _gfhOnline.in_stock !== false, stale: days >= 2, days: days });
+    }
     return out;
   }
 
@@ -2962,14 +2970,15 @@
       var col = isBuy ? good : mute;
       s += '<line x1="' + padL + '" y1="' + o.y.toFixed(1) + '" x2="' + (padL + cw) + '" y2="' + o.y.toFixed(1) +
            '" stroke="' + col + '" stroke-width="' + (isBuy ? 1.5 : 1) + '" stroke-dasharray="' +
-           (isBuy ? "7 4" : "2 5") + '" opacity="' + (isBuy ? 0.95 : 0.45) + '"/>';
+           (isBuy ? "7 4" : "2 5") + '" opacity="' + (isBuy ? 0.95 : (o.r.stale ? 0.25 : 0.45)) + '"/>';
       var ty = o.y - 5; if(ty < padT + 11) ty = o.y + 13;
       for(var q = 0; q < labY.length; q++) if(Math.abs(ty - labY[q]) < 13) ty = labY[q] + 13;
       labY.push(ty);
       var arrow = o.off === 1 ? " ↑" : o.off === -1 ? " ↓" : "";
       var txt = isBuy
         ? "BUY ZONE ≥ $" + o.r.v.toFixed(2) + (o.r.live ? "  ✓ IN ZONE" : "") + arrow
-        : "COSTCO $" + o.r.v.toFixed(2) + (o.r.stock ? "" : " (out of stock)") + arrow;
+        : "COSTCO $" + o.r.v.toFixed(2) +
+          (o.r.stale ? " (" + o.r.days + "d old · engine ignoring)" : o.r.stock ? "" : " (out of stock)") + arrow;
       // Backing pill. The price line wanders straight through where these labels sit and was
       // slicing the digits in half; a panel-coloured plate behind the text keeps it readable
       // without hiding the line. 6px/char is the advance width of this monospace face at 10px.
