@@ -378,6 +378,34 @@
   .jb-tchip[data-tier="3"] .dotc{color:var(--t3)} .jb-tchip[data-tier="4"] .dotc{color:var(--t4)}
   .jb-tiernote{font-family:var(--mono);font-size:10px;color:var(--ink-mute)}
 
+  /* ---- rule sheet ---- */
+  .rb-verdict{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;
+    border:1px solid var(--line2);background:var(--bg2)}
+  .rb-verdict.go{border-color:var(--good);background:var(--good-bg)}
+  .rb-verdict.maybe{border-color:var(--day-line);background:var(--day-bg)}
+  .rb-verdict.stop{border-color:var(--line2)}
+  .rb-v-day{font-family:var(--mono);font-size:11px;font-weight:800;letter-spacing:.11em;
+    text-transform:uppercase;color:var(--ink-mute);white-space:nowrap}
+  .rb-verdict.go .rb-v-day{color:var(--good)}
+  .rb-verdict.maybe .rb-v-day{color:var(--day)}
+  .rb-v-txt{font-size:14px;font-weight:660;color:var(--ink);line-height:1.35}
+  .rb-group{margin-top:14px}
+  .rb-h{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--ink-mute);font-weight:700;margin-bottom:7px}
+  .rb-rule{display:flex;gap:10px;align-items:flex-start;padding:9px 11px;border-radius:10px;
+    border:1px solid var(--line);margin-bottom:6px;font-size:13px;line-height:1.4}
+  .rb-rule b{color:var(--ink);font-weight:660}
+  .rb-rule.rb-key{border-color:var(--gold-deep);background:var(--gold-glow)}
+  .rb-rule.rb-warn{border-color:var(--bad);background:var(--bad-bg)}
+  .rb-n{flex:0 0 auto;font-family:var(--mono);font-size:10px;font-weight:800;color:var(--ink-mute);
+    border:1px solid var(--line2);border-radius:5px;padding:1px 6px;margin-top:2px}
+  .rb-rule.rb-key .rb-n{color:var(--gold);border-color:var(--gold-deep)}
+  .rb-rule.rb-warn .rb-n{color:var(--bad);border-color:var(--bad)}
+  .rb-why{display:block;margin-top:3px;font-size:11.5px;color:var(--ink-mute);line-height:1.45}
+  @media (max-width:560px){
+    .rb-verdict{flex-direction:column;align-items:flex-start;gap:6px}
+  }
+
   /* ---- sort bar (ported from June's call sheet so both pages sort identically) ---- */
   .jb-sortbar{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
   .jb-sortlab{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
@@ -793,6 +821,95 @@
           <tbody id="jbRows"></tbody>
         </table>
       </div>
+    </div>
+  </details>
+
+  <!-- RULE SHEET — the standing rules of the operation, in one place -->
+  <details class="junebox rulebox" id="ruleBox">
+    <summary class="jb-sum">
+      <div class="jb-l">
+        <span>📋 Rule sheet</span>
+        <span class="jb-sub">the standing rules · call days, pricing, what counts as stock</span>
+      </div>
+      <div class="jb-r">
+        <span class="jb-cov" id="rbToday">—</span>
+        <span class="jb-chev" aria-hidden="true">⌄</span>
+      </div>
+    </summary>
+    <div class="jb-body">
+
+      <!-- today's verdict, the one thing worth seeing at a glance -->
+      <div class="rb-verdict" id="rbVerdict">
+        <div class="rb-v-day" id="rbVDay">—</div>
+        <div class="rb-v-txt" id="rbVTxt">—</div>
+      </div>
+
+      <div class="rb-group">
+        <div class="rb-h">Call days</div>
+        <div class="rb-rule rb-key">
+          <span class="rb-n">1</span>
+          <div>
+            <b>June only calls on restock days.</b>
+            <span class="rb-why">Calling on a non-restock day burns her time on numbers that
+              haven't moved since the last round.</span>
+          </div>
+        </div>
+        <div class="rb-rule">
+          <span class="rb-n">2</span>
+          <div><b>Restock is always Wednesday.</b>
+            <span class="rb-why">Treat Wednesday as a guaranteed call day.</span></div>
+        </div>
+        <div class="rb-rule">
+          <span class="rb-n">3</span>
+          <div><b>Restock is sometimes Thursday.</b>
+            <span class="rb-why">Not guaranteed. Worth a round if Wednesday came up short.</span></div>
+        </div>
+        <div class="rb-rule">
+          <span class="rb-n">4</span>
+          <div><b>Work the tiers in order — tier 1 first.</b>
+            <span class="rb-why">The list is stored in tier order, so "next to call" already
+              follows it. Tier 4 is hidden by default.</span></div>
+        </div>
+      </div>
+
+      <div class="rb-group">
+        <div class="rb-h">What counts as stock</div>
+        <div class="rb-rule">
+          <span class="rb-n">5</span>
+          <div><b>A count older than 2 days does not count.</b>
+            <span class="rb-why">Stale rows are shown, but excluded from the bar totals and
+              from "most bars first".</span></div>
+        </div>
+        <div class="rb-rule">
+          <span class="rb-n">6</span>
+          <div><b>"In stock" with no number is not stock.</b>
+            <span class="rb-why">It is counted separately as "yes, no count" so it can never
+              inflate the bar total.</span></div>
+        </div>
+      </div>
+
+      <div class="rb-group">
+        <div class="rb-h">Pricing</div>
+        <div class="rb-rule">
+          <span class="rb-n">7</span>
+          <div><b>BUY is only ever June's price, or the online price minus $10.</b>
+            <span class="rb-why">Enforced in code by checkBuyPrice. Anything else is a bug and
+              paints a red banner.</span></div>
+        </div>
+        <div class="rb-rule">
+          <span class="rb-n">8</span>
+          <div><b>"Premium" means two different things — check the units.</b>
+            <span class="rb-why">gold_prices.premium is a PERCENT over spot. The dashboard's
+              onlinePrem is DOLLARS. Mixing them once invented a $7.10 gap with no error.</span></div>
+        </div>
+        <div class="rb-rule rb-warn">
+          <span class="rb-n">9</span>
+          <div><b>Elemetal pays spot − $10 for Pamp Fortuna. NOT VERIFIED.</b>
+            <span class="rb-why">This number is hardcoded in the alert engine and nothing checks
+              it. If Elemetal has changed it, every profit figure here is wrong.</span></div>
+        </div>
+      </div>
+
     </div>
   </details>
 
@@ -2007,6 +2124,28 @@
   // by the tier menu — an unknown id has to stay visible however the menu is set.
   function tierVisible(e){ return e.status==="unknown" || !!jbTiersOn[e.t]; }
 
+  /* ---- rule sheet: is today a call day? ----
+     Rule 1: June only calls on restock days. Wednesday is always one, Thursday sometimes.
+     Deliberately advisory, not a lock: it paints the verdict, it does not disable anything.
+     A wrong "do not call" that silently blocked a round would be worse than a wrong hint. */
+  const RULE_DAYS = {3:"go", 4:"maybe"};    // 0 = Sunday ... 3 = Wednesday, 4 = Thursday
+  function renderRuleDay(){
+    const d = new Date();
+    const dow = d.getDay();
+    const name = d.toLocaleDateString("en-US",{weekday:"long"});
+    const kind = RULE_DAYS[dow] || "stop";
+    const box = $("rbVerdict"), day = $("rbVDay"), txt = $("rbVTxt"), chip = $("rbToday");
+    if(!box) return;
+    box.className = "rb-verdict " + kind;
+    if(day) day.textContent = name;
+    if(txt) txt.textContent =
+      kind === "go"    ? "Restock day — June calls today."
+    : kind === "maybe" ? "Sometimes a restock day. Worth a round if Wednesday came up short."
+    :                    "Not a restock day. June does not call.";
+    if(chip) chip.textContent =
+      kind === "go" ? "call day" : kind === "maybe" ? "maybe" : "no calls today";
+  }
+
   function jbFullAddr(s){ return s.a+", "+s.c+", CA"+(s.z?" "+s.z:""); }
   function jbPhoneFmt(p){ return "("+p.slice(0,3)+") "+p.slice(3,6)+"-"+p.slice(6); }
   function jbMapsHref(s){
@@ -2817,6 +2956,10 @@
   })();
   $("jbSort").value=jbSortBy;      // restore the remembered sort before the first paint
   renderJbTierBar();               // and the remembered tier menu
+  renderRuleDay();
+  // The verdict is a date, so it has to survive a page left open overnight. Re-check on
+  // the hour rather than trusting the value painted at load.
+  setInterval(renderRuleDay, 3600000);
   // Same order as applyJune(): compute() decides the override, renderCFG() paints it.
   renderJune(); compute(); renderCFG(); initLive();
   pullJune(false).then(checkPriceRise);   // June's phone writes straight into this list
