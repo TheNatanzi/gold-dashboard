@@ -1055,12 +1055,13 @@
         </div>
         <div class="rb-rule rb-warn">
           <span class="rb-n">11</span>
-          <div><b>Elemetal pays spot − $20 for Pamp Fortuna, − $30 for any-brand bars
-              (verified 2026-07-28 price sheet).</b>
-            <span class="rb-why">The old − $10 ran unverified for weeks and overstated every
-              profit figure by $10/bar. Condition: the Pamp rate needs Veriscan + green foot,
-              or the bar counts as any-brand at − $30. Re-verify against each morning's
-              emailed sheet — the rate is typed in, not fetched.</span></div>
+          <div><b>Elemetal's SHEET pays spot − $20 Pamp / − $30 any-brand — but calling in
+              gets +$10 over the sheet, so the engine sells at spot − $10 / − $20.</b>
+            <span class="rb-why">The +$10 comes from phoning the desk and the working
+              relationship — the emailed sheet is the walk-in rate. Condition: the Pamp rate
+              needs Veriscan + green foot, or the bar counts as any-brand. Re-verify the sheet
+              each morning — the rate is typed in, not fetched, and the +$10 is a habit, not
+              a contract.</span></div>
         </div>
       </div>
 
@@ -1082,7 +1083,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: c49fab7 · built 2026-07-29 18:04 UTC</span>
+    <span id="verStamp" class="tnum">version: 16c27b0 · built 2026-07-29 23:34 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -1112,10 +1113,17 @@
   const DRIVE_SERVER = "Google Drive";   // best-guess display name; auto-corrected via listTools()
   let _liveServer = null;
 
+  // CALL-IN BONUS (Medi's rule): Elemetal's phone desk generally pays $10 OVER the emailed
+  // sheet — the +$10 comes from calling in and the working relationship. The sheet offsets
+  // below (and in the engine sheet) stay recorded AS PRINTED; the bonus is added on top at
+  // every point of use. If the sheet values are ever entered already-netted, drop this to 0
+  // or the bonus double-counts.
+  const CALL_IN_BONUS = 10;
+
   // Buyers (sell price = spot + offset). Elemetal is the default/preferred buyer.
   const BUYERS = [
-    {key:"elemetal_pamp",    name:"Elemetal · Pamp",    offset:-20,  note:"Verified 7/28 price sheet (GB1PAMPF). Must be Veriscan + green foot, else any-brand −$30.", t:"2026-07-28"},
-    {key:"elemetal_generic", name:"Elemetal · Generic", offset:-30,  note:"Verified 7/28 price sheet (GB1C, sealed/carded any brand).", t:"2026-07-28"},
+    {key:"elemetal_pamp",    name:"Elemetal · Pamp",    offset:-20,  note:"Verified 7/28 price sheet (GB1PAMPF) + $10 call-in (working relationship). Must be Veriscan + green foot, else any-brand.", t:"2026-07-28"},
+    {key:"elemetal_generic", name:"Elemetal · Generic", offset:-30,  note:"Verified 7/28 price sheet (GB1C, sealed/carded any brand) + $10 call-in.", t:"2026-07-28"},
     {key:"upstate",          name:"Upstate",            offset:7,    note:"Pays over spot; ship-in or drive.", t:"2026-07-24"},
     {key:"amark",            name:"AMARK",              offset:null, note:"Las Vegas; no price-pull yet.", t:null},
     {key:"collectpure",      name:"CollectPure",        offset:null, note:"Online marketplace; ship-in.", t:null},
@@ -1240,8 +1248,10 @@
        the one the sheet can move, so it wins; CFG stays as the fallback. */
     const eP=BUYERS.filter(function(b){ return b.key==="elemetal_pamp"; })[0];
     const eG=BUYERS.filter(function(b){ return b.key==="elemetal_generic"; })[0];
-    const discP=(eP && isFinite(eP.offset)) ? -eP.offset : CFG.discPamp;
-    const discG=(eG && isFinite(eG.offset)) ? -eG.offset : CFG.discGen;
+    // Sheet rate first (engine-sheet override wins, CFG fallback), then the +$10 call-in
+    // bonus on top — Elemetal's phone desk pays over the emailed sheet (working relationship).
+    const discP=((eP && isFinite(eP.offset)) ? -eP.offset : CFG.discPamp) - CALL_IN_BONUS;
+    const discG=((eG && isFinite(eG.offset)) ? -eG.offset : CFG.discGen) - CALL_IN_BONUS;
     const floorV=CFG.floor;
     const prem = (CFG.onlinePrem==null || isNaN(CFG.onlinePrem)) ? 10 : Number(CFG.onlinePrem);
     const impliedInStore=online-prem;   // `||10` swallowed a legitimate premium of 0
@@ -1289,7 +1299,7 @@
     const eleEl=$("eleV");
     if(eleEl){
       eleEl.textContent=money(sellP);
-      $("eleSub").textContent="spot − $"+discP+" Pamp · − $"+discG+" generic";
+      $("eleSub").textContent="spot − $"+discP+" Pamp · − $"+discG+" generic (sheet + $10 call-in)";
       // The date matters here: this rate is typed in, not fetched. Say when it was set,
       // and if nothing ever set it, say that instead of pretending.
       const eleT = eP && eP.t ? eP.t : null;
@@ -1299,7 +1309,7 @@
         : /^\d{4}-\d{2}-\d{2}$/.test(eleT) ? eleT
         : fmtDT(eleT);
       $("eleStamp").innerHTML = eleTxt
-        ? "rate set <b>"+eleTxt+"</b> · sell = live spot − discount"
+        ? "rate set <b>"+eleTxt+"</b> · +$10 over the sheet for calling in (working relationship)"
         : "rate date unknown — hardcoded default, never verified";
     }
 
@@ -1387,14 +1397,18 @@
   function renderBuyers(spot){
     if(spot==null) spot=num("spot");
     const box=$("buyers"); if(!box) return;
+    // Elemetal's two entries carry the +$10 call-in bonus on top of the printed sheet rate,
+    // so this card can never disagree with the Elemetal card / profit math above.
+    const effOff=b=>b.offset==null?null:b.offset+(/^elemetal_/.test(b.key)?CALL_IN_BONUS:0);
     const known=BUYERS.filter(b=>b.offset!=null);
-    const bestSell=known.length?Math.max(...known.map(b=>spot+b.offset)):null;
+    const bestSell=known.length?Math.max(...known.map(b=>spot+effOff(b))):null;
     box.innerHTML="";
     BUYERS.forEach(b=>{
       const has=b.offset!=null;
-      const sell=has?spot+b.offset:null;
+      const o=effOff(b);
+      const sell=has?spot+o:null;
       const best=has && bestSell!=null && Math.abs(sell-bestSell)<0.001;
-      const off=has?(b.offset<0?`spot − $${Math.abs(b.offset)}`:`spot + $${b.offset}`):"—";
+      const off=has?((o<0?`spot − $${Math.abs(o)}`:`spot + $${o}`)+(/^elemetal_/.test(b.key)?" · sheet + $10 call-in":"")):"—";
       const el=document.createElement("div");
       el.className="buyer"+(best?" best":"");
       el.innerHTML=`<div class="bname">${b.name}${best?' <span class="tagbest">best price</span>':''}</div>
