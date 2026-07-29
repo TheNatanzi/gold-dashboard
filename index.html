@@ -1082,7 +1082,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: c49fab7 · built 2026-07-29 17:48 UTC</span>
+    <span id="verStamp" class="tnum">version: c49fab7 · built 2026-07-29 18:04 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3503,6 +3503,34 @@
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
+  var _gfhBzHist = [];                                  // buyzone_history rows in the current window
+
+  // Save the trigger so the chart can draw where the zone actually SAT, not a re-derivation.
+  // Minute-floored primary key = many open dashboards collapse to one row a minute, and
+  // `resolution=ignore-duplicates` makes the losers silent. Writes happen on a real move
+  // (>= a cent) or a 5-minute heartbeat, so a flat day costs ~288 tiny rows.
+  var _bzWrote = { v: null, ts: 0 };
+  function recordBuyZone(bz){
+    try{
+      if(!bz || !isFinite(bz.v)) return;
+      var now = Date.now();
+      var lastRec = _gfhBzHist.length ? Number(_gfhBzHist[_gfhBzHist.length - 1].price) : null;
+      var base = (_bzWrote.v != null) ? _bzWrote.v : lastRec;
+      var changed = (base == null) || Math.abs(bz.v - base) >= 0.01;
+      if(!changed && (now - _bzWrote.ts) < 300000) return;
+      _bzWrote = { v: bz.v, ts: now };
+      var z = (typeof window !== "undefined") && window.__gfhZone;
+      fetch(SB_URL + "/rest/v1/buyzone_history?on_conflict=t", {
+        method: "POST",
+        headers: Object.assign({ "Content-Type": "application/json",
+                                 Prefer: "resolution=ignore-duplicates" }, H),
+        body: JSON.stringify([{ t: new Date(Math.floor(now / 60000) * 60000).toISOString(),
+                                price: Math.round(bz.v * 100) / 100,
+                                basis: (z && z.onlineBased) ? "online" : "june",
+                                in_zone: !!bz.live }])
+      }).catch(function(){});                           // table missing / offline -> just skip
+    }catch(e){}
+  }
 
   // "$4,159.99" / "−$12.34" -> Number.  money() prints a U+2212 minus, not a hyphen, and
   // parseFloat would happily read "−$12.34" as NaN and "$12.34" as 12.34 either way — so
@@ -3535,11 +3563,24 @@
       var hero = pMoney(parts[0]), floor = pMoney(parts[1]), s = parseFloat(sp.value);
       if(isFinite(hero) && isFinite(floor) && isFinite(s)){
         var bz = { key: "buy", v: s + (floor - hero), live: hero >= floor };   // live = already in the zone
-        // When BUY is online-based, the trigger moved every time the bar price moved:
-        // profit changes by (1 - eff%) per dollar of buy, so trigger(t) shifts by
-        // (1 - eff%) x (bar(t) - 10 - buyNow). The engine publishes those constants
-        // (__gfhZone) precisely so this stays its arithmetic, not a re-derivation here.
-        // When BUY is June's phoned price, bar moves never moved the trigger - flat is honest.
+        // RECORDED history first (buyzone_history, written by whichever dashboard is open —
+        // one row per minute at most, plus one per real trigger move). The recorded curve is
+        // the truth: it survives basis switches (June <-> online), discount edits and floor
+        // changes, none of which the derived fallback below can see.
+        var rec = (_gfhBzHist || []).filter(function(p){ return isFinite(Number(p.price)); })
+                                    .map(function(p){ return { t: p.t, price: Number(p.price) }; });
+        if(rec.length >= 2){
+          // Append the live value so the curve reaches "now" instead of dying at the last save.
+          rec.push({ t: new Date().toISOString(), price: bz.v });
+          var rvs = rec.map(function(q){ return q.price; });
+          bz.series = rec;
+          bz.lo = Math.min.apply(null, rvs); bz.hi = Math.max.apply(null, rvs);
+        } else {
+        // DERIVED fallback (pre-recording windows). When BUY is online-based, the trigger
+        // moved every time the bar price moved: profit changes by (1 - eff%) per dollar of
+        // buy, so trigger(t) shifts by (1 - eff%) x (bar(t) - 10 - buyNow). The engine
+        // publishes those constants (__gfhZone) precisely so this stays its arithmetic, not
+        // a re-derivation here. When BUY is June's phoned price, flat is honest.
         var z = (typeof window !== "undefined") && window.__gfhZone;
         if(z && z.onlineBased && isFinite(z.effFrac) && isFinite(z.buyNow) &&
            _gfhOnlineHist && _gfhOnlineHist.length >= 2){
@@ -3549,12 +3590,15 @@
             if(isFinite(pv)) ser.push({ t: pt.t, price: bz.v + f * ((pv - 10) - z.buyNow) });
           });
           if(ser.length >= 2){
+            ser.push({ t: new Date().toISOString(), price: bz.v });
             var vs = ser.map(function(q){ return q.price; });
             bz.series = ser;
             bz.lo = Math.min.apply(null, vs); bz.hi = Math.max.apply(null, vs);
           }
         }
+        }
         out.push(bz);
+        recordBuyZone(bz);
       }
     }
     if(_gfhOnline && isFinite(Number(_gfhOnline.price))){
@@ -3650,15 +3694,22 @@
     // $25/bar floor. Shade it under the price line so the line stays the brightest thing.
     refDraw.forEach(function(o){
       if(o.r.key !== "buy" || pts.length < 2) return;
-      // The zone's floor at any moment - steps with the bar price when a series exists.
+      // The zone's floor at any moment. Linear interpolation between saved points — the SAME
+      // shape the dashed line is drawn with — so the shade hugs the slanted line instead of
+      // stepping under it and leaving unfilled wedges above every rising stretch.
       function zoneAt(tms){
         var sr = o.r.series;
         if(sr && sr.length){
-          var zv = sr[0].price;
-          for(var zi = 0; zi < sr.length; zi++){
-            if(Date.parse(sr[zi].t) <= tms) zv = sr[zi].price; else break;
+          if(tms <= Date.parse(sr[0].t)) return sr[0].price;
+          for(var zi = 1; zi < sr.length; zi++){
+            var tb = Date.parse(sr[zi].t);
+            if(tms <= tb){
+              var ta = Date.parse(sr[zi - 1].t);
+              var fr = tb > ta ? (tms - ta) / (tb - ta) : 1;
+              return sr[zi - 1].price + fr * (sr[zi].price - sr[zi - 1].price);
+            }
           }
-          return zv;
+          return sr[sr.length - 1].price;
         }
         return o.r.v;
       }
@@ -3915,7 +3966,16 @@
       .then(function(rows){ _gfhOnlineHist = Array.isArray(rows) ? rows.slice().reverse() : []; })
       .catch(function(){ _gfhOnlineHist = []; });      // no history yet -> flat reference line
 
-    Promise.all([grab(), histDone])
+    // Recorded buy-zone trigger for the same window. Written by recordBuyZone() from any
+    // open dashboard; ~1 row/5 min, so one page covers every window. Missing table or a
+    // PostgREST error body (not an array) both land on [] -> derived fallback.
+    var bzDone = fetch(SB_URL + "/rest/v1/buyzone_history?select=t,price&t=gte." + since + "&order=t.desc",
+                       { headers: Object.assign({ Range: "0-999" }, H) })
+      .then(function(r){ return r.json(); })
+      .then(function(rows){ _gfhBzHist = Array.isArray(rows) ? rows.slice().reverse() : []; })
+      .catch(function(){ _gfhBzHist = []; });
+
+    Promise.all([grab(), histDone, bzDone])
       .then(function(){
         if(!all.length) return;
         all.reverse();                                // back to oldest -> newest for drawing
