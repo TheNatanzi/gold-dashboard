@@ -1064,13 +1064,25 @@
         </div>
       </div>
 
+      <div class="rb-group">
+        <div class="rb-h">Cards</div>
+        <div class="rb-rule">
+          <span class="rb-n">12</span>
+          <div><b>When Costco.com shows sold out, online-only cards leave the math.</b>
+            <span class="rb-why">Mastercard (Citi Double Cash) works only on Costco.com, never
+              at the register — with the listing sold out there is nothing it can buy. Its
+              checkbox unticks itself and buying power drops it; the tick comes back on its
+              own the moment stock returns. Your saved on/off choice is never overwritten.</span></div>
+        </div>
+      </div>
+
       </div><!-- /tab-rules -->
 
   <div class="foot">
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 8bdf124 · built 2026-07-28 19:26 UTC</span>
+    <span id="verStamp" class="tnum">version: c49fab7 · built 2026-07-29 17:48 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -1165,10 +1177,15 @@
     setTimeout(()=>el.classList.remove("flash","up","down"),560);
   }
 
+  // RULE 12: an online-only card (Mastercard) can only spend on Costco.com. With the
+  // listing sold out there is literally nothing it can buy, so it leaves the pool on its
+  // own — the avail[] preference is NOT touched, so the tick returns with the stock.
+  const mcLocked = c => c.net==="mc" && !CFG.inStock;
+
   // Costco split-tender spreads one bar's cost across cards → POOL total credit.
   // Whole bars only: floor(pooled credit / buy). Profit fills highest-reward cards first.
   function computeBP(rows, buy, lossP){
-    const pool=rows.filter(x=>x.barP>0 && avail[x.c.name]).sort((a,b)=>b.eff-a.eff);
+    const pool=rows.filter(x=>x.barP>0 && avail[x.c.name] && !mcLocked(x.c)).sort((a,b)=>b.eff-a.eff);
     let totCredit=0; pool.forEach(x=>totCredit+=x.c.limit);
     const totBars=Math.floor(totCredit/buy);
     const deployed=totBars*buy;
@@ -1193,7 +1210,9 @@
       : `<span class="chip pers">● PERSONAL</span>`;
     const profitable = barP>0;
     const limK = "$"+(c.limit/1000)+"k";
-    const availHTML = profitable
+    const availHTML = mcLocked(c)
+      ? `<label class="avail off"><input type="checkbox" disabled> ${limK} limit <em>excluded · Costco.com sold out</em></label>`
+      : profitable
       ? `<label class="avail"><input type="checkbox" data-card="${c.name}" ${avail[c.name]?"checked":""}> ${limK} limit available</label>`
       : `<label class="avail off"><input type="checkbox" disabled> ${limK} limit <em>excluded · no profit</em></label>`;
     return `<div class="rank ${c.hero?'medal':''}">${rankTxt}</div>
@@ -1316,7 +1335,7 @@
     rows.forEach(x=>{
       if(x.c.net==="mc" && !mcDone){
         const d=document.createElement("div"); d.className="divider";
-        d.innerHTML=`<span class="lbl">🌐 Online only · Mastercard <b>— works on Costco.com, not the register</b></span>`;
+        d.innerHTML=`<span class="lbl">🌐 Online only · Mastercard <b>— works on Costco.com, not the register</b>${CFG.inStock?"":` <b style="color:var(--bad)">· SOLD OUT — excluded from buying power (rule 12)</b>`}</span>`;
         mx.appendChild(d); mcDone=true;
       }
       const el=document.createElement("div");
