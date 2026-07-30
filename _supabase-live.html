@@ -266,6 +266,20 @@
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
   var _gfhBzHist = [];                                  // buyzone_history rows in the current window
+  var _gfhJuneHist = [];                                // june_history rows (manual register entries)
+
+  // ONE combined bar-price story (Medi 2026-07-30): the scraped Costco listing AND June's
+  // manually phoned register prices, merged by time into the same line. Manual entries count
+  // as buyable (someone was quoted that price at a register), so they draw at full opacity.
+  function gfhBarRows(){
+    var m = (_gfhOnlineHist || []).slice();
+    (_gfhJuneHist || []).forEach(function(r){
+      var v = Number(r.price);
+      if(isFinite(v)) m.push({ t: r.t, price: v, in_stock: true, bar_name: "June · register (manual)" });
+    });
+    m.sort(function(a, b){ return Date.parse(a.t) - Date.parse(b.t); });
+    return m;
+  }
 
   // Save the trigger so the chart can draw where the zone actually SAT, not a re-derivation.
   // Minute-floored primary key = many open dashboards collapse to one row a minute, and
@@ -404,11 +418,12 @@
       var days = ms > 0 ? Math.floor(ms / 86400000) : 0;
       var ref = { key: "costco", v: Number(_gfhOnline.price),
                   stock: _gfhOnline.in_stock !== false, stale: days >= 2, days: days };
-      if(_gfhOnlineHist && _gfhOnlineHist.length >= 2){
-        var ps = _gfhOnlineHist.map(function(p){ return Number(p.price); })
-                               .filter(function(n){ return isFinite(n); });
+      var barRows = gfhBarRows();                  // scraped listing + June's manual entries, one story
+      if(barRows.length >= 2){
+        var ps = barRows.map(function(p){ return Number(p.price); })
+                        .filter(function(n){ return isFinite(n); });
         if(ps.length >= 2){
-          ref.series = _gfhOnlineHist;
+          ref.series = barRows;
           ref.lo = Math.min.apply(null, ps);
           ref.hi = Math.max.apply(null, ps);
           ref.v  = ps[ps.length - 1];             // label the newest recorded price, not the row cache
@@ -798,7 +813,14 @@
       .then(function(rows){ _gfhBzHist = Array.isArray(rows) ? rows.slice().reverse() : []; })
       .catch(function(){ _gfhBzHist = []; });
 
-    Promise.all([grab(), histDone, bzDone])
+    // June's manual register entries (table lands with migration 004; [] until then).
+    var juneDone = fetch(SB_URL + "/rest/v1/june_history?select=t,price&t=gte." + since + "&order=t.desc",
+                       { headers: Object.assign({ Range: "0-999" }, H) })
+      .then(function(r){ return r.json(); })
+      .then(function(rows){ _gfhJuneHist = Array.isArray(rows) ? rows.slice().reverse() : []; })
+      .catch(function(){ _gfhJuneHist = []; });
+
+    Promise.all([grab(), histDone, bzDone, juneDone])
       .then(function(){
         if(!all.length) return;
         all.reverse();                                // back to oldest -> newest for drawing
@@ -837,10 +859,10 @@
       host = el("gfhHistRows"); cnt = el("gfhHistCount");
     }
     if(!host) return;
-    var rows = _gfhOnlineHist || [];
+    var rows = gfhBarRows();                       // listing + manual entries, same as the chart line
     if(rows.length < 1){
       host.innerHTML = '<div style="opacity:.6">No recorded history in this window yet. ' +
-        'The collector writes one row per genuine Costco refresh (~8 min), only while in stock.</div>';
+        'The collector writes one row per genuine Costco refresh (~8 min), plus June’s manual entries.</div>';
       if(cnt) cnt.textContent = "0 changes";
       return;
     }
