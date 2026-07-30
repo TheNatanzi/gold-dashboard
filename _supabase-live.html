@@ -253,13 +253,13 @@
       });
     }
   }
-  // Public-page-only rename of the candle chart header (the shared dashboard source stays untouched).
+  // Public-page-only: HIDE the futures chart entirely (Medi, 2026-07-29). Its candle feed
+  // rides the Google Drive connector, which exists only inside the Claude artifact viewer —
+  // on this page it can never be anything but the SAMPLE walk, and a fake price chart is
+  // worse than no chart. The spot chart above is the real, live one. The shared dashboard
+  // source stays untouched; inside the artifact the futures chart still works.
   function renameFuturesChart(){
-    var l = document.querySelector("#chartBox .cs-l"); if(!l) return;
-    for(var i = 0; i < l.childNodes.length; i++){
-      var n = l.childNodes[i];
-      if(n.nodeType === 3 && /Gold price chart/i.test(n.nodeValue)){ n.nodeValue = " Futures Gold Price Chart "; return; }
-    }
+    var b = el("chartBox"); if(b) b.style.display = "none";
   }
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
