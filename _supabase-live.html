@@ -374,7 +374,9 @@
           var f = 1 - z.effFrac, ser = [];
           _gfhOnlineHist.forEach(function(pt){
             var pv = Number(pt.price);
-            if(isFinite(pv)) ser.push({ t: pt.t, price: bz.v + f * ((pv - 10) - z.buyNow) });
+            // in-stock rows only: an out-of-stock listing never drove BUY, so it must not
+            // reconstruct a trigger either (history records OOS prices since 2026-07-30)
+            if(isFinite(pv) && pt.in_stock !== false) ser.push({ t: pt.t, price: bz.v + f * ((pv - 10) - z.buyNow) });
           });
           if(ser.length >= 2){
             ser.push({ t: new Date().toISOString(), price: bz.v });
@@ -590,6 +592,26 @@
           var yy = Math.max(padT, Math.min(padT + ch, Y(v)));
           dd += (n++ ? "L" : "M") + xx.toFixed(1) + "," + yy.toFixed(1);
         });
+        // Costco: since 2026-07-30 the collector records the LISTED price around the clock,
+        // stocked or not (Medi: the line must always show). Sold-out stretches draw extra
+        // faint — visible, but clearly "look, can't buy" against the buyable stretches.
+        if(o.r.key === "costco"){
+          // Base pass: the WHOLE series extra faint (sold-out stretches included).
+          if(n >= 2) s += '<path d="' + dd + '" fill="none" stroke="' + col +
+                          '" stroke-width="1.4" stroke-dasharray="2 5" opacity="0.16"/>';
+          // Overlay pass: only the in-stock runs at full reference opacity.
+          var sdd = "", run = 0;
+          o.r.series.forEach(function(p){
+            var v2 = Number(p.price);
+            if(!isFinite(v2) || p.in_stock === false){ run = 0; return; }
+            var xx2 = Math.max(padL, Math.min(padL + cw, X(p.t)));
+            var yy2 = Math.max(padT, Math.min(padT + ch, Y(v2)));
+            sdd += (run++ ? "L" : "M") + xx2.toFixed(1) + "," + yy2.toFixed(1);
+          });
+          if(/L/.test(sdd)) s += '<path d="' + sdd + '" fill="none" stroke="' + col +
+                          '" stroke-width="1.4" stroke-dasharray="2 5" opacity="' + op + '"/>';
+          dd = "";                                      // handled here; skip the generic draw below
+        }
         // The buy-zone line is a forward-looking level ("spot here = buy"), so it carries on
         // across the blank future gutter to the right edge at its current value.
         if(isBuy && n >= 2){
