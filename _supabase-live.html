@@ -334,8 +334,29 @@
         if(rec.length >= 2){
           // Append the live value so the curve reaches "now" instead of dying at the last save.
           rec.push({ t: new Date().toISOString(), price: bz.v });
-          var rvs = rec.map(function(q){ return q.price; });
-          bz.series = rec;
+          // DESPIKE: a browser tab still running an OLD build writes the old trigger between
+          // everyone else's rows, and the line saw-tooths $10 hundreds of times — the "green
+          // static" of 2026-07-30. An isolated row that jumps away from BOTH agreeing
+          // neighbours is a stale writer, not a market move (a real trigger change persists
+          // across rows, so it survives this). Then collapse equal runs — a flat hour is two
+          // points, not sixty dash segments.
+          var sp = [rec[0]];
+          for(var ri = 1; ri < rec.length - 1; ri++){
+            var a = rec[ri - 1].price, b = rec[ri].price, c = rec[ri + 1].price;
+            if(Math.abs(b - a) > 5 && Math.abs(b - c) > 5 && Math.abs(a - c) < 1) continue;
+            sp.push(rec[ri]);
+          }
+          sp.push(rec[rec.length - 1]);
+          // Keep run BOUNDARIES (first and last point of each equal stretch), so a flat hour
+          // stays flat and the change is a sharp step — dropping run-ends would redraw every
+          // step as a long slant back to wherever the run began.
+          var dd2 = sp.filter(function(p, pi){
+            return pi === 0 || pi === sp.length - 1 ||
+                   Math.abs(p.price - sp[pi - 1].price) > 0.001 ||
+                   Math.abs(p.price - sp[pi + 1].price) > 0.001;
+          });
+          var rvs = dd2.map(function(q){ return q.price; });
+          bz.series = dd2;
           bz.lo = Math.min.apply(null, rvs); bz.hi = Math.max.apply(null, rvs);
         } else {
         // DERIVED fallback (pre-recording windows). When BUY is online-based, the trigger
