@@ -340,13 +340,17 @@
           // neighbours is a stale writer, not a market move (a real trigger change persists
           // across rows, so it survives this). Then collapse equal runs — a flat hour is two
           // points, not sixty dash segments.
-          var sp = [rec[0]];
+          var sp = [rec[0]], dropped = 0;
           for(var ri = 1; ri < rec.length - 1; ri++){
             var a = rec[ri - 1].price, b = rec[ri].price, c = rec[ri + 1].price;
-            if(Math.abs(b - a) > 5 && Math.abs(b - c) > 5 && Math.abs(a - c) < 1) continue;
+            if(Math.abs(b - a) > 5 && Math.abs(b - c) > 5 && Math.abs(a - c) < 1){ dropped++; continue; }
             sp.push(rec[ri]);
           }
           sp.push(rec[rec.length - 1]);
+          // AUDIT RULE (Medi 2026-07-30): filtering is a bandage, not health. Surface how much
+          // got filtered so a still-open outdated tab gets refreshed instead of quietly
+          // polluting the table forever. Read by the chart's footer note.
+          try{ window.__gfhBzNoise = dropped; }catch(e){}
           // Keep run BOUNDARIES (first and last point of each equal stretch), so a flat hour
           // stays flat and the change is a sharp step — dropping run-ends would redraw every
           // step as a long slant back to wherever the run began.
@@ -693,7 +697,9 @@
     var span = mins < 90 ? mins + " min" : mins < 2880 ? (mins / 60).toFixed(1) + " hrs" : (mins / 1440).toFixed(1) + " days";
     if(note) note.textContent = pts.length + " pts · covering " + span + " · low $" + rawLo.toFixed(2) +
       " · high $" + rawHi.toFixed(2) + (capped ? " · ⚠ window truncated by the server row cap" : "") +
-      " · this hub's own 1-min spot saves";
+      " · this hub's own 1-min spot saves" +
+      (window.__gfhBzNoise >= 3 ? " · ⚠ " + window.__gfhBzNoise +
+        " stale buy-zone points filtered — an OUTDATED dashboard tab is still open somewhere, refresh it" : "");
   }
   // Crosshair + tooltip, wired once. Snaps to the nearest real sample rather than
   // interpolating, so the number under the pointer is always a price we actually saved.

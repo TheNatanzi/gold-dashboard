@@ -1077,13 +1077,42 @@
         </div>
       </div>
 
+      <div class="rb-group">
+        <div class="rb-h">Data quality (chart)</div>
+        <div class="rb-rule">
+          <span class="rb-n">13</span>
+          <div><b>A frozen Costco line means OUT OF STOCK, not a broken feed.</b>
+            <span class="rb-why">Price history is only recorded while the bar can actually be
+              bought — recording a price nobody can pay would fake a market. The scraper keeps
+              checking every few minutes; the line resumes the moment stock returns. The label
+              says "(out of stock)" whenever this is why the line stopped.</span></div>
+        </div>
+        <div class="rb-rule">
+          <span class="rb-n">14</span>
+          <div><b>The buy-zone line ignores lone $10 spikes, and says when it's doing so.</b>
+            <span class="rb-why">A dashboard tab left open on an old build keeps writing the
+              old trigger — the line saw-toothed hundreds of times on 2026-07-30. A lone point
+              both neighbours disagree with is a stale writer, never a market move (real
+              trigger changes persist across many rows, so they survive the filter). When ≥3
+              points get filtered, the chart footer names the cause: refresh every open
+              dashboard tab.</span></div>
+        </div>
+        <div class="rb-rule">
+          <span class="rb-n">15</span>
+          <div><b>One buy-zone row per minute, shared by every open dashboard.</b>
+            <span class="rb-why">Writes use the minute as the key, so ten open tabs collapse
+              into one record instead of ten duplicates fighting. A change is written the
+              minute it happens; a flat market costs one heartbeat row per 5 minutes.</span></div>
+        </div>
+      </div>
+
       </div><!-- /tab-rules -->
 
   <div class="foot">
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 77d22ce · built 2026-07-30 16:50 UTC</span>
+    <span id="verStamp" class="tnum">version: 68b526b · built 2026-07-30 16:56 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3592,13 +3621,17 @@
           // neighbours is a stale writer, not a market move (a real trigger change persists
           // across rows, so it survives this). Then collapse equal runs — a flat hour is two
           // points, not sixty dash segments.
-          var sp = [rec[0]];
+          var sp = [rec[0]], dropped = 0;
           for(var ri = 1; ri < rec.length - 1; ri++){
             var a = rec[ri - 1].price, b = rec[ri].price, c = rec[ri + 1].price;
-            if(Math.abs(b - a) > 5 && Math.abs(b - c) > 5 && Math.abs(a - c) < 1) continue;
+            if(Math.abs(b - a) > 5 && Math.abs(b - c) > 5 && Math.abs(a - c) < 1){ dropped++; continue; }
             sp.push(rec[ri]);
           }
           sp.push(rec[rec.length - 1]);
+          // AUDIT RULE (Medi 2026-07-30): filtering is a bandage, not health. Surface how much
+          // got filtered so a still-open outdated tab gets refreshed instead of quietly
+          // polluting the table forever. Read by the chart's footer note.
+          try{ window.__gfhBzNoise = dropped; }catch(e){}
           // Keep run BOUNDARIES (first and last point of each equal stretch), so a flat hour
           // stays flat and the change is a sharp step — dropping run-ends would redraw every
           // step as a long slant back to wherever the run began.
@@ -3945,7 +3978,9 @@
     var span = mins < 90 ? mins + " min" : mins < 2880 ? (mins / 60).toFixed(1) + " hrs" : (mins / 1440).toFixed(1) + " days";
     if(note) note.textContent = pts.length + " pts · covering " + span + " · low $" + rawLo.toFixed(2) +
       " · high $" + rawHi.toFixed(2) + (capped ? " · ⚠ window truncated by the server row cap" : "") +
-      " · this hub's own 1-min spot saves";
+      " · this hub's own 1-min spot saves" +
+      (window.__gfhBzNoise >= 3 ? " · ⚠ " + window.__gfhBzNoise +
+        " stale buy-zone points filtered — an OUTDATED dashboard tab is still open somewhere, refresh it" : "");
   }
   // Crosshair + tooltip, wired once. Snaps to the nearest real sample rather than
   // interpolating, so the number under the pointer is always a price we actually saved.
