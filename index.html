@@ -692,7 +692,7 @@
       </div>
       <div class="chartwrap">
         <svg id="chartSvg" viewBox="0 0 1000 360" preserveAspectRatio="xMidYMid meet"
-             aria-label="Gold price candlestick chart"></svg>
+             aria-label="Gold price line chart"></svg>
         <div class="chart-tip" id="chartTip" style="display:none"></div>
       </div>
       <div class="chart-foot">
@@ -1083,7 +1083,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 16c27b0 · built 2026-07-29 23:34 UTC</span>
+    <span id="verStamp" class="tnum">version: 77d22ce · built 2026-07-30 00:16 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -1726,11 +1726,12 @@
       svg.innerHTML=`<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#767d90" font-family="monospace" font-size="14">waiting for candle feed…</text>`;
       _cg=null; return;
     }
-    let lo=Math.min(...data.map(d=>d.l)), hi=Math.max(...data.map(d=>d.h));
+    // Line chart domain: closes only (Medi 2026-07-29 — candles read as noise at this size,
+    // so the wick highs/lows no longer stretch the frame either).
+    let lo=Math.min(...data.map(d=>d.c)), hi=Math.max(...data.map(d=>d.c));
     const pd=(hi-lo)*0.08||1; lo-=pd; hi+=pd;
     const x=i=> padL + (data.length===1? cw/2 : i*(cw/(data.length-1)));
     const y=p=> padT + (hi-p)/(hi-lo)*ch;
-    const bw=Math.max(1.2, Math.min(11, cw/data.length*0.66));
     // Read the live design tokens instead of hardcoding the dark palette — the chart is
     // drawn into SVG attributes, so it does not inherit CSS variables the way the rest of
     // the page does and used to keep its dark grid on the cream light theme.
@@ -1744,12 +1745,11 @@
       s+=`<line x1="${padL}" y1="${yy.toFixed(1)}" x2="${padL+cw}" y2="${yy.toFixed(1)}" stroke="${grid}" stroke-width="1"/>`;
       s+=`<text x="${padL+cw+5}" y="${(yy+4).toFixed(1)}" fill="${mute}" font-family="monospace" font-size="11">$${Math.round(p)}</text>`;
     }
-    data.forEach((d,i)=>{
-      const up=d.c>=d.o, col=up?good:bad, cx=x(i);
-      s+=`<line x1="${cx.toFixed(1)}" y1="${y(d.h).toFixed(1)}" x2="${cx.toFixed(1)}" y2="${y(d.l).toFixed(1)}" stroke="${col}" stroke-width="1"/>`;
-      const yo=y(d.o), yc=y(d.c), top=Math.min(yo,yc), bh=Math.max(1,Math.abs(yc-yo));
-      s+=`<rect x="${(cx-bw/2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" fill="${col}"/>`;
-    });
+    // One line through the closes + a soft area under it — the same look as the spot chart
+    // above, so the two read as one system. Candles are gone on purpose (Medi 2026-07-29).
+    const ld=data.map((d,i)=>(i?"L":"M")+x(i).toFixed(1)+","+y(d.c).toFixed(1)).join("");
+    s+=`<path d="${ld} L${(padL+cw).toFixed(1)},${padT+ch} L${padL},${padT+ch} Z" fill="rgba(230,179,37,.10)" stroke="none"/>`;
+    s+=`<path d="${ld}" fill="none" stroke="${gold}" stroke-width="2"/>`;
     const last=data[data.length-1].c, ly=y(last);
     s+=`<line x1="${padL}" y1="${ly.toFixed(1)}" x2="${padL+cw}" y2="${ly.toFixed(1)}" stroke="${gold}" stroke-width="1" stroke-dasharray="3 3" opacity="0.85"/>`;
     s+=`<rect x="${padL+cw}" y="${(ly-9).toFixed(1)}" width="${padR}" height="18" rx="3" fill="${gold}"/>`;
@@ -1786,7 +1786,7 @@
       i=Math.max(0,Math.min(n-1,i));
       const d=_cg.data[i], tip=$("chartTip"); if(!d||!tip) return;
       const dt=new Date(d.t*1000).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
-      tip.innerHTML=`<b>${dt}</b><br>O ${d.o.toFixed(2)} · H ${d.h.toFixed(2)}<br>L ${d.l.toFixed(2)} · C ${d.c.toFixed(2)}`;
+      tip.innerHTML=`<b>${dt}</b><br>$${d.c.toFixed(2)}`;
       tip.style.display="block";
       const wr=wrap.getBoundingClientRect();
       let lx=e.clientX-wr.left+12; if(lx>wr.width-140) lx=e.clientX-wr.left-128;
