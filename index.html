@@ -1081,11 +1081,13 @@
         <div class="rb-h">Data quality (chart)</div>
         <div class="rb-rule">
           <span class="rb-n">13</span>
-          <div><b>A frozen Costco line means OUT OF STOCK, not a broken feed.</b>
-            <span class="rb-why">Price history is only recorded while the bar can actually be
-              bought — recording a price nobody can pay would fake a market. The scraper keeps
-              checking every few minutes; the line resumes the moment stock returns. The label
-              says "(out of stock)" whenever this is why the line stopped.</span></div>
+          <div><b>The Costco line records around the clock — faint means SOLD OUT, bright
+              means buyable.</b>
+            <span class="rb-why">The listed price is real information even when nobody can
+              buy, so it stays on the chart (changed 2026-07-30; before that, sold-out hours
+              left a gap). Faint keeps "visible" and "buyable" distinct, and the engine still
+              ignores sold-out prices for BUY and the buy-zone. No data exists for sold-out
+              hours before Jul 30 — that gap is honest, not fixable.</span></div>
         </div>
         <div class="rb-rule">
           <span class="rb-n">14</span>
@@ -1112,7 +1114,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: a5b4bc4 · built 2026-07-30 17:21 UTC</span>
+    <span id="verStamp" class="tnum">version: 85189fc · built 2026-07-30 17:24 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
