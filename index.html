@@ -1083,7 +1083,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 77d22ce · built 2026-07-30 16:27 UTC</span>
+    <span id="verStamp" class="tnum">version: 77d22ce · built 2026-07-30 16:47 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3706,7 +3706,10 @@
     });
 
     var t0 = Date.parse(pts[0].t), t1 = Date.parse(pts[pts.length - 1].t) || (t0 + 1);
-    function X(iso){ return padL + (Date.parse(iso) - t0) / ((t1 - t0) || 1) * cw; }
+    // Breathing room (Medi 2026-07-30): the time axis runs ~12% past "now", so the newest
+    // price sits clear of the right edge with a stretch of blank future beside it.
+    var tEnd = t1 + Math.max((t1 - t0) * 0.12, 60000);
+    function X(iso){ return padL + (Date.parse(iso) - t0) / ((tEnd - t0) || 1) * cw; }
     function Y(v){ return padT + (hi - v) / (hi - lo) * ch; }
 
     var s = "";
@@ -3798,7 +3801,9 @@
     });
 
     var d = pts.map(function(p, i){ return (i ? "L" : "M") + X(p.t).toFixed(1) + "," + Y(Number(p.price)).toFixed(1); }).join("");
-    s += '<path d="' + d + ' L' + (padL + cw).toFixed(1) + ',' + (padT + ch) + ' L' + padL + ',' + (padT + ch) +
+    // Close the area fill under the LAST POINT, not the frame edge — the future gutter stays blank.
+    var xLast = X(pts[pts.length - 1].t);
+    s += '<path d="' + d + ' L' + xLast.toFixed(1) + ',' + (padT + ch) + ' L' + padL + ',' + (padT + ch) +
          ' Z" fill="rgba(230,179,37,.10)" stroke="none"/>' +
          '<path d="' + d + '" fill="none" stroke="' + gold + '" stroke-width="2"/>';
 
