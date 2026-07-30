@@ -153,7 +153,10 @@
   @media (prefers-reduced-motion:reduce){.flash,.flash.up,.flash.down{animation:none}}
   .mktnote{font-family:var(--mono);font-size:11px;color:var(--closed);font-weight:600;
     letter-spacing:.02em;margin-top:3px;white-space:normal}
-  .stamp{font-family:var(--mono);font-size:10.5px;color:var(--ink-mute);white-space:nowrap}
+  /* Stamps carry warnings now (rule 11 nag etc.) — they must WRAP inside their card, never
+     stretch it. nowrap used to shove the whole trio grid wide the moment a long note appeared. */
+  .stamp{font-family:var(--mono);font-size:10.5px;color:var(--ink-mute);
+    white-space:normal;overflow-wrap:break-word;line-height:1.35}
   .stamp b{color:var(--ink-soft);font-weight:600}
   .pull{cursor:pointer;border:1px solid var(--gold-deep);
     background:linear-gradient(180deg,var(--gold),var(--gold-deep));
@@ -1114,7 +1117,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 0e0bbb2 · built 2026-07-30 17:28 UTC</span>
+    <span id="verStamp" class="tnum">version: b80bc5b · built 2026-07-30 18:01 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -1153,8 +1156,8 @@
 
   // Buyers (sell price = spot + offset). Elemetal is the default/preferred buyer.
   const BUYERS = [
-    {key:"elemetal_pamp",    name:"Elemetal · Pamp",    offset:-20,  note:"Verified 7/28 price sheet (GB1PAMPF) + $10 call-in (working relationship). Must be Veriscan + green foot, else any-brand.", t:"2026-07-28"},
-    {key:"elemetal_generic", name:"Elemetal · Generic", offset:-30,  note:"Verified 7/28 price sheet (GB1C, sealed/carded any brand) + $10 call-in.", t:"2026-07-28"},
+    {key:"elemetal_pamp",    name:"Elemetal · Pamp",    offset:-20,  note:"Verified 7/30 price sheet (GB1PAMPF) + $10 call-in (working relationship). Must be Veriscan + green foot, else any-brand.", t:"2026-07-30"},
+    {key:"elemetal_generic", name:"Elemetal · Generic", offset:-30,  note:"Verified 7/30 price sheet (GB1C, sealed/carded any brand) + $10 call-in.", t:"2026-07-30"},
     {key:"upstate",          name:"Upstate",            offset:7,    note:"Pays over spot; ship-in or drive.", t:"2026-07-24"},
     {key:"amark",            name:"AMARK",              offset:null, note:"Las Vegas; no price-pull yet.", t:null},
     {key:"collectpure",      name:"CollectPure",        offset:null, note:"Online marketplace; ship-in.", t:null},
