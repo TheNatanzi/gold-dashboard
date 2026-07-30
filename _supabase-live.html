@@ -456,7 +456,7 @@
     var t0 = Date.parse(pts[0].t), t1 = Date.parse(pts[pts.length - 1].t) || (t0 + 1);
     // Breathing room (Medi 2026-07-30): the time axis runs ~12% past "now", so the newest
     // price sits clear of the right edge with a stretch of blank future beside it.
-    var tEnd = t1 + Math.max((t1 - t0) * 0.12, 60000);
+    var tEnd = t1 + Math.max((t1 - t0) * 0.08, 60000);
     function X(iso){ return padL + (Date.parse(iso) - t0) / ((tEnd - t0) || 1) * cw; }
     function Y(v){ return padT + (hi - v) / (hi - lo) * ch; }
 
@@ -586,6 +586,13 @@
           var yy = Math.max(padT, Math.min(padT + ch, Y(v)));
           dd += (n++ ? "L" : "M") + xx.toFixed(1) + "," + yy.toFixed(1);
         });
+        // The buy-zone line is a forward-looking level ("spot here = buy"), so it carries on
+        // across the blank future gutter to the right edge at its current value.
+        if(isBuy && n >= 2){
+          var endV = Number(o.r.series[o.r.series.length - 1].price);
+          if(isFinite(endV)) dd += "L" + (padL + cw).toFixed(1) + "," +
+            Math.max(padT, Math.min(padT + ch, Y(endV))).toFixed(1);
+        }
         if(n >= 2) s += '<path d="' + dd + '" fill="none" stroke="' + col +
                         '" stroke-width="1.4" stroke-dasharray="2 5" opacity="' + op + '"/>';
         // Mark each moment the recorded price actually CHANGED - a dot on the curve and the
