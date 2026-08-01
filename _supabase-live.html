@@ -471,7 +471,10 @@
     }
     refs.slice().sort(function(a, b){ return refDist(a) - refDist(b); }).forEach(function(r){
       var nlo = Math.min(lo, refLo(r) - pd), nhi = Math.max(hi, refHi(r) + pd);
-      if(nhi - nlo <= maxSpan){ lo = nlo; hi = nhi; }
+      // The BUY ZONE is the business decision line — it is ALWAYS admitted into the frame
+      // (Medi 2026-08-01), even on a flat weekend when that squashes the price line. Costco
+      // keeps the 35% guard: informative, but not worth flattening the chart for.
+      if(r.key === "buy" || nhi - nlo <= maxSpan){ lo = nlo; hi = nhi; }
     });
 
     var t0 = Date.parse(pts[0].t), t1 = Date.parse(pts[pts.length - 1].t) || (t0 + 1);
