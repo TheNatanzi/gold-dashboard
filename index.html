@@ -1142,7 +1142,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: c162e54 · built 2026-08-01 19:59 UTC</span>
+    <span id="verStamp" class="tnum">version: c162e54 · built 2026-08-01 20:50 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -4181,7 +4181,11 @@
   // ordered ASCENDING, so it silently received the OLDEST 1000 and threw away everything
   // newer: the chart sat ~4h in the past and would have drifted further every day as
   // history grew. Fetch newest-first and page backwards instead.
-  var GFH_PAGE = 1000, GFH_MAXPAGES = 6;            // 6000 one-minute ticks ≈ 4 days
+  // 12 pages = 12,000 one-minute ticks ≈ 8.3 days. Was 6 (≈4.2 days), which on 2026-08-01
+  // silently cut the 1M/1W views short of history that actually existed (spot recording
+  // began Jul 27). The footer's "window truncated" warning stays honest for a real month
+  // once the table outgrows this; server-side downsampling is the eventual fix, not more pages.
+  var GFH_PAGE = 1000, GFH_MAXPAGES = 12;
   function loadSpotChart(){
     var win = GFH_TFS[gfhTf] || 1440;
     var since = new Date(Date.now() - win * 60000).toISOString();
