@@ -962,7 +962,7 @@
     <b>Venmo = verified 3%</b> + Synchrony Taekus 2.13% = 5.13% → best per-bar card. •
     <b>Citi Double Cash</b> (personal MC) takes <b>no Taekus</b> → 2% only. •
     <b>Where you sell</b> compares each buyer's price (spot ± their offset); Elemetal is the default. •
-    <b>PULL</b> re-reads the live engine sheet (spot + prices); <b>PULL ONLINE</b> flags a Costco.com price refresh for Claude/June.
+    <b>PULL</b> re-reads the live engine sheet (spot + prices); <b>PULL ONLINE</b> flags a Costco.com price refresh for Claude/June (on the shared web page this button is <b>PRODUCT LINK</b> and opens the bar on Costco.com).
   </div>
 
   </div><!-- /tab-dash -->
@@ -1119,7 +1119,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 468cbac · built 2026-08-01 19:00 UTC</span>
+    <span id="verStamp" class="tnum">version: 2993534 · built 2026-08-01 19:04 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3582,6 +3582,21 @@
   function renameFuturesChart(){
     var b = el("chartBox"); if(b) b.style.display = "none";
   }
+  // PULL ONLINE → PRODUCT LINK (Medi 2026-08-01): on this page the button opens the current
+  // bar straight on Costco.com — same .product.<item>.html link the restock email carries.
+  // Cloning strips the dashboard's own "flag a refresh" click handler.
+  function rewireOnlineBtn(){
+    var b = el("onlinePullBtn"); if(!b || !b.parentNode) return;
+    var c = b.cloneNode(true);
+    b.parentNode.replaceChild(c, b);
+    c.innerHTML = '<span class="dot"></span> PRODUCT LINK';
+    c.title = "Open this bar on Costco.com";
+    c.addEventListener("click", function(){
+      var it = _gfhOnline && _gfhOnline.item;
+      window.open(it ? "https://www.costco.com/.product." + it + ".html"
+                     : "https://www.costco.com/gold-silver-platinum.html", "_blank", "noopener");
+    });
+  }
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
@@ -4122,7 +4137,7 @@
     // Costco history for the same window. Newest-first for the same 1000-row-cap reason as
     // spot, then reversed. Far fewer rows than spot — the collector writes one per genuine
     // online refresh (~8 min), not one a minute — so a single page covers any window we draw.
-    var histDone = fetch(SB_URL + "/rest/v1/online_history?select=t,price,bar_name,in_stock&t=gte." + since + "&order=t.desc",
+    var histDone = fetch(SB_URL + "/rest/v1/online_history?select=t,price,bar_name,in_stock,item&t=gte." + since + "&order=t.desc",
                          { headers: Object.assign({ Range: "0-999" }, H) })
       .then(function(r){ return r.json(); })
       .then(function(rows){ _gfhOnlineHist = Array.isArray(rows) ? rows.slice().reverse() : []; })
@@ -4195,8 +4210,8 @@
       var v = Number(r.price); if(!isFinite(v)) return;
       var barName = r.bar_name || "(bar not recorded)";
       var prev = lastByBar[barName];
-      if(prev === undefined) ev.push({ t: r.t, bar: barName, from: null, to: v });
-      else if(Math.abs(v - prev) > 0.001) ev.push({ t: r.t, bar: barName, from: prev, to: v });
+      if(prev === undefined) ev.push({ t: r.t, bar: barName, item: r.item, from: null, to: v });
+      else if(Math.abs(v - prev) > 0.001) ev.push({ t: r.t, bar: barName, item: r.item, from: prev, to: v });
       lastByBar[barName] = v;
     });
     function f2(n){ return "$" + n.toFixed(2); }
@@ -4213,7 +4228,10 @@
         '<span style="min-width:80px;font-weight:700">' + f2(e.to) + '</span>' +
         '<span style="min-width:110px;color:' + col + '">' + delta +
           (e.from != null ? ' <span style="opacity:.5">(was ' + f2(e.from) + ')</span>' : '') + '</span>' +
-        '<span style="opacity:.55">' + e.bar + '</span>' +
+        '<span style="opacity:.55">' + (e.item
+          ? '<a href="https://www.costco.com/.product.' + e.item + '.html" target="_blank" rel="noopener" ' +
+            'style="color:inherit;text-decoration:underline dotted">' + e.bar + ' ↗</a>'
+          : e.bar) + '</span>' +
       '</div>';
     });
     host.innerHTML = html;
@@ -4261,7 +4279,7 @@
   function start(){
     var s = el("spotStatus"); if(s){ s.textContent = "● connecting…"; s.className = "spot-status"; }
     wirePull(); mountTimer(); load(); setInterval(load, 60000); setInterval(tickTimer, 1000);
-    mountSpotChart(); wireSpotHover(); renameFuturesChart(); loadSpotChart(); setInterval(loadSpotChart, 300000);   // chart refetches every 5 min
+    mountSpotChart(); wireSpotHover(); renameFuturesChart(); rewireOnlineBtn(); loadSpotChart(); setInterval(loadSpotChart, 300000);   // chart refetches every 5 min
     // SVG attributes cannot inherit CSS variables, so the palette is baked in at draw time.
     // Flipping the theme therefore left the chart in the old theme's colours until the next
     // redraw — briefly painting a near-black label plate onto the cream page. Redraw on the
