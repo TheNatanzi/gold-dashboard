@@ -813,23 +813,34 @@
           capped = true;                              // hit our own page budget, not the window
         });
     }
-    // Costco history for the same window. Newest-first for the same 1000-row-cap reason as
-    // spot, then reversed. Far fewer rows than spot — the collector writes one per genuine
-    // online refresh (~8 min), not one a minute — so a single page covers any window we draw.
-    var histDone = fetch(SB_URL + "/rest/v1/online_history?select=t,price,bar_name,in_stock,item&t=gte." + since + "&order=t.desc",
-                         { headers: Object.assign({ Range: "0-999" }, H) })
-      .then(function(r){ return r.json(); })
-      .then(function(rows){ _gfhOnlineHist = Array.isArray(rows) ? rows.slice().reverse() : []; })
-      .catch(function(){ _gfhOnlineHist = []; });      // no history yet -> flat reference line
-
-    // Recorded buy-zone trigger for the same window. Written by recordBuyZone() from any
-    // open dashboard; ~1 row/5 min, so one page covers every window. Missing table or a
-    // PostgREST error body (not an array) both land on [] -> derived fallback.
-    var bzDone = fetch(SB_URL + "/rest/v1/buyzone_history?select=t,price&t=gte." + since + "&order=t.desc",
-                       { headers: Object.assign({ Range: "0-999" }, H) })
-      .then(function(r){ return r.json(); })
-      .then(function(rows){ _gfhBzHist = Array.isArray(rows) ? rows.slice().reverse() : []; })
-      .catch(function(){ _gfhBzHist = []; });
+    // Both history tables below share spot's 1000-row-cap problem: PostgREST truncates
+    // every response at 1000 rows, so a single newest-first page silently cuts the line
+    // to the newest ~day once a table grows past 1000 rows in the window. buyzone_history
+    // crossed that line on 2026-08-01 (2,431 rows — several tabs write ~1 row/min), and
+    // online_history (~288 rows/day since migration 003) is days from it. Page backwards
+    // to the same GFH_MAXPAGES budget as spot — the x-axis can't outgrow spot anyway.
+    function pageBack(table, select, done){
+      var all = [], page = 0;
+      function grab(){
+        var from = page * GFH_PAGE;
+        return fetch(SB_URL + "/rest/v1/" + table + "?select=" + select + "&t=gte." + since + "&order=t.desc",
+                     { headers: Object.assign({ Range: from + "-" + (from + GFH_PAGE - 1) }, H) })
+          .then(function(r){ return r.json(); })
+          .then(function(rows){
+            if(!Array.isArray(rows) || !rows.length) return;
+            all = all.concat(rows);
+            page++;
+            if(rows.length < GFH_PAGE) return;         // reached the start of the window
+            if(page < GFH_MAXPAGES) return grab();
+          });
+      }
+      // Missing table or a PostgREST error body (not an array) both land on [] -> fallbacks.
+      return grab().then(function(){ done(all.reverse()); }).catch(function(){ done([]); });
+    }
+    var histDone = pageBack("online_history", "t,price,bar_name,in_stock,item",
+                            function(rows){ _gfhOnlineHist = rows; });
+    var bzDone = pageBack("buyzone_history", "t,price",
+                          function(rows){ _gfhBzHist = rows; });
 
     // June's manual register entries (table lands with migration 004; [] until then).
     var juneDone = fetch(SB_URL + "/rest/v1/june_history?select=t,price&t=gte." + since + "&order=t.desc",
