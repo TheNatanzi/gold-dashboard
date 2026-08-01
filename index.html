@@ -534,6 +534,7 @@
   .instock{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
     padding:3px 8px;border-radius:6px;background:var(--good-bg);color:var(--good)}
   .instock.out{background:var(--bad-bg);color:var(--bad)}
+  .instock.warn{background:var(--warn-bg);color:var(--warn)}   /* rule 16: feed says IN, Costco says NO */
   .online-req{font-size:11px;color:var(--warn);display:none}
 
   .gauge-title{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
@@ -1078,7 +1079,8 @@
             <span class="rb-why">Mastercard (Citi Double Cash) works only on Costco.com, never
               at the register — with the listing sold out there is nothing it can buy. Its
               checkbox unticks itself and buying power drops it; the tick comes back on its
-              own the moment stock returns. Your saved on/off choice is never overwritten.</span></div>
+              own the moment stock returns. Your saved on/off choice is never overwritten.
+              A flagged Costco mismatch counts as sold out here (rule 16).</span></div>
         </div>
       </div>
 
@@ -1113,13 +1115,34 @@
         </div>
       </div>
 
+      <div class="rb-group">
+        <div class="rb-h">Stock truth</div>
+        <div class="rb-rule rb-key">
+          <span class="rb-n">16</span>
+          <div><b>"IN STOCK" is the scraper's claim, not Costco's — one click checks the
+              referee, and a mismatch is remembered.</b>
+            <span class="rb-why">Proven 2026-08-01: the feed said the Rand bar (item 1943085)
+              was in stock at $4,109.99 while Costco.com itself said "product not available" —
+              the green badge, the Mastercard unlock (rule 12) and the restock email were all
+              wrong for hours. No robot can check for us: Costco's bot-wall blocks every
+              server and headless client tested (curl, PowerShell, headless Chrome), and gold
+              is excluded from its sitemaps — only a real browser sees the truth. So the badge
+              on the shared page carries a one-click "Costco ↗" link, and a ✗ click records
+              the mismatch for everyone: the badge turns amber "feed: in · costco: no", the
+              Mastercard stays locked, and restock emails become a false-alarm notice instead.
+              The flag clears on its own when the feed concedes (goes out of stock), when a
+              newer ✓ overrides it, or after 6 hours. Unchecked stock stays green — the flag
+              exists to remember a disproven claim, not to distrust every restock.</span></div>
+        </div>
+      </div>
+
       </div><!-- /tab-rules -->
 
   <div class="foot">
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 2993534 · built 2026-08-01 19:32 UTC</span>
+    <span id="verStamp" class="tnum">version: c162e54 · built 2026-08-01 19:59 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -1132,6 +1155,10 @@
   const CFG = {
     junePrice:4159.99, juneTime:"2026-07-25T09:32",
     onlinePrice:4169.99, onlineTime:"2026-07-25T10:15", inStock:true,
+    // costcoOk — did a human's browser confirm the feed's IN STOCK against costco.com itself?
+    // true = verified live · false = "feed says IN, Costco says NO" (rule 16) · null = unchecked.
+    // Only the live layer ever sets it; in the artifact it stays null and nothing changes.
+    costcoOk:null,
     discPamp:20, discGen:30, floor:25, onlinePrem:10
   };
   // The built-in starting price, captured before anything can overwrite it. CFG.junePrice
@@ -1224,7 +1251,11 @@
   // RULE 12: an online-only card (Mastercard) can only spend on Costco.com. With the
   // listing sold out there is literally nothing it can buy, so it leaves the pool on its
   // own — the avail[] preference is NOT touched, so the tick returns with the stock.
-  const mcLocked = c => c.net==="mc" && !CFG.inStock;
+  // RULE 16: the feed's "in stock" is a claim, not Costco's word. A recorded Costco-says-NO
+  // check (CFG.costcoOk===false) means the listing is not actually buyable, so the card
+  // stays locked exactly as if the feed had said sold out. Unchecked (null) changes nothing.
+  const stockTrusted = () => CFG.inStock && CFG.costcoOk!==false;
+  const mcLocked = c => c.net==="mc" && !stockTrusted();
 
   // Costco split-tender spreads one bar's cost across cards → POOL total credit.
   // Whole bars only: floor(pooled credit / buy). Profit fills highest-reward cards first.
@@ -1390,7 +1421,10 @@
     rows.forEach(x=>{
       if(x.c.net==="mc" && !mcDone){
         const d=document.createElement("div"); d.className="divider";
-        d.innerHTML=`<span class="lbl">🌐 Online only · Mastercard <b>— works on Costco.com, not the register</b>${CFG.inStock?"":` <b style="color:var(--bad)">· SOLD OUT — excluded from buying power (rule 12)</b>`}</span>`;
+        d.innerHTML=`<span class="lbl">🌐 Online only · Mastercard <b>— works on Costco.com, not the register</b>${
+          CFG.inStock
+            ? (CFG.costcoOk===false ? ` <b style="color:var(--bad)">· FEED SAYS IN, COSTCO SAYS NO — excluded until re-verified (rules 12+16)</b>` : "")
+            : ` <b style="color:var(--bad)">· SOLD OUT — excluded from buying power (rule 12)</b>`}</span>`;
         mx.appendChild(d); mcDone=true;
       }
       const el=document.createElement("div");
@@ -1476,8 +1510,18 @@
       : (priceState()==="expired-dropped" ? "expired — not in use" : "not captured yet");
     $("onlinePriceV").textContent=money(CFG.onlinePrice);
     $("onlineTimeV").textContent=fmtDT(CFG.onlineTime);
-    const s=$("inStockV"); s.textContent=CFG.inStock?"in stock":"out of stock";
-    s.className="instock"+(CFG.inStock?"":" out");
+    // Three states, not two (rule 16): the amber one means the feed and Costco.com disagree
+    // — a human checked and the listing is not really buyable. Never show green for a claim
+    // a human has just disproven.
+    const s=$("inStockV");
+    if(CFG.inStock && CFG.costcoOk===false){
+      s.textContent="feed: in · costco: no"; s.className="instock warn";
+      s.title="The stock feed says IN STOCK but a check of costco.com itself says the listing is not buyable (rule 16).";
+    } else {
+      s.textContent=CFG.inStock?"in stock":"out of stock";
+      s.className="instock"+(CFG.inStock?"":" out");
+      s.title="";
+    }
   }
 
   // ---- LIVE feed (Google Drive connector → engine sheet) ----
@@ -1554,6 +1598,12 @@
     setNum("online_premium",(v)=>CFG.onlinePrem=v);
     setNum("alert_floor",(v)=>CFG.floor=v);
     if(map.online_instock&&map.online_instock.v) CFG.inStock=/^(true|yes|1|in ?stock)$/i.test(map.online_instock.v);
+    // rule 16 verdict from the live layer: "yes" = human verified live, "no" = human saw
+    // Costco itself refuse ("feed says IN, Costco says NO"), anything else = unchecked.
+    // The key is ALWAYS sent when an online row exists, so an expired flag self-heals to null.
+    if(map.online_costco&&map.online_costco.v)
+      CFG.costcoOk = /^yes$/i.test(map.online_costco.v) ? true
+                   : /^no$/i.test(map.online_costco.v)  ? false : null;
     [["elemetal_pamp","elemetal_pamp"],["elemetal_generic","elemetal_generic"],
      ["upstate","upstate"],["amark","amark"],["collectpure","collectpure"]].forEach(([k,bk])=>{
       const b=BUYERS.find(x=>x.key===bk); if(!b||!map[k]) return;
@@ -2851,6 +2901,10 @@
   }
   function stockCaveat(){
     let s="";
+    if(CFG.inStock && CFG.costcoOk===false)
+      s+=" ⚠ The stock feed says <b>IN STOCK</b> but a check of Costco.com itself says the"+
+         " listing is <b>not buyable</b> — treated as sold out for the Mastercard and the"+
+         " restock alerts until re-verified (rule 16). The listed price still stands (rule 7).";
     if(!CFG.inStock)
       s+=" Costco.com is showing <b>out of stock</b> — the last listed price stands in for the"+
          " bar price until June or a fresh lookup updates it (rule: no data point is invented,"+
@@ -3406,7 +3460,8 @@
     june_price:     { unit: "usd",  from: "gold_prices.june.price",      min: 500, max: 20000 },
     gold_spot:      { unit: "usd",  from: "gold_prices.spot.price",      min: 500, max: 20000 },
     online_price:   { unit: "usd",  from: "gold_prices.online.price",    min: 500, max: 20000 },
-    online_instock: { unit: "bool", from: "gold_prices.online.in_stock" }
+    online_instock: { unit: "bool", from: "gold_prices.online.in_stock" },
+    online_costco:  { unit: "tri",  from: "stock_checks.verdict — latest human browser check of costco.com for the listed item (rule 16); yes/no/unknown" }
   };
   // Named explicitly so the next person gets the reason, not just "unknown key".
   var INGEST_FORBIDDEN = {
@@ -3492,6 +3547,16 @@
       // Leave CFG.onlinePrem at its $10 default. The premium-over-spot idea is already on the
       // page in dollars as the "Costco → spot delta" card, so nothing is lost by dropping it.
       if(online.in_stock != null) map.online_instock = { v: online.in_stock ? "yes" : "no", t: "" };
+      // RULE 16 — the feed's "in stock" is a claim; costco.com is the referee, and only a
+      // real browser can ask it (its bot-wall 403s every server client — tested 2026-08-01).
+      // The latest human verdict rides in as yes/no; no check, a stale check (>6h), a
+      // different item, or feed-says-OOS all read "unknown" (→ CFG.costcoOk = null).
+      // ALWAYS sent when the online row exists, so an expired flag self-heals off the badge.
+      if(online.in_stock != null){
+        var cvd = checkVerdict(online);
+        map.online_costco = { v: cvd || "unknown",
+                              t: (cvd && _gfhCheck && _gfhCheck.checked_at) ? fmtT(_gfhCheck.checked_at) : "" };
+      }
     }
     var failures = guardIngest(map);                  // refuse anything whose unit is not declared
     var before = snapNums();                          // snapshot every displayed number
@@ -3501,6 +3566,7 @@
     showGuardFailures(failures);
     pulseDiff(before);                                // flash whatever the update moved
     badge(spot, online);                              // then stamp the confidence badge (applySheet already ran)
+    mountVerify(online);                              // rule 16: "Costco ↗" link + ✗/✓ flag next to the stock badge
     _gfhOnline = online;                              // the chart's Costco reference line reads this
     // Prices refresh every 60s but the chart only refetches every 5 min. Redraw the last
     // points now so the buy-zone and Costco lines never sit up to 5 minutes behind the
@@ -4251,11 +4317,91 @@
     if(cnt) cnt.textContent = nchg + " change" + (nchg === 1 ? "" : "s");
   }
 
+  // ==========================================================================================
+  // RULE 16 — stock verification latch (2026-08-01).
+  //
+  // The feed lied: costcogoldinventory said the Rand bar (1943085) was IN STOCK while
+  // costco.com itself returned "product not available". No robot can re-check for us —
+  // Costco's Akamai wall 403s curl, PowerShell and headless Chrome, and bullion is excluded
+  // from the sitemaps — so verification is one HUMAN click in a real browser, and this table
+  // (stock_checks, migration 004) is the shared memory that makes one person's click flip
+  // every open dashboard + the alert engine at once. Fail-open: no verdict = trust the feed.
+  // A 'no' verdict counts only for the item it names, only while the feed says IN STOCK,
+  // and only for 6 hours; a newer 'yes' overrides it.
+  // ==========================================================================================
+  var CHECK_TTL_MS = 6 * 3600 * 1000;
+  var _gfhCheck = null;                       // latest stock_checks row for the current item
+  function checkVerdict(online){
+    if(!(online && online.in_stock && online.item && _gfhCheck)) return null;
+    if(String(_gfhCheck.item) !== String(online.item)) return null;
+    var age = Date.now() - Date.parse(_gfhCheck.checked_at);
+    if(!(isFinite(age) && age >= 0 && age < CHECK_TTL_MS)) return null;
+    return _gfhCheck.verdict === "no" ? "no" : "yes";
+  }
+  function loadCheck(rows){
+    var online = null;
+    (rows || []).forEach(function(r){ if(r.id === "online") online = r; });
+    if(!(online && online.in_stock && online.item)){ _gfhCheck = null; return Promise.resolve(rows); }
+    return fetch(SB_URL + "/rest/v1/stock_checks?item=eq." + encodeURIComponent(online.item) +
+                 "&select=item,verdict,checked_at&order=checked_at.desc&limit=1", { headers: H })
+      .then(function(r){ return r.ok ? r.json() : []; })
+      .then(function(cs){ _gfhCheck = (Array.isArray(cs) && cs[0]) ? cs[0] : null; return rows; })
+      .catch(function(){ return rows; });     // network blip -> keep the last-known verdict
+  }
+  function writeCheck(item, verdict, host){
+    fetch(SB_URL + "/rest/v1/stock_checks", {
+      method: "POST",
+      headers: Object.assign({ "Content-Type": "application/json", Prefer: "return=minimal" }, H),
+      body: JSON.stringify({ item: String(item), verdict: verdict, note: "dashboard click" })
+    }).then(function(r){
+      if(!r.ok && host) host.innerHTML = '<span style="opacity:.7">⚠ not saved — is migration 004 run?</span>';
+      else load();                            // re-read so THIS click repaints badge + rule 12 now
+    }).catch(function(){ if(host) host.innerHTML = '<span style="opacity:.7">⚠ offline — not saved</span>'; });
+  }
+  function mountVerify(online){
+    var s = el("inStockV"); if(!s || !s.parentNode) return;
+    var w = el("gfhVerify");
+    if(!w){
+      w = document.createElement("span");
+      w.id = "gfhVerify";
+      w.style.cssText = "margin-left:8px;font-size:11px;white-space:nowrap;display:inline-flex;gap:6px;align-items:center;";
+      s.parentNode.insertBefore(w, s.nextSibling);
+    }
+    if(!(online && online.in_stock && online.item)){ w.innerHTML = ""; return; }
+    var url  = "https://www.costco.com/.product." + online.item + ".html";
+    var link = '<a href="' + url + '" target="_blank" rel="noopener" ' +
+               'title="Open the listing on costco.com itself — the 2-second truth check (rule 16)" ' +
+               'style="color:inherit;opacity:.75;text-decoration:underline dotted">Costco ↗</a>';
+    function btn(id, label, title){
+      return '<button id="' + id + '" title="' + title + '" style="font:inherit;font-size:10px;' +
+             'padding:1px 7px;border-radius:9px;border:1px solid var(--line2,#888);' +
+             'background:transparent;color:inherit;cursor:pointer;opacity:.85">' + label + '</button>';
+    }
+    var v = checkVerdict(online);
+    if(v === "no")
+      w.innerHTML = link + btn("gfhCkYes", "✓ it's live now",
+        "Costco shows the listing again — clear the mismatch flag for everyone");
+    else if(v === "yes")
+      w.innerHTML = link + '<span style="opacity:.6" title="A human confirmed the listing live on costco.com">✓ verified ' +
+        (fmtT(_gfhCheck.checked_at) || "").slice(11) + '</span>' +
+        btn("gfhCkNo", "✗", "Costco says NO after all — flag the mismatch");
+    else
+      w.innerHTML = link + btn("gfhCkNo", "✗ Costco says NO?",
+        "Opened the link and got 404 / unavailable? One click flags it on every dashboard and mutes the restock alert (rule 16)");
+    var bn = el("gfhCkNo"), by = el("gfhCkYes");
+    if(bn) bn.addEventListener("click", function(){ bn.disabled = true; writeCheck(online.item, "no",  w); });
+    if(by) by.addEventListener("click", function(){ by.disabled = true; writeCheck(online.item, "yes", w); });
+  }
+
   function load(){
     nextAt = Date.now() + 60000;
     fetch(SB_URL + "/rest/v1/gold_prices?select=*", { headers: H })
       .then(function(r){ return r.json(); })
-      .then(function(rows){ if(Array.isArray(rows)) apply(rows); })
+      .then(function(rows){
+        if(!Array.isArray(rows)) return;
+        // verdict first, THEN apply — apply() folds the verdict into the ingest map
+        return loadCheck(rows).then(function(){ apply(rows); });
+      })
       .catch(function(){ /* keep last-good; applySheet's stale-guard greys after 3 min of no advance */ });
   }
 
