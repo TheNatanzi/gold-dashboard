@@ -1033,7 +1033,9 @@
               was updated more recently.</b>
             <span class="rb-why">Recency picks the basis; a day-old register quote must not
               outrank a Costco price refreshed this hour. Enforced in code by checkBuyPrice.
-              Anything else is a bug and paints a red banner.</span></div>
+              Anything else is a bug and paints a red banner. Out of stock does NOT silence
+              the listing (2026-08-01): the last listed price stands until June or a newer
+              lookup replaces it — only the 2-day expiry retires it.</span></div>
         </div>
         <div class="rb-rule">
           <span class="rb-n">8</span>
@@ -1117,7 +1119,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 07d26cd · built 2026-08-01 18:58 UTC</span>
+    <span id="verStamp" class="tnum">version: 468cbac · built 2026-08-01 19:00 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -1302,7 +1304,10 @@
        can't decide, the conservative (worse) buy price should. */
     const juneT   = Date.parse(CFG.juneTime)   || 0;
     const onlineT = Date.parse(CFG.onlineTime) || 0;
-    const onlineUsable = inStock && !onlineOld && isFinite(impliedInStore);
+    // OUT OF STOCK no longer disqualifies the listing (Medi, 2026-08-01): the last listed
+    // price is assumed to STAND until a newer data point — June's phone or a fresh lookup —
+    // replaces it. Only the 2-day expiry retires it (the standing staleness backstop).
+    const onlineUsable = !onlineOld && isFinite(impliedInStore);
     const overridden = onlineUsable && (
         onlineT > juneT + 60000 ? true
       : juneT > onlineT + 60000 ? false
@@ -2847,7 +2852,9 @@
   function stockCaveat(){
     let s="";
     if(!CFG.inStock)
-      s+=" Costco.com is showing <b>out of stock</b>, so the online figure cannot take over even if it is higher.";
+      s+=" Costco.com is showing <b>out of stock</b> — the last listed price stands in for the"+
+         " bar price until June or a fresh lookup updates it (rule: no data point is invented,"+
+         " the old one just keeps its seat).";
     if(onlineAgeDays()>=2)
       s+=" The online lookup is <b>over 2 days old</b> ("+fmtDT(CFG.onlineTime)+
          "), so it is locked out of driving BUY until someone refreshes it.";
