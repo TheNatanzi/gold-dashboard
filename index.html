@@ -706,6 +706,28 @@
     </div>
   </details>
 
+  <!-- ONE-OUNCE BAR HISTORY (2026-08-04)
+       Every recorded price move AND every sold-out / back-in-stock flip for the 1oz
+       Costco gold bars, newest first. Fed by bars_history (migration 005) through the
+       bars_changes() function (migration 006), which does the comparison server-side.
+       ONE OUNCE ONLY, on purpose: the feed lists ~44 gold bars across 11 weights, and
+       the other sizes are not what gets flipped. The all-sizes view lives on the
+       brother's live page. -->
+  <details class="chartbox" id="barHistBox">
+    <summary class="chart-sum">
+      <span class="cs-l"><span class="cs-ic">🧾</span> 1&nbsp;oz bar history
+        <span class="cs-sub">every price change &amp; sell-out · last 7 days</span></span>
+      <span class="cs-r"><span class="cs-last" id="barHistCount">—</span>
+        <span class="cs-toggle"><span class="cs-toggle-txt"></span><span class="cs-chev">▾</span></span></span>
+    </summary>
+    <div class="chart-body">
+      <div id="barHistRows" style="font-family:var(--mono,monospace);font-size:12px;line-height:1.55;overflow-x:auto">
+        <div style="opacity:.6">loading…</div>
+      </div>
+      <div class="chart-foot"><span id="barHistFoot">—</span></div>
+    </div>
+  </details>
+
   <!-- TRIO: June · Online · Costco→spot delta -->
   <div class="trio">
     <div class="capcard june">
@@ -725,6 +747,10 @@
         <div class="cap-f"><span class="k">Online 1oz price</span><span class="val" id="onlinePriceV">—</span></div>
         <div class="cap-f"><span class="k">Checked · last lookup</span><span class="val time" id="onlineTimeV">—</span></div>
       </div>
+      <!-- Previous price + WHEN it changed (2026-08-04). "Checked" above only says when we
+           last looked; it says nothing about when the number last actually moved. Read from
+           online_history, the same series the chart's Costco line draws. -->
+      <div class="cap-sub" id="onlinePrevV">—</div>
       <button class="pull sm" id="onlinePullBtn" title="Ask Claude to look up the current Costco online price">
         <span class="dot"></span> PULL ONLINE
       </button>
@@ -1142,7 +1168,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 476a8e3 · built 2026-08-05 01:54 UTC</span>
+    <span id="verStamp" class="tnum">version: 5548fb7 · built 2026-08-05 04:20 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3315,6 +3341,197 @@
   renderJune(); compute(); renderCFG(); initLive();
   pullJune(false).then(checkPriceRise);   // June's phone writes straight into this list
   setInterval(function(){ pullJune(false).then(checkPriceRise); }, 30000);
+
+  /* ============================================================================
+     1 OZ BAR HISTORY  (2026-08-04)
+
+     What it answers: "what did the 1oz bars cost, and when did they sell out?"
+
+     WHY IT EXISTS: refresh-prices has always parsed every bar on
+     costcogoldinventory and then kept only the cheapest in-stock 1oz one. Every
+     other bar's price moves and every sell-out went unrecorded — not hidden,
+     genuinely never stored. bars_history (migration 005) now records all of them
+     on every fetch, and bars_changes() (migration 006) reduces that to events.
+
+     WHY AN RPC AND NOT A TABLE READ: bars_history collects ~44 rows per fetch,
+     ~8,100 a day. Only a handful are events. PostgREST caps any response at 1000
+     rows, so reading the table raw would page repeatedly and still silently cut
+     the window short. The function does the lag() comparison in Postgres, after
+     the time filter, and returns just the events.
+
+     ONE OUNCE ONLY: min_oz/max_oz bracket 1.0 with a tolerance, because
+     weight_oz is a parsed float and === 1 is not safe. The all-sizes view stays
+     on the brother's live page; this dashboard is about the bar that gets flipped.
+
+     Degrades quietly: any failure leaves an honest one-line message, never a
+     blank box and never a fake zero.
+     ============================================================================ */
+  var BARHIST_DAYS = 7, BARHIST_LIM = 400, BARHIST_SHOW = 200;
+
+  function barHistFmt(n){
+    return "$" + Number(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+
+  function renderBarHist(rows, err){
+    var host = $("barHistRows"), cnt = $("barHistCount"), foot = $("barHistFoot");
+    if(!host) return;
+    if(err){
+      host.innerHTML = '<div style="opacity:.7">could not load bar history — ' + err + '</div>';
+      if(cnt) cnt.textContent = "—";
+      if(foot) foot.textContent = "the recorder writes one row per bar per Costco fetch (~8 min)";
+      return;
+    }
+    if(!rows.length){
+      host.innerHTML = '<div style="opacity:.6">No 1&nbsp;oz events recorded yet in the last ' +
+        BARHIST_DAYS + ' days. Recording began 2026-08-04; the list fills as prices move.</div>';
+      if(cnt) cnt.textContent = "0 events";
+      if(foot) foot.textContent = "";
+      return;
+    }
+    // Server returns newest-first, which is the order we display. Do not re-sort.
+    var nPrice = 0, nOut = 0, nBack = 0, html = "";
+    rows.slice(0, BARHIST_SHOW).forEach(function(r){
+      var price = Number(r.price), prev = (r.prev_price == null ? null : Number(r.prev_price));
+      if(!isFinite(price)) return;
+      var stock = r.in_stock !== false;
+      var pstock = (r.prev_in_stock == null) ? null : (r.prev_in_stock !== false);
+      var d = new Date(r.t);
+      var when = d.toLocaleDateString("en-US",{month:"short",day:"numeric"}) + " " +
+                 d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+
+      // A single row can be BOTH a price move and a stock flip — say both, in the
+      // order they matter. Stock first: whether you could buy it outranks the cents.
+      var tags = [];
+      if(pstock !== null && pstock !== stock){
+        if(stock){ tags.push('<b style="color:var(--good,#0f9d6b)">BACK IN STOCK</b>'); nBack++; }
+        else     { tags.push('<b style="color:var(--bad,#d23b45)">SOLD OUT</b>');      nOut++;  }
+      }
+      // ALWAYS show the comparison when there is a previous price — including when the
+      // price did not move (Medi, 2026-08-04). A sold-out row used to print the badge and
+      // nothing else, which read as "price unknown" when in fact it was known and flat.
+      // "▼ −0.00 (was $4,179.99)" says the real thing: it sold out at the same price.
+      // Every 1oz bar is treated identically here; no bar gets a different rule.
+      if(prev === null){
+        tags.push('<span style="opacity:.6">first seen</span>');
+      }else{
+        var diff = price - prev;
+        var moved = Math.abs(diff) > 0.001;
+        var up = diff > 0.001;                       // exactly flat renders as ▼ −0.00
+        tags.push('<span style="color:' + (moved ? (up ? 'var(--bad,#d23b45)' : 'var(--good,#0f9d6b)')
+                                                 : 'var(--ink-mute,#888)') + '">' +
+                  (up ? "▲ +" : "▼ −") + Math.abs(diff).toFixed(2) +
+                  '</span> <span style="opacity:.5">(was ' + barHistFmt(prev) + ')</span>');
+        if(moved) nPrice++;                          // a flat row is not a "price move"
+      }
+      // A price rise is red and a fall is green on purpose: this dashboard buys bars,
+      // so a cheaper bar is the good news. Same convention as the rest of the page.
+
+      html += '<div style="display:flex;gap:14px;flex-wrap:wrap;padding:4px 0;border-bottom:1px solid var(--line)">' +
+        '<span style="opacity:.6;min-width:112px">' + when + '</span>' +
+        '<span style="min-width:86px;font-weight:700' + (stock ? '' : ';opacity:.5') + '">' +
+          barHistFmt(price) + '</span>' +
+        '<span style="min-width:210px">' + (tags.length ? tags.join(" · ") : "—") + '</span>' +
+        '<span style="opacity:.55">' +
+          '<a href="https://www.costco.com/.product.' + r.item + '.html" target="_blank" rel="noopener" ' +
+             'style="color:inherit;text-decoration:underline dotted">' +
+             (r.bar_name || "(bar not recorded)") + ' ↗</a></span>' +
+      '</div>';
+    });
+    host.innerHTML = html;
+    if(cnt) cnt.textContent = (nPrice + nOut + nBack) + " events";
+    // NO SILENT TRUNCATION — if rows were dropped, say how many and why.
+    var noteTrunc = rows.length > BARHIST_SHOW
+      ? " · showing newest " + BARHIST_SHOW + " of " + rows.length
+      : "";
+    if(foot) foot.textContent = nPrice + " price moves · " + nOut + " sell-outs · " +
+                                nBack + " restocks" + noteTrunc;
+  }
+
+  // GET, not POST, and that is not a style choice. sbFetch deliberately throws away the
+  // response body of any non-GET (`if(o.method && o.method!=="GET") ... data:null`),
+  // because every other write on this page returns nothing worth reading. An RPC is the
+  // one call that is a read wearing a POST's clothes. bars_changes is declared STABLE,
+  // so PostgREST accepts it as GET with the arguments as query parameters — which keeps
+  // this call inside sbFetch, where the timeout and the error kinds live.
+  function pullBarHist(){
+    var since = new Date(Date.now() - BARHIST_DAYS*864e5).toISOString();
+    var url = SB_URL + "/rest/v1/rpc/bars_changes" +
+              "?since=" + encodeURIComponent(since) +
+              "&lim="   + BARHIST_LIM +
+              // 0.999–1.001 rather than = 1: weight_oz is parsed off the page as a float.
+              "&min_oz=0.999&max_oz=1.001";
+    return sbFetch(url, { headers: sbH() }).then(function(res){
+      if(res.kind === "ok" && Array.isArray(res.data)) return renderBarHist(res.data, null);
+      renderBarHist([], res.kind === "timeout" ? "timed out"
+                      : res.kind === "network" ? "offline"
+                      : res.kind === "http"    ? ("server said " + res.status)
+                      : res.kind === "parse"   ? "unreadable reply"
+                      : "unexpected reply");
+    });
+  }
+
+  /* ---------------------------------------------------------------------------
+     ONLINE CARD — previous price, and WHEN it changed  (2026-08-04)
+
+     The card already said "Checked · last lookup", which is when we last LOOKED,
+     not when the number last MOVED. Those two are wildly different: the scraper
+     checks every ~8 minutes, while the price can sit still for days. A fresh
+     "checked" stamp on a price that has not budged since Tuesday reads as news.
+
+     Source is online_history — the same cheapest-in-stock-1oz series the chart's
+     Costco line draws, so the card and the chart can never tell different stories.
+
+     Walk newest-first until the price differs. That row is the previous price;
+     the row just after it (one step newer) is the first sighting of the current
+     price, which is the moment it changed. Honest about its own limits: if the
+     whole page of rows carries one price, it says so rather than inventing a date.
+     --------------------------------------------------------------------------- */
+  function renderOnlinePrev(txt, title){
+    var el = $("onlinePrevV"); if(!el) return;
+    el.textContent = txt;
+    el.title = title || "";
+  }
+
+  function pullOnlinePrev(){
+    // PostgREST caps any response at 1000 rows; ask for exactly that and say so if
+    // the whole page is one flat price rather than pretending we looked further.
+    var url = SB_URL + "/rest/v1/online_history?select=t,price&order=t.desc&limit=1000";
+    return sbFetch(url, { headers: sbH() }).then(function(res){
+      if(res.kind !== "ok" || !Array.isArray(res.data) || !res.data.length){
+        return renderOnlinePrev(res.kind === "ok" ? "no recorded price history yet"
+                                                  : "previous price unavailable · " + res.kind);
+      }
+      var rows = res.data;                                  // newest first
+      var cur = Number(rows[0].price);
+      if(!isFinite(cur)) return renderOnlinePrev("previous price unreadable");
+      var i = 1;
+      while(i < rows.length && Math.abs(Number(rows[i].price) - cur) <= 0.001) i++;
+      if(i >= rows.length){
+        var oldest = new Date(rows[rows.length - 1].t);
+        return renderOnlinePrev("no change since " +
+          oldest.toLocaleDateString("en-US",{month:"short",day:"numeric"}) + " · flat across " +
+          rows.length + " checks",
+          "Every recorded check in this window carries the same price.");
+      }
+      var prevPrice = Number(rows[i].price);
+      var changed   = new Date(rows[i - 1].t);              // first sighting of today's price
+      var when = changed.toLocaleDateString("en-US",{month:"short",day:"numeric"}) + ", " +
+                 changed.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+      // DELIBERATELY NO ARROW OR DELTA HERE. The price shown above this line can be a
+      // seeded/last-known value (in the raw dashboard it is, until the live layer feeds
+      // it), while this line reads the recorded series. Printing "▲ +80.00" next to a
+      // number it was not computed from puts arithmetic on screen that does not add up.
+      // The previous price and the moment it changed are what was asked for, and both
+      // are facts from one source. Per-bar deltas live in the 1 oz bar history box.
+      renderOnlinePrev("was " + barHistFmt(prevPrice) + "  ·  changed " + when,
+                       "Previous recorded online price, and the first check that showed the current one. " +
+                       "Recorded price at that check: " + barHistFmt(cur) + ".");
+    });
+  }
+
+  pullBarHist();
+  pullOnlinePrev();
+  setInterval(function(){ pullBarHist(); pullOnlinePrev(); }, 300000);   // recorder writes every ~8 min
 
   window.__gfhIngest = applySheet;   // public-page ingest hook (build-injected; unused in the artifact)
 })();
