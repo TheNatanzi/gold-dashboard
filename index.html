@@ -945,86 +945,6 @@
     </div>
   </section>
 
-  <!-- JUNE'S COSTCO ROUND — the live call sheet that produces the BUY price -->
-  <details class="junebox" id="juneBox">
-    <summary class="jb-sum">
-      <div class="jb-l">
-        <span>📞 June's Costco round</span>
-        <span class="jb-sub" id="jbSub">45 warehouses within 75 miles · tiered, tier 1 first</span>
-      </div>
-      <div class="jb-r">
-        <span class="jb-live" id="jbLive">◉ connecting</span>
-        <span class="jb-cov" id="jbCov">no calls yet</span>
-        <span class="jb-chev" aria-hidden="true">⌄</span>
-      </div>
-    </summary>
-    <div class="jb-body">
-      <div class="jb-actions">
-        <button class="pull sm" id="jbRefresh" type="button"><span class="dot"></span> REFRESH NOW</button>
-        <button class="pull sm" id="jbSelf" type="button"><span class="dot"></span> I CALLED ONE MYSELF</button>
-        <button class="pull sm" id="jbPasteToggle" type="button" style="filter:saturate(.25)"><span class="dot"></span> PASTE A ROUND</button>
-        <button class="pull sm" id="jbDropPaste" type="button" style="display:none;filter:saturate(.25)"><span class="dot"></span> DROP PASTED ROUND</button>
-        <span class="jb-msg" id="jbMsg">Nothing recorded yet — BUY is still the seed price.</span>
-      </div>
-
-      <!-- Log a call without June: same shared table, marked as yours -->
-      <div class="jb-self" id="jbSelfForm" style="display:none">
-        <div class="jbs-grid">
-          <div class="jbs-f">
-            <label class="jbs-lab" for="jsStore">Warehouse</label>
-            <select id="jsStore"></select>
-          </div>
-          <div class="jbs-f">
-            <label class="jbs-lab" for="jsStock">Stock</label>
-            <select id="jsStock">
-              <option value="yes">Has bars</option>
-              <option value="no">Sold out</option>
-            </select>
-          </div>
-          <div class="jbs-f">
-            <label class="jbs-lab" for="jsPamp">Pamp bars</label>
-            <input id="jsPamp" type="number" min="0" step="1" placeholder="0">
-          </div>
-          <div class="jbs-f">
-            <label class="jbs-lab" for="jsGen">Generic bars</label>
-            <input id="jsGen" type="number" min="0" step="1" placeholder="0">
-          </div>
-          <div class="jbs-f wide">
-            <label class="jbs-lab" for="jsNote">Notes</label>
-            <input id="jsNote" type="text" placeholder="limit per member, restock day, who you spoke to">
-          </div>
-          <div class="jbs-f">
-            <label class="jbs-lab" for="jsPrice">Shelf price (optional)</label>
-            <input id="jsPrice" type="number" min="0" step="0.01" placeholder="leave blank to keep">
-          </div>
-        </div>
-        <div class="jb-actions">
-          <button class="pull sm" id="jsSave" type="button"><span class="dot"></span> SAVE MY CALL</button>
-          <span class="jb-msg" id="jsMsg">Saves to the same list June's phone writes to.</span>
-        </div>
-      </div>
-
-      <div id="jbPasteWrap" style="display:none">
-        <textarea class="jb-paste" id="jbPaste" spellcheck="false"
-          placeholder="Backup route — paste what June copied from the call sheet, then press IMPORT."></textarea>
-        <div class="jb-actions" style="margin-top:8px">
-          <button class="pull sm" id="jbImport" type="button"><span class="dot"></span> IMPORT PASTED ROUND</button>
-        </div>
-      </div>
-
-      <!-- The June TABLE, its sort bar and its tier bar were removed 2026-08-05:
-           the Warehouses tab shows the same 45 warehouses with June's calls merged
-           in beside the bot feed, so this was a second view of the same rows.
-
-           What deliberately stayed: the actions above (refresh, "I called one
-           myself", and the paste importer). Those have no equivalent anywhere else,
-           and the paste importer is still the only way to load a whole call sheet.
-
-           renderJune() also still runs on every pull. It is no longer painting a
-           table, but it computes _cov -> the coverage ring, the verdict and the
-           BUY price. Deleting it would silently change money numbers. -->
-  </details>
-
 
   <!-- ALERT GAUGE (full-width band) -->
   <div class="gaugebar">
@@ -1303,6 +1223,94 @@
       </div>
     </section>
 
+    <!-- June's call controls. They used to sit on the Dashboard tab, above the alert
+         gauge. They live here because this tab is where her calls are READ: the table
+         below already merges June's calls beside the bot feed, but there was no way to
+         RECORD one without switching tabs. The ids are unchanged on purpose -- every
+         listener still binds by id, and renderJune() writes jbSub/jbCov unconditionally.
+
+         renderJune() itself did NOT move and must not be touched: it computes _cov,
+         which drives the coverage ring, the verdict and the BUY price. -->
+    <!-- JUNE'S COSTCO ROUND — the live call sheet that produces the BUY price -->
+    <details class="junebox" id="juneBox">
+      <summary class="jb-sum">
+        <div class="jb-l">
+          <span>📞 June's Costco round</span>
+          <span class="jb-sub" id="jbSub">45 warehouses within 75 miles · tiered, tier 1 first</span>
+        </div>
+        <div class="jb-r">
+          <span class="jb-live" id="jbLive">◉ connecting</span>
+          <span class="jb-cov" id="jbCov">no calls yet</span>
+          <span class="jb-chev" aria-hidden="true">⌄</span>
+        </div>
+      </summary>
+      <div class="jb-body">
+        <div class="jb-actions">
+          <button class="pull sm" id="jbRefresh" type="button"><span class="dot"></span> REFRESH NOW</button>
+          <button class="pull sm" id="jbSelf" type="button"><span class="dot"></span> I CALLED ONE MYSELF</button>
+          <button class="pull sm" id="jbPasteToggle" type="button" style="filter:saturate(.25)"><span class="dot"></span> PASTE A ROUND</button>
+          <button class="pull sm" id="jbDropPaste" type="button" style="display:none;filter:saturate(.25)"><span class="dot"></span> DROP PASTED ROUND</button>
+          <span class="jb-msg" id="jbMsg">Nothing recorded yet — BUY is still the seed price.</span>
+        </div>
+
+        <!-- Log a call without June: same shared table, marked as yours -->
+        <div class="jb-self" id="jbSelfForm" style="display:none">
+          <div class="jbs-grid">
+            <div class="jbs-f">
+              <label class="jbs-lab" for="jsStore">Warehouse</label>
+              <select id="jsStore"></select>
+            </div>
+            <div class="jbs-f">
+              <label class="jbs-lab" for="jsStock">Stock</label>
+              <select id="jsStock">
+                <option value="yes">Has bars</option>
+                <option value="no">Sold out</option>
+              </select>
+            </div>
+            <div class="jbs-f">
+              <label class="jbs-lab" for="jsPamp">Pamp bars</label>
+              <input id="jsPamp" type="number" min="0" step="1" placeholder="0">
+            </div>
+            <div class="jbs-f">
+              <label class="jbs-lab" for="jsGen">Generic bars</label>
+              <input id="jsGen" type="number" min="0" step="1" placeholder="0">
+            </div>
+            <div class="jbs-f wide">
+              <label class="jbs-lab" for="jsNote">Notes</label>
+              <input id="jsNote" type="text" placeholder="limit per member, restock day, who you spoke to">
+            </div>
+            <div class="jbs-f">
+              <label class="jbs-lab" for="jsPrice">Shelf price (optional)</label>
+              <input id="jsPrice" type="number" min="0" step="0.01" placeholder="leave blank to keep">
+            </div>
+          </div>
+          <div class="jb-actions">
+            <button class="pull sm" id="jsSave" type="button"><span class="dot"></span> SAVE MY CALL</button>
+            <span class="jb-msg" id="jsMsg">Saves to the same list June's phone writes to.</span>
+          </div>
+        </div>
+
+        <div id="jbPasteWrap" style="display:none">
+          <textarea class="jb-paste" id="jbPaste" spellcheck="false"
+            placeholder="Backup route — paste what June copied from the call sheet, then press IMPORT."></textarea>
+          <div class="jb-actions" style="margin-top:8px">
+            <button class="pull sm" id="jbImport" type="button"><span class="dot"></span> IMPORT PASTED ROUND</button>
+          </div>
+        </div>
+
+        <!-- The June TABLE, its sort bar and its tier bar were removed 2026-08-05:
+             the Warehouses tab shows the same 45 warehouses with June's calls merged
+             in beside the bot feed, so this was a second view of the same rows.
+
+             What deliberately stayed: the actions above (refresh, "I called one
+             myself", and the paste importer). Those have no equivalent anywhere else,
+             and the paste importer is still the only way to load a whole call sheet.
+
+             renderJune() also still runs on every pull. It is no longer painting a
+             table, but it computes _cov -> the coverage ring, the verdict and the
+             BUY price. Deleting it would silently change money numbers. -->
+    </details>
+
     <div class="sec-head">
       <h3>Watchlist</h3>
       <span id="wiStamp">—</span>
@@ -1365,7 +1373,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 7dd3b38 · built 2026-08-05 20:21 UTC</span>
+    <span id="verStamp" class="tnum">version: ccedb84 · built 2026-08-05 22:06 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
