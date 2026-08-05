@@ -314,6 +314,108 @@
   @media (prefers-reduced-motion:reduce){.jb-chev{transition:none}}
   .jb-body{padding:0 16px 16px;display:flex;flex-direction:column;gap:12px}
   .jb-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  /* ============ WAREHOUSE INVENTORY ============
+     Reuses the existing tokens on purpose — no new colours. A new hue would have
+     to be added to four blocks in june-call-sheet.html and two here, or it fails
+     silently in one theme. Everything below is built from --good/--day/--bad,
+     which already carry the exact meanings needed. */
+
+  /* The health banner. This is the most important element on the tab: it is what
+     stops the page from ever showing "no stock" when the truth is "we don't know".
+     In the unknown state it REPLACES the numbers rather than sitting beside them. */
+  .wi-health{border-radius:var(--r);padding:12px 16px;margin-bottom:14px;
+    display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+    font-family:var(--mono);font-size:12.5px;line-height:1.5;
+    border:1px solid var(--line2);background:var(--panel)}
+  .wi-health .ic{font-size:16px;line-height:1}
+  .wi-health b{font-weight:700}
+  .wi-health .sub{color:var(--ink-mute);font-size:11px;width:100%}
+  .wi-health.fresh{border-color:var(--good);background:var(--good-bg);color:var(--ink)}
+  .wi-health.fresh b{color:var(--good)}
+  .wi-health.stale{border-color:var(--day-line);background:var(--day-bg);color:var(--ink)}
+  .wi-health.stale b{color:var(--day)}
+  /* Loudest state in the file. Silence from the feed is ambiguous — it could mean
+     "no gold anywhere" or "the pipeline is dead" — and acting on the wrong reading
+     costs a real drive. So it is red, and it hides the counts. */
+  .wi-health.unknown{border-color:var(--bad);background:var(--bad-bg);color:var(--ink)}
+  .wi-health.unknown b{color:var(--bad)}
+
+  .wi-broken{font-family:var(--mono);font-size:11px;color:var(--bad);
+    border:1px dashed var(--bad);border-radius:8px;padding:6px 10px;margin-top:8px}
+
+  /* Row controls. State lives in aria-pressed, never a .active class — the house
+     contract, matching .chip / .tchip / .jb-tchip. */
+  .wi-tog{cursor:pointer;font-family:var(--mono);font-size:10px;font-weight:700;
+    letter-spacing:.06em;text-transform:uppercase;background:var(--bg2);
+    border:1px solid var(--line2);color:var(--ink-mute);border-radius:999px;
+    padding:5px 10px;min-height:32px}
+  .wi-tog:hover{border-color:var(--gold-deep)}
+  .wi-tog[aria-pressed="true"]{background:var(--gold-glow);border-color:var(--gold-deep);color:var(--gold)}
+  .wi-tog.alert[aria-pressed="true"]{background:var(--good-bg);border-color:var(--good);color:var(--good)}
+  .wi-tog[disabled]{opacity:.4;cursor:not-allowed}
+
+  /* 16px: below that iOS zooms the whole page when the select takes focus. Same
+     rule the call sheet has always had and this page had to back-port. */
+  .wi-tsel{background:var(--bg2);color:var(--ink);border:1px solid var(--line2);
+    border-radius:8px;padding:6px 8px;font-family:var(--mono);font-size:16px;min-height:34px}
+  .wi-tsel.t1{border-color:var(--t1);color:var(--t1)}
+  .wi-tsel.t2{border-color:var(--t2);color:var(--t2)}
+  .wi-tsel.t3{border-color:var(--t3);color:var(--t3)}
+  .wi-tsel.t4{border-color:var(--t4);color:var(--t4)}
+  .wi-inherit{font-size:9px;color:var(--ink-mute);margin-left:5px}
+
+  /* 44px targets — Medi uses these standing in a parking lot, one-handed. */
+  .wi-act{display:inline-flex;align-items:center;justify-content:center;gap:5px;
+    min-width:44px;min-height:38px;padding:0 10px;border-radius:9px;
+    border:1px solid var(--line2);text-decoration:none;color:var(--ink-soft);
+    font-family:var(--mono);font-size:11px;white-space:nowrap}
+  .wi-act:hover{border-color:var(--gold-deep);color:var(--gold)}
+  .wi-act.call{border-color:var(--good);color:var(--good)}
+  .wi-acts{display:flex;gap:6px}
+
+  .wi-lvl{font-size:8.5px;letter-spacing:.09em;text-transform:uppercase;
+    border-radius:4px;padding:1px 5px;border:1px solid currentColor;white-space:nowrap}
+  .wi-lvl.in_stock{color:var(--good)}
+  .wi-lvl.low{color:var(--day)}
+  /* "Present, level not reported" — 46% of real observations. Never styled as
+     absence, and never styled as a confirmed count. */
+  .wi-lvl.unknown{color:var(--ink-mute)}
+  .wi-lvl.unrecognised{color:var(--bad)}
+  .wi-lvl.none{color:var(--ink-mute);opacity:.55}
+  /* "The bot does not scan this warehouse at all" — must NOT look like the
+     bot scanned it and found nothing. The roster is 45 stores; the bot covers
+     27, so 18 rows are permanently blind and 5 of those sit inside the default
+     tier 1-3 view (Richmond is 15.4 mi — closer than most stores it DOES scan).
+     Rendering both as a bare dash told Medi "no gold here" about a warehouse
+     nobody had looked at. Dashed border = "no information", not "no bars". */
+  .wi-lvl.blind{color:var(--ink-mute);opacity:.75;border-style:dashed;font-style:italic}
+  /* Watch/email on a warehouse the bot cannot see. The control still works and
+     still saves, but it must not look like live coverage. */
+  .wi-tog.noalert{opacity:.62;border-style:dashed}
+  /* A sighting the feed has since posted past without re-listing. Still shown —
+     it may well still be there — but never as "right now". */
+  .cb-chip.aged{opacity:.68;border-style:dashed}
+  /* A chip carrying a sentence, not a store name. Must wrap, or it forces the
+     whole page to scroll sideways on a phone. */
+  .cb-chip.wrap16{white-space:normal;max-width:100%}
+  .wi-noalert-mark{display:block;font-size:7.5px;letter-spacing:.06em;opacity:.85;
+    text-transform:uppercase;line-height:1.1;margin-top:1px}
+
+  .wi-hist{font-family:var(--mono);font-size:11.5px}
+  .wi-bar{display:inline-block;height:9px;border-radius:3px;background:var(--gold-deep);
+    vertical-align:middle;min-width:2px}
+  .wi-bar.dim{background:var(--line2)}
+  .wi-dow{display:flex;gap:3px;align-items:flex-end;height:44px}
+  .wi-dow div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;
+    align-items:center;gap:3px}
+  .wi-dow .b{width:100%;background:var(--gold-deep);border-radius:3px 3px 0 0;min-height:2px}
+  .wi-dow .l{font-size:8.5px;color:var(--ink-mute)}
+
+  @media (max-width:560px){
+    .wi-acts{flex-direction:column}
+    .wi-health{font-size:12px}
+  }
+
   .jb-open{text-decoration:none}
   .jb-paste{width:100%;min-height:64px;background:var(--bg2);border:1px solid var(--line2);
     color:var(--ink);border-radius:10px;padding:10px 12px;font-family:var(--mono);font-size:11.5px;
@@ -671,6 +773,10 @@
     <button class="tabbtn" role="tab" data-tab="dash"  aria-selected="true"  id="tabBtnDash">◆ Dashboard</button>
     <button class="tabbtn" role="tab" data-tab="rules" aria-selected="false" id="tabBtnRules">📋 Rules
       <span class="tb-chip" id="tabRuleChip">—</span></button>
+    <!-- The chip rides on the TAB so the in-stock count is readable without opening
+         it — same trick as the Rules tab's call-day verdict. -->
+    <button class="tabbtn" role="tab" data-tab="inv" aria-selected="false" id="tabBtnInv">🏬 Warehouses
+      <span class="tb-chip" id="tabInvChip">—</span></button>
   </nav>
 
   <div class="tabpanel" id="tab-dash" role="tabpanel" aria-labelledby="tabBtnDash">
@@ -906,40 +1012,17 @@
         </div>
       </div>
 
-      <div class="jb-sortbar">
-        <label class="jb-sortlab" for="jbSort">Sort</label>
-        <select id="jbSort">
-          <option value="tier">Tier — 1 first, then 2, 3, 4</option>
-          <option value="distance">Distance — nearest to Walnut Creek</option>
-          <option value="smart">Called today first, nearest — day-old at the bottom</option>
-          <option value="name">Name — A to Z</option>
-          <option value="bars">Inventory — most bars first</option>
-        </select>
-        <span class="jb-sortnote" id="jbSortNote">—</span>
-      </div>
+      <!-- The June TABLE, its sort bar and its tier bar were removed 2026-08-05:
+           the Warehouses tab shows the same 45 warehouses with June's calls merged
+           in beside the bot feed, so this was a second view of the same rows.
 
-      <div class="jb-tierbar" id="jbTierBar" role="group" aria-label="Show or hide tiers">
-        <span class="jb-sortlab">Tiers</span>
-        <button class="jb-tchip" type="button" data-tier="1" aria-pressed="true"><span class="dotc"></span>1 <span class="cnt" id="jbtc1">0</span></button>
-        <button class="jb-tchip" type="button" data-tier="2" aria-pressed="true"><span class="dotc"></span>2 <span class="cnt" id="jbtc2">0</span></button>
-        <button class="jb-tchip" type="button" data-tier="3" aria-pressed="true"><span class="dotc"></span>3 <span class="cnt" id="jbtc3">0</span></button>
-        <button class="jb-tchip" type="button" data-tier="4" aria-pressed="false"><span class="dotc"></span>4 <span class="cnt" id="jbtc4">0</span></button>
-        <button class="jb-tchip" type="button" data-tier="all">Show all</button>
-        <span class="jb-tiernote" id="jbTierNote">—</span>
-      </div>
+           What deliberately stayed: the actions above (refresh, "I called one
+           myself", and the paste importer). Those have no equivalent anywhere else,
+           and the paste importer is still the only way to load a whole call sheet.
 
-      <div class="jb-wrap" id="jbWrap">
-        <table class="jb-table">
-          <thead>
-            <tr>
-              <th>Warehouse &amp; address</th><th class="r">Miles</th><th class="r">Pamp</th><th class="r">Generic</th>
-              <th class="r">Total</th><th>Called</th><th>By</th><th>Notes</th>
-            </tr>
-          </thead>
-          <tbody id="jbRows"></tbody>
-        </table>
-      </div>
-    </div>
+           renderJune() also still runs on every pull. It is no longer painting a
+           table, but it computes _cov -> the coverage ring, the verdict and the
+           BUY price. Deleting it would silently change money numbers. -->
   </details>
 
 
@@ -1178,11 +1261,111 @@
 
       </div><!-- /tab-rules -->
 
+  <!-- ======================= WAREHOUSE INVENTORY ======================= -->
+  <div class="tabpanel" id="tab-inv" role="tabpanel" aria-labelledby="tabBtnInv" hidden>
+
+    <!-- The freshness verdict. Rendered FIRST and, in the unknown state, instead of
+         the numbers below it. Silence from the upstream bot is ambiguous — five
+         multi-hour outages in the last 90 days — and "no stock" is not a safe
+         reading of silence. -->
+    <section class="wi-health" id="wiHealth" role="status" aria-live="polite">
+      <span class="ic">⏳</span><b>Reading the feed…</b>
+    </section>
+
+    <section class="covband" id="wiNow">
+      <div class="cb-top">
+        <div class="cb-stats">
+          <div class="cb-s">
+            <div class="k">In stock now</div>
+            <div class="v gold tnum" id="wiStockN">—</div>
+            <div class="sub" id="wiStockSub">—</div>
+          </div>
+          <div class="cb-s">
+            <div class="k">On your watchlist</div>
+            <div class="v tnum" id="wiWatchN">—</div>
+            <div class="sub" id="wiWatchSub">—</div>
+          </div>
+          <div class="cb-s">
+            <div class="k">Last scan</div>
+            <div class="v tnum" id="wiLastN">—</div>
+            <div class="sub" id="wiLastSub">—</div>
+          </div>
+          <div class="cb-s">
+            <div class="k">Warehouses tracked</div>
+            <div class="v tnum" id="wiTrackN">—</div>
+            <div class="sub" id="wiTrackSub">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="cb-near">
+        <div class="cb-title">Where the bars are</div>
+        <div class="cb-chips" id="wiChips"><span class="cb-chip none">reading…</span></div>
+      </div>
+    </section>
+
+    <div class="sec-head">
+      <h3>Watchlist</h3>
+      <span id="wiStamp">—</span>
+      <div class="rail"></div>
+    </div>
+
+    <!-- Same tier vocabulary as June's call sheet and the June table above. The
+         override is stored in warehouse_tiers; a store with no row inherits the
+         tier hardcoded in the roster. One notion of importance, not two. -->
+    <div class="jb-tierbar" id="wiTierBar" role="group" aria-label="Show or hide tiers">
+      <span class="jb-sortlab">Tiers</span>
+      <button class="jb-tchip" type="button" data-tier="1" aria-pressed="true">1 <span class="cnt" id="witc1">0</span></button>
+      <button class="jb-tchip" type="button" data-tier="2" aria-pressed="true">2 <span class="cnt" id="witc2">0</span></button>
+      <button class="jb-tchip" type="button" data-tier="3" aria-pressed="true">3 <span class="cnt" id="witc3">0</span></button>
+      <button class="jb-tchip" type="button" data-tier="4" aria-pressed="false">4 <span class="cnt" id="witc4">0</span></button>
+      <button class="jb-tchip" type="button" data-tier="all">Show all</button>
+      <button class="jb-tchip" type="button" data-tier="watched" id="wiWatchOnly" aria-pressed="false">★ Watched only</button>
+      <span class="jb-sortlab" id="wiTierNote">—</span>
+    </div>
+
+    <div class="jb-wrap">
+      <table class="jb-table" id="wiTable">
+        <thead>
+          <tr>
+            <th>Warehouse</th>
+            <th>Tier</th>
+            <th>Bot says</th>
+            <th>June says</th>
+            <th class="r">Seen</th>
+            <th>Watch</th>
+            <th>Email</th>
+            <th>Act</th>
+          </tr>
+        </thead>
+        <tbody id="wiBody">
+          <tr><td colspan="8" class="jb-msg">reading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="jb-msg" id="wiMsg" style="margin-top:8px">—</div>
+
+    <details class="chartbox" id="wiHistBox">
+      <summary class="chart-sum">
+        <span class="cs-title">History &amp; patterns</span>
+        <span class="cs-toggle-txt"></span>
+        <span class="cs-chev">▾</span>
+      </summary>
+      <div style="padding:12px 2px 4px">
+        <div class="cb-title" style="margin-bottom:8px">Which warehouse stocks most often</div>
+        <div class="wi-hist" id="wiTop">—</div>
+        <div class="cb-title" style="margin:16px 0 8px">Which day of the week</div>
+        <div class="wi-dow" id="wiDow"></div>
+        <div class="jb-msg" id="wiHistNote" style="margin-top:10px">—</div>
+      </div>
+    </details>
+
+  </div><!-- /tab-inv -->
+
   <div class="foot">
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: f9933b2 · built 2026-08-05 06:16 UTC</span>
+    <span id="verStamp" class="tnum">version: 4477a4d · built 2026-08-05 17:28 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -2027,7 +2210,7 @@
     {id:"pleasanton",  n:"Pleasanton",                  a:"7200 Johnson Dr",           c:"Pleasanton",          z:"94588", p:"9254754000", mi:15,   t:1, r:4},
     {id:"livermore",   n:"Livermore",                   a:"2800 Independence Dr",      c:"Livermore",           z:"94551", p:"9254436306", mi:17.8, t:1, r:5},
     {id:"concord",     n:"Concord",                     a:"2400 Monument Blvd",        c:"Concord",             z:"94520", p:"9255664003", mi:4.7,  t:1, r:6},
-    {id:"hayward",     n:"Hayward",                     a:"28505 Hesperian Blvd",      c:"Hayward",             z:"94545", p:"5109213126", mi:19.1, t:1, r:7},
+    {id:"hayward",     n:"Hayward",                     a:"28505 Hesperian Blvd",      c:"Hayward",             z:"94545", p:"5109213128", mi:19.1, t:1, r:7},
     /* ---- TIER 2 ---- */
     {id:"danville",    n:"Danville",                    a:"3150 Fostoria Way",         c:"Danville",            z:"94526", p:"9252770407", mi:8.2,  t:2, r:8},
     {id:"sjalmaden",   n:"San Jose — Almaden",          a:"5301 Almaden Expy",         c:"San Jose",            z:"95118", p:"4087230964", mi:44.8, t:2, r:9},
@@ -2537,10 +2720,13 @@
       if(!Object.keys(jbTiersOn).length) jbTiersOn[n]=true;   // never leave an empty table
     }
     try{ localStorage.setItem(DASH_TIERS_KEY, Object.keys(jbTiersOn).sort().join(",")); }catch(e){}
-    renderJbTierBar(); renderJune();
+    renderJune();
   }
 
   function renderJbTierBar(){
+    // The June tier bar was removed with its table; the Warehouses tab owns tiers
+    // now. Kept as a no-op so any remaining caller cannot throw.
+    if(!$("jbTierBar")) return;
     for(let n=1;n<=4;n++){
       const b=document.querySelector('.jb-tchip[data-tier="'+n+'"]');
       if(b) b.setAttribute("aria-pressed", jbTiersOn[n]?"true":"false");
@@ -2635,6 +2821,9 @@
   }
 
   function renderJune(){
+    // body/note are null since the June table was removed in favour of the
+    // Warehouses tab. Everything below still runs: this function's real job is
+    // computing _cov, which feeds the coverage ring, the verdict and the BUY price.
     const sub=$("jbSub"), cov=$("jbCov"), body=$("jbRows"), note=$("jbSortNote");
     const all=joinStores();
 
@@ -2687,7 +2876,11 @@
       }
       html+=rowHTMLJune(e);
     });
-    body.innerHTML=html;
+    // The table this used to paint into is gone — the Warehouses tab shows these
+    // rows now. The loop above still runs because it is what tallies _cov, and
+    // juneVerdict()/renderCoverage() below turn that into the ring, the verdict
+    // and the BUY price. Dropping the loop would silently zero those.
+    if(body) body.innerHTML=html;
 
     juneVerdict();
     renderCoverage();
@@ -3122,13 +3315,13 @@
     }).join("");
   })();
 
-  $("jbSort").addEventListener("change",function(e){
+  if($("jbSort")) $("jbSort").addEventListener("change",function(e){
     jbSortBy=e.target.value;
     try{ localStorage.setItem(DASH_SORT_KEY, jbSortBy); }catch(err){}
     renderJune();
   });
 
-  $("jbTierBar").addEventListener("click",function(ev){
+  if($("jbTierBar")) $("jbTierBar").addEventListener("click",function(ev){
     const b=ev.target.closest(".jb-tchip");
     if(b) jbToggleTier(b.dataset.tier);
   });
@@ -3344,8 +3537,651 @@
         if(junePriceFresh(r)){ CFG.junePrice=r.price; CFG.juneTime=r.priceAt; } } }
     }catch(e){}
   })();
-  $("jbSort").value=jbSortBy;      // restore the remembered sort before the first paint
-  renderJbTierBar();               // and the remembered tier menu
+  /* ==================================================================
+     WAREHOUSE INVENTORY
+     Data comes from the Costco Restock Bot's Slack DM, pulled hourly by a
+     scheduled task and landed in Supabase. Four tables / three functions,
+     all created by migrations/007-warehouse-inventory.sql.
+
+     THE ONE RULE THIS SCREEN EXISTS TO ENFORCE:
+       "no stock" and "we don't know" are different answers, and they must
+       never be shown as the same thing. The upstream had five multi-hour
+       outages in the last 90 days, and 46% of real observations arrive with
+       no availability field at all. Every unknown path below resolves to
+       "we don't know", never to zero.
+     ================================================================== */
+  const WI = { warehouses:[], tiers:{}, stock:[], calls:{}, health:null, patterns:[], loaded:false, err:null };
+
+  /* ---- June's call, read the way her own sheet reads it ---- */
+  // Returns {txt, cls, ageH, hasBars} or null when she has never called.
+  function wiJune(id){
+    const c = WI.calls[id];
+    if(!c || !c.called_at) return null;
+    let ageH = (Date.now() - new Date(c.called_at).getTime())/36e5;
+    // An unreadable called_at used to return null, which the caller renders as
+    // "not called" — a real phone call to a real store, erased because its
+    // timestamp would not parse. June's own coverage path counts these into
+    // _juneSkipped and surfaces them; this one quietly dropped them. Keep the
+    // call, admit the age is unknown, and let wiAgeTxt render "—".
+    if(isNaN(ageH)) ageH = null;
+    const bars = nnum(c.pamp)+nnum(c.generic);
+    let txt, cls;
+    if(!c.in_stock){ txt="sold out"; cls="none"; }
+    else if(bars>0){ txt=nnum(c.pamp)+" Pamp / "+nnum(c.generic)+" Gen"; cls="in_stock"; }
+    // She got a yes but no number. Real information — it must not be dropped just
+    // because it cannot be added up. Same rule as isStockUnknownCount().
+    else { txt="yes · no count"; cls="unknown"; }
+    return {txt:txt, cls:cls, ageH:ageH, hasBars:!!c.in_stock, who:c.called_by||"", call:c};
+  }
+
+  // Do the bot and June disagree about this warehouse right now?
+  // Rule 16 already settles who wins: the scraper's claim is not Costco's truth, and
+  // a human check overrides it. June phoning the store IS that human check — so she
+  // wins, and the row says so out loud rather than quietly picking a side.
+  function wiConflict(botList, j){
+    // Too old to arbitrate — and ageH null means the call's timestamp would not
+    // parse, so we cannot tell whether it is recent. Unknown age never arbitrates.
+    if(!j || j.ageH == null || j.ageH >= 48) return null;
+    const botSaysStock = botList.some(function(x){ return x.level!=="unrecognised"; });
+    if(botSaysStock && !j.hasBars) return "bot says stock · June says sold out";
+    if(!botSaysStock && j.hasBars && botList.length===0) return null;  // she just knows more
+    return null;
+  }
+
+  const WI_TIERS_KEY = "alchemy_wi_tiers";
+  const WI_WATCHED_KEY = "alchemy_wi_watchedonly";
+
+  let wiTiersOn = (function(){
+    const raw = localStorage.getItem(WI_TIERS_KEY);
+    const src = (raw==null||raw==="") ? "1,2,3" : raw;
+    const m = {};
+    src.split(",").forEach(function(n){ n=parseInt(n,10); if(n>=1&&n<=4) m[n]=true; });
+    // An empty set would show a blank page with no obvious way back.
+    return Object.keys(m).length ? m : {1:true,2:true,3:true};
+  })();
+  let wiWatchedOnly = localStorage.getItem(WI_WATCHED_KEY)==="1";
+
+  // Effective tier = the override in warehouse_tiers, else the tier hardcoded on
+  // the roster. This is the whole point of the shared table: June's call sheet and
+  // this screen resolve importance the same way, so there is one answer, not two.
+  function wiEffTier(id){
+    const row = WI.tiers[id];
+    if(row && row.tier!=null) return row.tier;
+    return SMAP[id] ? SMAP[id].t : null;
+  }
+  function wiIsOverridden(id){
+    const row = WI.tiers[id];
+    return !!(row && row.tier!=null && SMAP[id] && row.tier!==SMAP[id].t);
+  }
+  function wiWatched(id){ return !!(WI.tiers[id] && WI.tiers[id].watched); }
+  function wiAlerts(id){ const r=WI.tiers[id]; return r ? r.alerts_on!==false : true; }
+
+  function wiDirHref(w){
+    // The bot already emits real turn-by-turn links keyed on coordinates. Reusing
+    // that beats jbMapsHref's address text-search, which only opens the place card.
+    // Only 27 of the 45 warehouses have coordinates, so the rest fall back to the
+    // address search the rest of this page already uses — worse, but never broken.
+    const wh = w && w.wh ? w.wh : w;
+    if(wh && wh.lat!=null && wh.lon!=null){
+      return "https://www.google.com/maps/dir/?api=1&destination="+
+             encodeURIComponent(wh.lat+","+wh.lon)+"&travelmode=driving";
+    }
+    return jbMapsHref(w && w.roster ? w.roster : w);
+  }
+
+  // The bot watches exactly two items, both PAMP Suisse Lady Fortuna Veriscan.
+  // Only the 1 oz has ever actually been in stock, but the ½ oz is tracked and
+  // could appear at any time — so it gets its own row rather than being collapsed
+  // into whichever sighting happened to be newest.
+  const WI_SKU_TXT = { "1943308":"1oz", "1942925":"½oz" };
+
+  const WI_LEVEL_TXT = {
+    in_stock:"In stock",
+    low:"Low (<5)",
+    unknown:"Yes · no count",       // present, level not reported. NOT absence.
+    unrecognised:"New format ⚠"
+  };
+
+  function wiAgeTxt(h){
+    if(h==null) return "—";
+    const n = Number(h);
+    if(isNaN(n)) return "—";
+    if(n < 1) return Math.max(1,Math.round(n*60))+"m ago";
+    if(n < 48) return Math.round(n)+"h ago";
+    return Math.round(n/24)+"d ago";
+  }
+
+  /* ---- read ---- */
+  function wiPull(){
+    return Promise.all([
+      sbFetch(SB_URL+"/rest/v1/rpc/feed_health",{headers:sbH()}),
+      sbFetch(SB_URL+"/rest/v1/rpc/current_stock?max_age_hours=26",{headers:sbH()}),
+      sbFetch(SB_URL+"/rest/v1/warehouses?select=*",{headers:sbH()}),
+      sbFetch(SB_URL+"/rest/v1/warehouse_tiers?select=*",{headers:sbH()}),
+      // June's calls — the SAME table her call sheet writes to. The bot says WHERE,
+      // June says HOW MANY, and neither answers the other's question.
+      sbFetch(SB_URL+"/rest/v1/alchemy_calls?select=*",{headers:sbH()})
+    ]).then(function(r){
+      // The first four are required. June's calls are allowed to fail on their own:
+      // losing her column must not blank out the whole tab.
+      const bad = r.slice(0,4).find(function(x){ return x.kind!=="ok"; });
+      if(bad){
+        // Cannot reach the database => we do NOT know what is in stock. This has
+        // to fall through to the unknown state, never to an empty "no stock" list.
+        WI.err = bad.kind;
+        WI.health = null;
+        wiRender();
+        return;
+      }
+      WI.err = null;
+      WI.health     = (r[0].data && r[0].data[0]) || null;
+      WI.stock      = r[1].data || [];
+      WI.warehouses = r[2].data || [];
+      WI.tiers      = {};
+      (r[3].data||[]).forEach(function(t){ WI.tiers[t.store_id]=t; });
+      // Newest call wins per warehouse — the same newest-wins rule renderJune()
+      // uses, so the two screens can never disagree about which call is current.
+      WI.calls = {};
+      if(r[4] && r[4].kind==="ok"){
+        (r[4].data||[]).forEach(function(c){
+          const prev = WI.calls[c.store_id];
+          if(!prev || String(c.called_at) > String(prev.called_at)) WI.calls[c.store_id]=c;
+        });
+      }
+      WI.loaded = true;
+      wiRender();
+      wiPullPatterns();
+    });
+  }
+
+  function wiPullPatterns(){
+    // GET, not POST: restock_patterns is declared STABLE so PostgREST accepts it
+    // as a GET with query-string arguments, and sbFetch discards non-GET bodies.
+    sbFetch(SB_URL+"/rest/v1/rpc/restock_patterns?since_days=90",{headers:sbH()})
+      .then(function(r){ if(r.kind==="ok"){ WI.patterns=r.data||[]; wiRenderHist(); } });
+  }
+
+  /* ---- write ---- */
+  function wiSave(id, patch, btn){
+    const cur = WI.tiers[id] || {store_id:id, tier:null, watched:false, alerts_on:true};
+    const body = {
+      store_id:id,
+      tier: ("tier" in patch) ? patch.tier : (cur.tier==null?null:cur.tier),
+      watched: ("watched" in patch) ? patch.watched : !!cur.watched,
+      alerts_on: ("alerts_on" in patch) ? patch.alerts_on : cur.alerts_on!==false,
+      updated_by:"medi"
+    };
+    // Optimistic: the control answers the tap immediately, then reconciles.
+    WI.tiers[id] = Object.assign({}, cur, body);
+    wiRender();
+    if(btn) btn.disabled = true;
+
+    return sbFetch(SB_URL+"/rest/v1/warehouse_tiers?on_conflict=store_id",{
+      method:"POST",
+      headers:sbH({Prefer:"resolution=merge-duplicates,return=minimal"}),
+      body:JSON.stringify(body)
+    }).then(function(r){
+      if(btn) btn.disabled = false;
+      const m = $("wiMsg");
+      if(r.kind!=="ok"){
+        // Put the old value back rather than leaving a lie on screen.
+        WI.tiers[id] = cur;
+        wiRender();
+        m.className="jb-msg err";
+        m.textContent = r.kind==="network"
+          ? "No connection — that change was not saved."
+          : "Could not save that change (" + r.kind + ").";
+      } else {
+        m.className="jb-msg ok";
+        m.textContent = "Saved.";
+      }
+    });
+  }
+
+  /* ---- render: health ---- */
+  function wiRenderHealth(){
+    const el = $("wiHealth");
+    el.classList.remove("fresh","stale","unknown");
+
+    if(WI.err){
+      el.classList.add("unknown");
+      el.innerHTML = "<span class='ic'>🚨</span><b>We don't know what's in stock.</b>"+
+        "<span class='sub'>Couldn't reach the database ("+esc(WI.err)+"). "+
+        "This is NOT the same as “nothing in stock” — do not act on an empty list below.</span>";
+      return "unknown";
+    }
+    if(!WI.health || !WI.health.last_posted_at){
+      el.classList.add("unknown");
+      el.innerHTML = "<span class='ic'>🚨</span><b>We don't know what's in stock.</b>"+
+        "<span class='sub'>No scans have been ingested yet. Run migration 007 and the "+
+        "first pull before trusting anything on this tab.</span>";
+      return "unknown";
+    }
+
+    // NOT Number(): Number(null) is 0, and wiAgeTxt(0) renders "1m ago" — a null
+    // age was being shown as the freshest possible reading, on the one banner the
+    // whole tab rests on. wiAgeTxt already guards null and NaN itself and returns
+    // "—"; it just never got the chance because the coercion happened first.
+    const st = WI.health.state, age = WI.health.age_hours;
+    if(st==="unknown"){
+      el.classList.add("unknown");
+      el.innerHTML = "<span class='ic'>🚨</span><b>We don't know what's in stock.</b>"+
+        "<span class='sub'>The feed has gone quiet — last scan "+wiAgeTxt(age)+
+        " ("+esc(fmtDT(WI.health.last_posted_at))+"). Silence could mean no gold "+
+        "anywhere — or that the bot is down. It has had five multi-hour outages in 90 days. "+
+        "Treat the list below as unknown, not as empty.</span>";
+    } else if(st==="stale"){
+      el.classList.add("stale");
+      // wiAgeTxt already ends in "ago" — this branch used to append another one
+      // and read "Last scan was 18h ago ago." Only the stale branch had it, which
+      // is why it survived: it is the one state the harness's default scenarios
+      // do not open on.
+      el.innerHTML = "<span class='ic'>⚠️</span><b>Last scan was "+wiAgeTxt(age)+".</b>"+
+        "<span class='sub'>Past due but not yet alarming — the daily digest lands at 8am or 12pm. "+
+        esc(fmtDT(WI.health.last_posted_at))+"</span>";
+    } else {
+      el.classList.add("fresh");
+      el.innerHTML = "<span class='ic'>✅</span><b>Feed is live — last scan "+wiAgeTxt(age)+".</b>"+
+        "<span class='sub'>"+esc(fmtDT(WI.health.last_posted_at))+" · "+
+        (WI.health.messages_24h||0)+" message"+((WI.health.messages_24h===1)?"":"s")+" in 24h</span>";
+    }
+    return st;
+  }
+
+  /* ---- render: the Now band ---- */
+  function wiRenderNow(state){
+    const unknown = (state==="unknown");
+
+    // Deliberately over EVERY warehouse, never over the tier menu. A display
+    // toggle must not be able to move a headline number — the same invariant the
+    // June table defends.
+    const live = WI.stock.filter(function(s){
+      return s.level==="in_stock" || s.level==="low" || s.level==="unknown" || s.level==="unrecognised";
+    });
+    // A sighting whose coordinates matched no warehouse arrives with store_id
+    // NULL. Migration 007 promises those are "surfaced, never dropped", but the
+    // headline counted only rows WITH a store_id — so a real warehouse holding
+    // real bars was left out of "IN STOCK NOW" while its sighting still counted
+    // in the sub-line, producing the self-contradiction "4 warehouses · 6
+    // sightings". This is the Concord failure mode: a warehouse falls out of the
+    // roster exactly when it has been quiet, which is the moment before it
+    // restocks. Counted by raw_name, which is all we have for an unmatched store.
+    const ids = {}, unmatched = {};
+    live.forEach(function(s){
+      if(s.store_id) ids[s.store_id]=true;
+      else unmatched[s.raw_name || "(unnamed)"] = true;
+    });
+    const nUnmatched = Object.keys(unmatched).length;
+    const nStores = Object.keys(ids).length + nUnmatched;
+
+    const watchedIds = Object.keys(WI.tiers).filter(function(id){ return WI.tiers[id].watched; });
+    const watchedHit = watchedIds.filter(function(id){ return ids[id]; }).length;
+
+    if(unknown){
+      // The unknown state REPLACES the counts. Showing "0" here while the banner
+      // says "we don't know" is exactly the contradiction this screen forbids.
+      $("wiStockN").textContent = "?";
+      $("wiStockN").className = "v mute tnum";
+      $("wiStockSub").textContent = "feed silent — not measured";
+      $("wiChips").innerHTML = "<span class='cb-chip none'>Unknown — the feed is not reporting</span>";
+    } else {
+      $("wiStockN").textContent = String(nStores);
+      $("wiStockN").className = "v gold tnum";
+      const noCount = live.filter(function(s){ return s.level==="unknown"; }).length;
+      $("wiStockSub").textContent = live.length + " sighting" + (live.length===1?"":"s") +
+        (noCount ? " · " + noCount + " with no count given" : "");
+
+      // A sighting stays in current_stock for 26 hours, but the chips carried no
+      // age at all — so a bar seen 25h ago looked exactly like one seen 5 minutes
+      // ago, under a green "Feed is live" banner. Replaying the real capture,
+      // 30 minutes after the bot's "No Stock found anywhere" digest this strip
+      // still showed 10 warehouses as if they had bars.
+      //
+      // If the feed has posted MORE RECENTLY than a sighting, the bot has spoken
+      // since without re-listing that store. That is not proof it is gone — a
+      // Network Alert only lists stores that DO have stock, so it supersedes
+      // nothing — but it is definitely not "right now" either. So: show the age
+      // on every chip, and mark the superseded ones instead of quietly counting
+      // them as current. Claiming they are empty would be the same invented
+      // certainty in the other direction.
+      // NOTE on the threshold, because it is a judgement and not a fact: the
+      // exactly-right test is "older than the last FULL SCAN", and feed_health
+      // only publishes the last MESSAGE time. A Network Alert is not a sweep —
+      // it lists only stores that have stock — so treating every message as
+      // superseding would put a warning on a perfectly good 1-hour-old sighting.
+      // Until feed_health exposes a last_full_scan_at, this flags only sightings
+      // that are BOTH superseded and old enough for it to matter (6h+), which
+      // catches "yesterday's bars" without crying wolf on this morning's.
+      const feedAge = Number(WI.health && WI.health.age_hours);
+      const isStale = function(s){
+        const a = Number(s.age_hours);
+        return !isNaN(a) && !isNaN(feedAge) && a > feedAge + 0.5 && a >= 6;
+      };
+      const nStale = live.filter(isStale).length;
+
+      const chips = live.slice().sort(function(a,b){
+        const ta=wiEffTier(a.store_id)||9, tb=wiEffTier(b.store_id)||9;
+        return ta-tb;
+      }).map(function(s){
+        const w = SMAP[s.store_id];
+        const stale = isStale(s);
+        const cls = "cb-chip" + ((s.level==="low") ? " day" : "") + (stale ? " aged" : "");
+        const tip = stale
+          ? "Last seen "+wiAgeTxt(s.age_hours)+". The feed has posted since without "
+            +"listing this warehouse, so the bars may already be gone — call first."
+          : "Seen "+wiAgeTxt(s.age_hours)+", in the most recent scan.";
+        return "<span class='"+cls+"' title='"+esc(tip)+"'><b>"+esc(w?w.n:s.raw_name)+"</b>"+
+               "<span class='mi'>"+(w?w.mi+" mi":"")+"</span>"+
+               "<span class='mi'>"+(stale?"⚠ ":"")+wiAgeTxt(s.age_hours)+"</span></span>";
+      });
+      // Rule 16, which the alert email has carried since day one and this tab did
+      // not: "IN STOCK" is the scraper's claim, not Costco's. It already caught a
+      // false restock on 2026-08-01. The screen that sends Medi out of the door
+      // should say it at least as loudly as the email that does.
+      // wrap16: .cb-chip is white-space:nowrap, which is right for a short store
+      // chip and wrong for a sentence — at 375px this one ran to 444px and pushed
+      // the whole page into horizontal scroll. It wraps instead.
+      const rule16 = "<span class='cb-chip none wrap16' title='Rule 16 — a scraper saying "+
+        "IN STOCK is a claim, not Costco&#39;s inventory. A false restock on "+
+        "2026-08-01 is why this rule exists.'>📞 Call first — “in stock” is the "+
+        "bot’s claim, not Costco’s (rule 16)</span>";
+
+      $("wiChips").innerHTML = chips.length ? (chips.join("") + rule16) :
+        "<span class='cb-chip none'>Nobody has bars right now — and the feed is live, so that is a real zero</span>";
+
+      if(nStale){
+        $("wiStockSub").textContent += " · " + nStale + " not seen in the latest scan";
+      }
+      if(nUnmatched){
+        // Say it out loud. An unmatched warehouse has no row in the table below
+        // (the table is keyed by roster id), so the count is the only place it
+        // can be seen at all.
+        $("wiStockSub").textContent += " · " + nUnmatched +
+          " not matched to a known warehouse — see the chips";
+      }
+    }
+
+    $("wiWatchN").textContent = String(watchedIds.length);
+    $("wiWatchSub").textContent = unknown ? "—" :
+      (watchedHit + " of them ha" + (watchedHit===1?"s":"ve") + " bars now");
+
+    $("wiLastN").textContent = WI.health && WI.health.last_posted_at
+      ? wiAgeTxt(WI.health.age_hours) : "—";
+    $("wiLastSub").textContent = WI.health && WI.health.last_posted_at
+      ? fmtDT(WI.health.last_posted_at) : "nothing ingested";
+
+    // All 45 from the roster. The sub-line says how many the bot can actually see,
+    // because "45 tracked" on its own would imply coverage the feed does not have.
+    $("wiTrackN").textContent = String(JSTORES.length);
+    const broken = WI.health ? (WI.health.broken_7d||0) : 0;
+    $("wiTrackSub").textContent = WI.warehouses.length + " watched by the bot" +
+      (broken ? " · " + broken + " message" + (broken===1?"":"s") + " unreadable" : "");
+
+    // The tab chip: readable without opening the tab.
+    const chip = $("tabInvChip");
+    chip.textContent = unknown ? "?" : String(nStores);
+    chip.className = "tb-chip" + (unknown ? "" : (nStores ? " go" : ""));
+  }
+
+  /* ---- render: table ---- */
+  function wiRenderTable(state){
+    const body = $("wiBody");
+    // Keyed by store AND sku. Collapsing to one row per store used to mean that a
+    // warehouse holding both sizes showed only whichever sighting was newest, and
+    // the other size vanished with no trace that it existed.
+    const stockBy = {};
+    WI.stock.forEach(function(s){
+      if(!s.store_id) return;
+      const list = stockBy[s.store_id] || (stockBy[s.store_id]=[]);
+      const i = list.findIndex(function(x){ return x.sku===s.sku; });
+      if(i<0) list.push(s);
+      else if(s.observed_at > list[i].observed_at) list[i]=s;
+    });
+    // 1 oz first — it is the only size the profit model is built on.
+    Object.keys(stockBy).forEach(function(k){
+      stockBy[k].sort(function(a,b){ return (a.sku==="1943308"?0:1)-(b.sku==="1943308"?0:1); });
+    });
+
+    // Driven by the ROSTER (all 45), not by the warehouses table (27 with known
+    // coordinates). June calls stores the bot does not cover — the feed only scans
+    // 37 within 50 miles — and a warehouse she has found bars at must never drop off
+    // this list just because the bot has nothing to say about it.
+    const whById = {};
+    WI.warehouses.forEach(function(w){ whById[w.store_id]=w; });
+
+    const all = JSTORES.map(function(s){
+      return {store_id:s.id, roster:s, wh:whById[s.id]||null};
+    });
+
+    const rows = all.filter(function(w){
+      const t = wiEffTier(w.store_id);
+      if(wiWatchedOnly && !wiWatched(w.store_id)) return false;
+      // A warehouse with no tier at all can never be hidden by the tier menu.
+      return t==null || !!wiTiersOn[t];
+    }).sort(function(a,b){
+      const ta=wiEffTier(a.store_id)||9, tb=wiEffTier(b.store_id)||9;
+      if(ta!==tb) return ta-tb;
+      return (a.roster.mi||999)-(b.roster.mi||999);
+    });
+
+    // Tier counts are over ALL warehouses, not the filtered view — the chip has to
+    // say how many exist, or turning a tier off would make its own count vanish.
+    const counts={1:0,2:0,3:0,4:0};
+    all.forEach(function(w){ const t=wiEffTier(w.store_id); if(counts[t]!=null) counts[t]++; });
+    [1,2,3,4].forEach(function(n){ const el=$("witc"+n); if(el) el.textContent=counts[n]; });
+    document.querySelectorAll("#wiTierBar .jb-tchip").forEach(function(b){
+      const d=b.dataset.tier;
+      if(d==="all") return;
+      if(d==="watched") b.setAttribute("aria-pressed", wiWatchedOnly?"true":"false");
+      else b.setAttribute("aria-pressed", wiTiersOn[parseInt(d,10)]?"true":"false");
+    });
+    $("wiTierNote").textContent = rows.length+" of "+all.length+" showing";
+
+    if(!WI.loaded){ body.innerHTML="<tr><td colspan='8' class='jb-msg'>reading…</td></tr>"; return; }
+    if(!rows.length){
+      body.innerHTML="<tr><td colspan='8' class='jb-msg'>Nothing here. Turn a tier back on, or switch off “Watched only”.</td></tr>";
+      return;
+    }
+
+    body.innerHTML = rows.map(function(w){
+      const id=w.store_id, t=wiEffTier(id), list=stockBy[id]||[], s=list[0];
+      const r = w.roster;
+      const phone = r.p || (w.wh && w.wh.phone) || "";
+      const watched = wiWatched(id), alerts = wiAlerts(id);
+      const j = wiJune(id);
+      // Not in the unknown state. wiConflict arbitrates between the bot and June,
+      // but when the feed has gone quiet every stock cell on this screen has
+      // already been forced to "Unknown" — so "⚠ disagree · bot says stock" would
+      // assert a bot claim the same row has just said it cannot read.
+      const conflict = (state==="unknown") ? null : wiConflict(list, j);
+
+      // In the unknown state every stock cell reads unknown. A stale row must never
+      // render as a confident "in stock" — the Session-8 lesson, applied here.
+      let lvlHtml, rowCls="";
+      if(state==="unknown"){
+        lvlHtml = "<span class='wi-lvl unknown'>Unknown</span>";
+        rowCls = "unknown";
+      } else if(s){
+        // One badge per size actually reported, so a warehouse holding both shows both.
+        lvlHtml = list.map(function(x){
+          return "<span class='wi-lvl "+esc(x.level)+"'>"+
+                 "<b>"+esc(WI_SKU_TXT[x.sku]||x.sku)+"</b> "+
+                 esc(WI_LEVEL_TXT[x.level]||x.level)+"</span>";
+        }).join(" ");
+        // 'unknown' means the Availability field was absent — the bot listed the
+        // store as FOUND but did not say how much. That is a place with bars and
+        // it gets the gold tint. It is 46% of real observations; rendering it as
+        // no-highlight would make nearly half the sightings look like nothing.
+        // The "Yes · no count" badge carries the caveat, the row carries the signal.
+        // Across all sizes: any real sighting wins the gold tint. Only when EVERY
+        // size is unreadable does the row fall back to the flagged amber.
+        rowCls = list.some(function(x){ return x.level!=="unrecognised"; }) ? "best" : "stale";
+      } else if(!w.wh){
+        // The bot does not scan this warehouse at all (w.wh is the row from the
+        // warehouses table, and it is null for the 18 roster stores outside the
+        // bot's coverage). Silence from a store nobody watches is NOT zero, and
+        // it must not read like the bot cleared the place.
+        lvlHtml = "<span class='wi-lvl blind' title='The bot does not scan this "+
+                  "warehouse — no information either way. Only a phone call settles it.'>not scanned</span>";
+        rowCls = "todo";
+      } else {
+        // The bot DOES scan this warehouse and listed no bars in the latest scan.
+        // A store only appears as a bullet in the feed when the bot found it, so
+        // absence from a healthy scan is the genuine out-of-stock signal.
+        lvlHtml = "<span class='wi-lvl none' title='The bot scanned this warehouse "+
+                  "and found no bars'>—</span>";
+        rowCls = "todo";
+      }
+
+      const tsel = "<select class='wi-tsel t"+(t||"")+"' data-id='"+esc(id)+"' aria-label='Tier for "+esc(r.n||id)+"'>"+
+        [1,2,3,4].map(function(n){
+          return "<option value='"+n+"'"+(n===t?" selected":"")+">T"+n+"</option>";
+        }).join("")+"</select>"+
+        (wiIsOverridden(id) ? "<span class='wi-inherit' title='Changed from the built-in tier'>•</span>" : "");
+
+      // June's column. Independent of the bot's freshness state — her call is a
+      // separate observation and stays readable even when the feed has gone quiet.
+      const juneHtml = j
+        ? "<span class='wi-lvl "+j.cls+"'>"+esc(j.txt)+"</span>"+
+          "<span class='jb-mi'>"+wiAgeTxt(j.ageH)+"</span>"
+        : "<span class='wi-lvl none'>not called</span>";
+
+      const dir = wiDirHref(w);
+
+      // The alert engine builds its watchlist by walking the warehouses TABLE and
+      // matching feed coordinates (wiWatchedByCoord_). A roster store with no
+      // warehouses row has no coordinates to match on, so starring one of the 18
+      // unscanned warehouses can never produce an email. The toggle still saved,
+      // still lit up "★ ON ✉ ON", and promised coverage that cannot exist.
+      // The preference is still worth storing — it starts working the day the bot
+      // covers the store — so the control stays live and says what it can't do.
+      const canAlert = !!w.wh;
+      const noAlert = canAlert ? "" :
+        " title='The bot does not scan this warehouse, so no alert can fire for it "+
+        "yet. Your choice is saved and starts working if the bot ever covers it.'";
+      const noAlertCls = canAlert ? "" : " noalert";
+
+      return "<tr class='"+rowCls+" t"+(t||"")+"'>"+
+        "<td><a class='jb-name' href='"+dir+"' target='_blank' rel='noopener noreferrer'>"+
+            esc(r.n||id)+"</a>"+
+            "<span class='jb-mi'>"+(r.mi!=null?r.mi+" mi":"")+"</span>"+
+            (conflict ? "<span class='jb-tag warnid' title='"+esc(conflict)+"'>⚠ disagree</span>" : "")+
+            "<span class='jb-addr'>"+esc(r.a||"")+"</span></td>"+
+        "<td>"+tsel+"</td>"+
+        "<td>"+lvlHtml+"</td>"+
+        "<td>"+juneHtml+"</td>"+
+        "<td class='r'>"+(state==="unknown" ? "—" : (s ? wiAgeTxt(s.age_hours) : "—"))+"</td>"+
+        "<td><button class='wi-tog"+noAlertCls+"' type='button' data-act='watch' data-id='"+esc(id)+"' "+
+            "aria-pressed='"+(watched?"true":"false")+"'"+noAlert+" "+
+            "aria-label='"+(watched?"Stop watching ":"Watch ")+esc(r.n||id)+
+            (canAlert?"":" (the bot does not scan this warehouse, so no alert can fire yet)")+"'>"+
+            (watched?"★ On":"☆ Off")+(canAlert?"":"<sup class='wi-noalert-mark'>no alert</sup>")+"</button></td>"+
+        "<td><button class='wi-tog alert"+noAlertCls+"' type='button' data-act='alerts' data-id='"+esc(id)+"' "+
+            (watched?"":"disabled ")+
+            "aria-pressed='"+(watched&&alerts?"true":"false")+"'"+noAlert+" "+
+            "aria-label='Email alerts for "+esc(r.n||id)+
+            (canAlert?"":" (unavailable — the bot does not scan this warehouse)")+"'>"+
+            (alerts?"✉ On":"✉ Off")+"</button></td>"+
+        "<td><span class='wi-acts'>"+
+            (phone?"<a class='wi-act call' href='tel:+1"+esc(phone)+"' aria-label='Call "+esc(r.n||id)+"'>📞 Call</a>":"")+
+            "<a class='wi-act' href='"+wiDirHref(w)+"' target='_blank' rel='noopener noreferrer' "+
+            "aria-label='Directions to "+esc(r.n||id)+"'>🧭 Drive</a>"+
+            "</span></td>"+
+      "</tr>";
+    }).join("");
+  }
+
+  /* ---- render: history ---- */
+  function wiRenderHist(){
+    const top=$("wiTop"), dow=$("wiDow"), note=$("wiHistNote");
+    if(!WI.patterns.length){
+      top.innerHTML="<span class='jb-msg'>No sightings stored yet.</span>";
+      dow.innerHTML=""; note.textContent="—";
+      return;
+    }
+    const byStore={}, byDow={};
+    WI.patterns.forEach(function(p){
+      if(!byStore[p.store_id]) byStore[p.store_id]={n:p.raw_name, days:p.days_seen, hits:p.sightings};
+      if(p.dow!=null) byDow[p.dow]=(byDow[p.dow]||0)+(p.dow_sightings||0);
+    });
+    const list=Object.keys(byStore).map(function(k){
+      return Object.assign({id:k}, byStore[k]);
+    }).sort(function(a,b){ return b.days-a.days || b.hits-a.hits; }).slice(0,12);
+    const max=list.length?list[0].days:1;
+
+    top.innerHTML=list.map(function(x){
+      const r=SMAP[x.id]||{};
+      const w=Math.max(2,Math.round((x.days/max)*160));
+      return "<div style='display:flex;align-items:center;gap:8px;margin:3px 0'>"+
+        "<span style='width:130px;color:var(--ink)'>"+esc(r.n||x.n||x.id)+"</span>"+
+        "<span class='wi-bar' style='width:"+w+"px'></span>"+
+        "<span style='color:var(--ink-mute)'>"+x.days+" day"+(x.days===1?"":"s")+"</span></div>";
+    }).join("");
+
+    const names=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    const dmax=Math.max.apply(null,names.map(function(_,i){ return byDow[i]||0; }).concat([1]));
+    dow.innerHTML=names.map(function(nm,i){
+      const v=byDow[i]||0;
+      const h=Math.max(2,Math.round((v/dmax)*34));
+      return "<div><span class='b' style='height:"+h+"px' title='"+v+" sightings'></span>"+
+             "<span class='l'>"+nm+"</span></div>";
+    }).join("");
+
+    const days=Object.keys(byStore).reduce(function(a,k){ return a+byStore[k].days; },0);
+    note.textContent="Over the stored window · "+Object.keys(byStore).length+
+      " warehouses, "+days+" warehouse-days with bars. Only what has been captured counts — "+
+      "the upstream Slack keeps 90 days.";
+  }
+
+  function wiRender(){
+    const state = wiRenderHealth();
+    wiRenderNow(state);
+    wiRenderTable(state);
+  }
+
+  /* ---- events ---- */
+  $("wiTierBar").addEventListener("click", function(ev){
+    const b=ev.target.closest(".jb-tchip"); if(!b) return;
+    const d=b.dataset.tier;
+    if(d==="watched"){
+      wiWatchedOnly=!wiWatchedOnly;
+      try{ localStorage.setItem(WI_WATCHED_KEY, wiWatchedOnly?"1":"0"); }catch(e){}
+    } else if(d==="all"){
+      const allOn=[1,2,3,4].every(function(n){ return wiTiersOn[n]; });
+      wiTiersOn = allOn ? {1:true,2:true,3:true} : {1:true,2:true,3:true,4:true};
+    } else {
+      const n=parseInt(d,10); if(!(n>=1&&n<=4)) return;
+      if(wiTiersOn[n]) delete wiTiersOn[n]; else wiTiersOn[n]=true;
+      if(!Object.keys(wiTiersOn).length) wiTiersOn[n]=true;   // never a blank page
+    }
+    try{ localStorage.setItem(WI_TIERS_KEY, Object.keys(wiTiersOn).sort().join(",")); }catch(e){}
+    wiRender();
+  });
+
+  $("wiBody").addEventListener("click", function(ev){
+    const b=ev.target.closest("button[data-act]"); if(!b) return;
+    const id=b.dataset.id;
+    if(b.dataset.act==="watch"){
+      const now=!wiWatched(id);
+      // Turning watch on implies you want the email; that is the whole point.
+      wiSave(id, now ? {watched:true, alerts_on:true} : {watched:false}, b);
+    } else {
+      if(!wiWatched(id)) return;         // the control is disabled, but belt and braces
+      wiSave(id, {alerts_on: !wiAlerts(id)}, b);
+    }
+  });
+
+  $("wiBody").addEventListener("change", function(ev){
+    const sel=ev.target.closest(".wi-tsel"); if(!sel) return;
+    wiSave(sel.dataset.id, {tier: parseInt(sel.value,10)}, null);
+  });
+
+  // The June sort/tier controls live on the Warehouses tab now; both guards are
+  // here so this boot block is safe whether or not that markup is present.
+  if($("jbSort")) $("jbSort").value=jbSortBy;
+  renderJbTierBar();
+  wiPull();                        // warehouse inventory: health, stock, roster, tiers
+  setInterval(wiPull, 60000);      // the feed updates hourly at best; 60s is plenty
   renderRuleDay();
   // The verdict is a date, so it has to survive a page left open overnight. Re-check on
   // the hour rather than trusting the value painted at load.
