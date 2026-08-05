@@ -1365,7 +1365,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 4477a4d · built 2026-08-05 17:28 UTC</span>
+    <span id="verStamp" class="tnum">version: bb205fd · built 2026-08-05 19:42 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3977,7 +3977,21 @@
     });
     $("wiTierNote").textContent = rows.length+" of "+all.length+" showing";
 
-    if(!WI.loaded){ body.innerHTML="<tr><td colspan='8' class='jb-msg'>reading…</td></tr>"; return; }
+    // Only "reading…" while a first attempt is genuinely still in flight.
+    //
+    // This used to gate on WI.loaded alone, which never becomes true if the
+    // database cannot be reached — so a failed pull threw away the entire table
+    // and left one grey "reading…" row forever. But the roster is LOCAL: all 45
+    // warehouses, their addresses, distances, tiers, phone numbers and drive
+    // links are in JSTORES and need no database at all. Only the "bot says"
+    // column does. Standing in a parking lot with no rows and no phone numbers,
+    // because a table that has nothing to do with phone numbers is missing, is
+    // the worst version of this screen.
+    //
+    // WI.err is set once a pull has failed, so !loaded && !err means "still
+    // waiting"; !loaded && err means "we tried, we failed, show what we own".
+    // The stock column is already forced to "Unknown" by state==='unknown'.
+    if(!WI.loaded && !WI.err){ body.innerHTML="<tr><td colspan='8' class='jb-msg'>reading…</td></tr>"; return; }
     if(!rows.length){
       body.innerHTML="<tr><td colspan='8' class='jb-msg'>Nothing here. Turn a tier back on, or switch off “Watched only”.</td></tr>";
       return;
