@@ -1373,7 +1373,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: ccedb84 · built 2026-08-05 22:06 UTC</span>
+    <span id="verStamp" class="tnum">version: f2e3a2a · built 2026-08-05 22:29 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3675,14 +3675,57 @@
      from the list, which is why "no bars" and "never looked" were the same
      thing there. Here a real zero is a real zero, and it is recorded as one.
 
+     HOW THE 45 WERE READ (2026-08-05, widened from the first 11):
+     The first pass covered only the 11 starred favourites. This one covers the
+     whole roster, read from the Warehouse Finder over 11 zip searches — 94596,
+     94080, 95112, 95687, 95401, 95814, 95205, 95060, plus 94550, 94560 and
+     95020 to reach Livermore, Fremont, Newark and Gilroy. The Finder renders
+     only the ~12 nearest per search, so the searches were merged.
+
+     TWO TRAPS THAT WERE HIT AND CORRECTED, both of which fake a reading:
+
+     1. The store's own badge ("1 in stock") is about ANY tracked product, not
+        this SKU. Brentwood reads "1 in stock" while the 1 oz Lady Fortuna has
+        been out for 14 days. Every state below is keyed on the row whose link
+        carries the SKU 1943308, never on the badge.
+
+     2. The result rail TRUNCATES a store's product rows. Vacaville rendered
+        two rows and neither was this SKU, which looks exactly like "nobody
+        looked" — but its own store page lists the 1 oz Lady Fortuna as out of
+        stock for a month. So a store with no SKU row in the rail was NOT taken
+        as unknown; it was opened and read directly. That is how Vacaville,
+        Elk Grove and Natomas below came to be marked sold out.
+
+     THE TWO STILL UNREAD are deliberately in neither list, so they render as
+     "not checked" rather than as a zero:
+       napa       — the vendor scans it (15m before this reading) but has never
+                    recorded ANY gold or silver there in 91 days. That is not
+                    the same as looking at this SKU and finding none, so it is
+                    not written down as one. A phone call settles it.
+       morganhill — the vendor has no such warehouse at all; searching its own
+                    zip 95037 returns Great Oaks and Gilroy instead.
+
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-08-05T10:40:00-07:00",
+    at: "2026-08-05T15:20:00-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
-    price: 4319.99,          // Costco shelf price that day; spot was $4,249.10
-    inStock: ["concord","danville","livermore","richmond","sanleandro","vallejo"],
-    soldOut: {antioch:"9d", brentwood:"14d", hayward:"6d", pleasanton:"today"}
+    price: 4319.99,          // Costco shelf price that day; spot was $4,248.20
+    // 26 of the 45. Read from the row carrying SKU 1943308, not the store badge.
+    inStock: ["concord","danville","livermore","richmond","sanleandro","vallejo",
+              "sjalmaden","ssf","fairfield","fostercity","fremont","sjgreatoaks",
+              "manteca","modesto","mountainview","sjne","novato","ranchocordova",
+              "redwoodcity","ssfairport","sacstockton","sf","santaclara",
+              "santarosa","sunnyvale","tracy"],
+    // 17 of the 45, with how long since the store last had one. The three marked
+    // "read from the store page" are the truncation trap in note 2 above.
+    soldOut: {antioch:"9d", brentwood:"14d", hayward:"7d", pleasanton:"today",
+              saccalexpo:"15d", gilroy:"10d", lodi:"9d", newark:"today",
+              riverbank:"9d", rohnertpark:"16d", sjsenter:"today",
+              santacruz:"14d", stockton:"8d", woodland:"11d",
+              vacaville:"1mo",   // read from the store page, not the rail
+              elkgrove:"2mo",    // read from the store page, not the rail
+              sacnatomas:"1mo"}  // read from the store page, not the rail
   };
 
   // Turn the snapshot into the same row shape wiRenderNow/wiRenderTable already
