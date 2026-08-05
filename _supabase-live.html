@@ -294,6 +294,8 @@
   var _gfhOnlineHist = [];                              // online_history rows in the current window
   var _gfhBzHist = [];                                  // buyzone_history rows in the current window
   var _gfhJuneHist = [];                                // june_history rows (manual register entries)
+  var _gfhBarsHist = [];                                // bars_changes() rows — ALL bars, all sizes
+  var _gfhBarsCapped = false;                           // true when the RPC hit its own row limit
 
   // ONE combined bar-price story (Medi 2026-07-30): the scraped Costco listing AND June's
   // manually phoned register prices, merged by time into the same line. Manual entries count
@@ -865,7 +867,33 @@
       .then(function(rows){ _gfhJuneHist = Array.isArray(rows) ? rows.slice().reverse() : []; })
       .catch(function(){ _gfhJuneHist = []; });
 
-    Promise.all([grab(), histDone, bzDone, juneDone])
+    // ---- ALL BARS, every size — the history box's own source (migration 005) ----
+    // NOT the chart's. The chart line stays on online_history (cheapest in-stock 1oz), because
+    // ~45 bars drawn together is not a chart. The box wants the opposite: everything.
+    //
+    // This is an RPC, not a table read, and that is the whole point. bars_history collects
+    // ~45 rows per fetch x ~180 fetches/day ~= 8,100 rows/day, and the box only ever displays
+    // rows whose price MOVED — a couple hundred a day. Reading the raw table would page ~8
+    // times for a 1-day window and blow straight past pageBack's 12,000-row budget on 1W/1M,
+    // truncating silently: the same failure the pageBack comment above exists to prevent.
+    // bars_changes(since, lim) does the lag() comparison server-side, after the time filter,
+    // and hands back only the changes.
+    var BARS_LIM = 800;
+    var barsDone = fetch(SB_URL + "/rest/v1/rpc/bars_changes", {
+        method: "POST",
+        headers: Object.assign({ "Content-Type": "application/json" }, H),
+        body: JSON.stringify({ since: since, lim: BARS_LIM })
+      })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(rows){
+        _gfhBarsHist = Array.isArray(rows) ? rows : [];
+        _gfhBarsCapped = _gfhBarsHist.length >= BARS_LIM;
+      })
+      // Missing function (migration 005 not run yet) or any error -> [] and the box falls
+      // back to the old online_history story, so it degrades to yesterday rather than blank.
+      .catch(function(){ _gfhBarsHist = []; _gfhBarsCapped = false; });
+
+    Promise.all([grab(), histDone, bzDone, juneDone, barsDone])
       .then(function(){
         if(!all.length) return;
         all.reverse();                                // back to oldest -> newest for drawing
@@ -882,9 +910,26 @@
   }
 
   // ---- accordion: every recorded bar-price change in the chart's window ----
-  // Built from the same online_history rows the chart draws, so the two can never
-  // disagree. Grouped by bar so a product swap (Argor -> Pamp etc.) reads as its own
-  // "first seen" line instead of a fake price jump inside one bar's story.
+  //
+  // SOURCE CHANGED 2026-08-04. This box used to read the same online_history rows the
+  // chart draws — which meant it could only ever show changes to ONE bar, the cheapest
+  // in-stock 1oz. Every 10oz move and every fractional-size move was invisible, because
+  // the scraper parsed those bars and then threw them away without storing them.
+  //
+  // It now reads bars_changes() over bars_history (migration 005): every gold bar the
+  // feed lists, at every weight, in stock or not. The CHART is deliberately left on
+  // online_history — one line per bar across ~45 bars is spaghetti, not a chart.
+  //
+  //     chart line -> online_history  (cheapest in-stock 1oz, one story)
+  //     this box   -> bars_history    (all bars, all sizes, every change)
+  //
+  // Rows are still grouped per bar, so a product swap (Argor -> Pamp etc.) reads as its
+  // own "first seen" line instead of a fake price jump inside one bar's story — that
+  // grouping now happens server-side, in bars_changes' partition by item.
+  //
+  // FALLBACK: if the RPC is missing (migration 005 not run yet) or errors, the old
+  // online_history derivation below still runs, so the box degrades to what it showed
+  // yesterday rather than going blank.
   function renderHistBox(){
     var host = el("gfhHistRows"), cnt = el("gfhHistCount");
     if(!host){
@@ -894,7 +939,7 @@
       d.innerHTML =
         '<summary class="chart-sum">' +
           '<span class="cs-l"><span class="cs-ic">\ud83e\uddfe</span> Costco bar price history' +
-            '<span class="cs-sub">every recorded change \u00b7 window follows the chart timeframe</span></span>' +
+            '<span class="cs-sub">every bar, every size \u00b7 window follows the chart timeframe</span></span>' +
           '<span class="cs-r"><span class="cs-last" id="gfhHistCount">\u2014</span>' +
             '<span class="cs-toggle"><span class="cs-chev">\u25be</span></span></span>' +
         '</summary>' +
@@ -904,25 +949,62 @@
       host = el("gfhHistRows"); cnt = el("gfhHistCount");
     }
     if(!host) return;
-    var rows = gfhBarRows();                       // listing + manual entries, same as the chart line
-    if(rows.length < 1){
+    var ev = [], allBars = false, nBars = 0;
+
+    if(_gfhBarsHist && _gfhBarsHist.length){
+      // ---- ALL BARS (bars_changes RPC). Already reduced to changes and ordered newest
+      // first; reverse to oldest-first so the shared display code below is untouched.
+      // prev_price === null means "first row for this bar inside the window" -> "first seen".
+      allBars = true;
+      var uniq = {};
+      _gfhBarsHist.slice().reverse().forEach(function(r){
+        var v = Number(r.price); if(!isFinite(v)) return;
+        uniq[r.item] = true;
+        var p = (r.prev_price == null) ? null : Number(r.prev_price);
+        ev.push({ t: r.t, bar: r.bar_name || "(bar not recorded)", item: r.item,
+                  wt: (r.weight_oz == null ? null : Number(r.weight_oz)),
+                  stock: r.in_stock !== false,
+                  from: (p != null && isFinite(p)) ? p : null, to: v });
+      });
+      for(var k in uniq){ if(Object.prototype.hasOwnProperty.call(uniq, k)) nBars++; }
+    } else {
+      // ---- FALLBACK: the pre-005 story — cheapest-1oz listing + June's manual entries.
+      var rows = gfhBarRows();
+      if(rows.length < 1){
+        host.innerHTML = '<div style="opacity:.6">No recorded history in this window yet. ' +
+          'The collector writes one row per bar per Costco refresh (~8 min), plus June’s manual entries.</div>';
+        if(cnt) cnt.textContent = "0 changes";
+        return;
+      }
+      var lastByBar = {};
+      rows.forEach(function(r){
+        var v = Number(r.price); if(!isFinite(v)) return;
+        var barName = r.bar_name || "(bar not recorded)";
+        var prev = lastByBar[barName];
+        if(prev === undefined) ev.push({ t: r.t, bar: barName, item: r.item, from: null, to: v });
+        else if(Math.abs(v - prev) > 0.001) ev.push({ t: r.t, bar: barName, item: r.item, from: prev, to: v });
+        lastByBar[barName] = v;
+      });
+    }
+
+    if(!ev.length){
       host.innerHTML = '<div style="opacity:.6">No recorded history in this window yet. ' +
-        'The collector writes one row per genuine Costco refresh (~8 min), plus June’s manual entries.</div>';
+        'The collector writes one row per bar per Costco refresh (~8 min).</div>';
       if(cnt) cnt.textContent = "0 changes";
       return;
     }
-    var ev = [], lastByBar = {};
-    rows.forEach(function(r){
-      var v = Number(r.price); if(!isFinite(v)) return;
-      var barName = r.bar_name || "(bar not recorded)";
-      var prev = lastByBar[barName];
-      if(prev === undefined) ev.push({ t: r.t, bar: barName, item: r.item, from: null, to: v });
-      else if(Math.abs(v - prev) > 0.001) ev.push({ t: r.t, bar: barName, item: r.item, from: prev, to: v });
-      lastByBar[barName] = v;
-    });
     function f2(n){ return "$" + n.toFixed(2); }
+    // Weight is only known on the all-bars path, and it is the column that makes a 45-bar
+    // list readable — "$40,499.99" means nothing until you can see it is a 10oz bar.
+    function wtLabel(w){
+      if(w == null || !isFinite(w)) return "";
+      if(Math.abs(w - Math.round(w)) < 0.001) return Math.round(w) + " oz";
+      return (Math.round(w * 1000) / 1000) + " oz";
+    }
+    var SHOW = allBars ? 250 : 120;                // ~45 bars means 45 "first seen" lines alone
+    var shown = ev.slice().reverse().slice(0, SHOW);
     var html = "";
-    ev.slice().reverse().slice(0, 120).forEach(function(e){
+    shown.forEach(function(e){
       var d2 = new Date(e.t);
       var when = d2.toLocaleDateString("en-US",{month:"short",day:"numeric"}) + " " +
                  d2.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
@@ -931,19 +1013,33 @@
       var col = e.from == null ? "inherit" : (e.to > e.from ? "var(--bad,#d23b45)" : "var(--good,#0f9d6b)");
       html += '<div style="display:flex;gap:14px;flex-wrap:wrap;padding:3px 0;border-bottom:1px solid var(--line,#333)">' +
         '<span style="opacity:.6;min-width:110px">' + when + '</span>' +
+        (allBars ? '<span style="opacity:.75;min-width:56px;text-align:right">' + wtLabel(e.wt) + '</span>' : '') +
         '<span style="min-width:80px;font-weight:700">' + f2(e.to) + '</span>' +
         '<span style="min-width:110px;color:' + col + '">' + delta +
           (e.from != null ? ' <span style="opacity:.5">(was ' + f2(e.from) + ')</span>' : '') + '</span>' +
         '<span style="opacity:.55">' + (e.item
           ? '<a href="https://www.costco.com/.product.' + e.item + '.html" target="_blank" rel="noopener" ' +
             'style="color:inherit;text-decoration:underline dotted">' + e.bar + ' ↗</a>'
-          : e.bar) + '</span>' +
+          : e.bar) +
+          // "sold out" is said out loud rather than implied: an out-of-stock row is a listed
+          // price, not a price anyone could pay, and the two must not read the same.
+          (allBars && e.stock === false ? ' <span style="opacity:.45">· sold out</span>' : '') +
+        '</span>' +
       '</div>';
     });
+    // NO SILENT TRUNCATION. If rows were dropped — by the display cap or by the RPC's own
+    // limit — say so, with the numbers. A list that quietly stops at 250 reads as "that is
+    // everything that happened", which is the exact lie this box now exists to stop telling.
+    if(ev.length > shown.length || _gfhBarsCapped){
+      html += '<div style="opacity:.55;padding:6px 0">showing the newest ' + shown.length +
+              ' of ' + ev.length + (_gfhBarsCapped ? '+ (server row limit reached)' : '') +
+              ' — pick a shorter chart timeframe to see a window in full</div>';
+    }
     host.innerHTML = html;
     var nchg = 0;
     ev.forEach(function(e){ if(e.from != null) nchg++; });
-    if(cnt) cnt.textContent = nchg + " change" + (nchg === 1 ? "" : "s");
+    if(cnt) cnt.textContent = nchg + " change" + (nchg === 1 ? "" : "s") +
+                              (allBars && nBars ? " · " + nBars + " bars" : "");
   }
 
   // ==========================================================================================

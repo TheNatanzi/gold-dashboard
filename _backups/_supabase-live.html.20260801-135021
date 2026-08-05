@@ -85,7 +85,8 @@
     june_price:     { unit: "usd",  from: "gold_prices.june.price",      min: 500, max: 20000 },
     gold_spot:      { unit: "usd",  from: "gold_prices.spot.price",      min: 500, max: 20000 },
     online_price:   { unit: "usd",  from: "gold_prices.online.price",    min: 500, max: 20000 },
-    online_instock: { unit: "bool", from: "gold_prices.online.in_stock" }
+    online_instock: { unit: "bool", from: "gold_prices.online.in_stock" },
+    online_costco:  { unit: "tri",  from: "stock_checks.verdict — latest human browser check of costco.com for the listed item (rule 16); yes/no/unknown" }
   };
   // Named explicitly so the next person gets the reason, not just "unknown key".
   var INGEST_FORBIDDEN = {
@@ -171,6 +172,16 @@
       // Leave CFG.onlinePrem at its $10 default. The premium-over-spot idea is already on the
       // page in dollars as the "Costco → spot delta" card, so nothing is lost by dropping it.
       if(online.in_stock != null) map.online_instock = { v: online.in_stock ? "yes" : "no", t: "" };
+      // RULE 16 — the feed's "in stock" is a claim; costco.com is the referee, and only a
+      // real browser can ask it (its bot-wall 403s every server client — tested 2026-08-01).
+      // The latest human verdict rides in as yes/no; no check, a stale check (>6h), a
+      // different item, or feed-says-OOS all read "unknown" (→ CFG.costcoOk = null).
+      // ALWAYS sent when the online row exists, so an expired flag self-heals off the badge.
+      if(online.in_stock != null){
+        var cvd = checkVerdict(online);
+        map.online_costco = { v: cvd || "unknown",
+                              t: (cvd && _gfhCheck && _gfhCheck.checked_at) ? fmtT(_gfhCheck.checked_at) : "" };
+      }
     }
     var failures = guardIngest(map);                  // refuse anything whose unit is not declared
     var before = snapNums();                          // snapshot every displayed number
@@ -180,6 +191,7 @@
     showGuardFailures(failures);
     pulseDiff(before);                                // flash whatever the update moved
     badge(spot, online);                              // then stamp the confidence badge (applySheet already ran)
+    mountVerify(online);                              // rule 16: "Costco ↗" link + ✗/✓ flag next to the stock badge
     _gfhOnline = online;                              // the chart's Costco reference line reads this
     // Prices refresh every 60s but the chart only refetches every 5 min. Redraw the last
     // points now so the buy-zone and Costco lines never sit up to 5 minutes behind the
@@ -260,6 +272,21 @@
   // source stays untouched; inside the artifact the futures chart still works.
   function renameFuturesChart(){
     var b = el("chartBox"); if(b) b.style.display = "none";
+  }
+  // PULL ONLINE → PRODUCT LINK (Medi 2026-08-01): on this page the button opens the current
+  // bar straight on Costco.com — same .product.<item>.html link the restock email carries.
+  // Cloning strips the dashboard's own "flag a refresh" click handler.
+  function rewireOnlineBtn(){
+    var b = el("onlinePullBtn"); if(!b || !b.parentNode) return;
+    var c = b.cloneNode(true);
+    b.parentNode.replaceChild(c, b);
+    c.innerHTML = '<span class="dot"></span> PRODUCT LINK';
+    c.title = "Open this bar on Costco.com";
+    c.addEventListener("click", function(){
+      var it = _gfhOnline && _gfhOnline.item;
+      window.open(it ? "https://www.costco.com/.product." + it + ".html"
+                     : "https://www.costco.com/gold-silver-platinum.html", "_blank", "noopener");
+    });
   }
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
@@ -471,7 +498,10 @@
     }
     refs.slice().sort(function(a, b){ return refDist(a) - refDist(b); }).forEach(function(r){
       var nlo = Math.min(lo, refLo(r) - pd), nhi = Math.max(hi, refHi(r) + pd);
-      if(nhi - nlo <= maxSpan){ lo = nlo; hi = nhi; }
+      // The BUY ZONE is the business decision line — it is ALWAYS admitted into the frame
+      // (Medi 2026-08-01), even on a flat weekend when that squashes the price line. Costco
+      // keeps the 35% guard: informative, but not worth flattening the chart for.
+      if(r.key === "buy" || nhi - nlo <= maxSpan){ lo = nlo; hi = nhi; }
     });
 
     var t0 = Date.parse(pts[0].t), t1 = Date.parse(pts[pts.length - 1].t) || (t0 + 1);
@@ -795,23 +825,34 @@
           capped = true;                              // hit our own page budget, not the window
         });
     }
-    // Costco history for the same window. Newest-first for the same 1000-row-cap reason as
-    // spot, then reversed. Far fewer rows than spot — the collector writes one per genuine
-    // online refresh (~8 min), not one a minute — so a single page covers any window we draw.
-    var histDone = fetch(SB_URL + "/rest/v1/online_history?select=t,price,bar_name,in_stock&t=gte." + since + "&order=t.desc",
-                         { headers: Object.assign({ Range: "0-999" }, H) })
-      .then(function(r){ return r.json(); })
-      .then(function(rows){ _gfhOnlineHist = Array.isArray(rows) ? rows.slice().reverse() : []; })
-      .catch(function(){ _gfhOnlineHist = []; });      // no history yet -> flat reference line
-
-    // Recorded buy-zone trigger for the same window. Written by recordBuyZone() from any
-    // open dashboard; ~1 row/5 min, so one page covers every window. Missing table or a
-    // PostgREST error body (not an array) both land on [] -> derived fallback.
-    var bzDone = fetch(SB_URL + "/rest/v1/buyzone_history?select=t,price&t=gte." + since + "&order=t.desc",
-                       { headers: Object.assign({ Range: "0-999" }, H) })
-      .then(function(r){ return r.json(); })
-      .then(function(rows){ _gfhBzHist = Array.isArray(rows) ? rows.slice().reverse() : []; })
-      .catch(function(){ _gfhBzHist = []; });
+    // Both history tables below share spot's 1000-row-cap problem: PostgREST truncates
+    // every response at 1000 rows, so a single newest-first page silently cuts the line
+    // to the newest ~day once a table grows past 1000 rows in the window. buyzone_history
+    // crossed that line on 2026-08-01 (2,431 rows — several tabs write ~1 row/min), and
+    // online_history (~288 rows/day since migration 003) is days from it. Page backwards
+    // to the same GFH_MAXPAGES budget as spot — the x-axis can't outgrow spot anyway.
+    function pageBack(table, select, done){
+      var all = [], page = 0;
+      function grab(){
+        var from = page * GFH_PAGE;
+        return fetch(SB_URL + "/rest/v1/" + table + "?select=" + select + "&t=gte." + since + "&order=t.desc",
+                     { headers: Object.assign({ Range: from + "-" + (from + GFH_PAGE - 1) }, H) })
+          .then(function(r){ return r.json(); })
+          .then(function(rows){
+            if(!Array.isArray(rows) || !rows.length) return;
+            all = all.concat(rows);
+            page++;
+            if(rows.length < GFH_PAGE) return;         // reached the start of the window
+            if(page < GFH_MAXPAGES) return grab();
+          });
+      }
+      // Missing table or a PostgREST error body (not an array) both land on [] -> fallbacks.
+      return grab().then(function(){ done(all.reverse()); }).catch(function(){ done([]); });
+    }
+    var histDone = pageBack("online_history", "t,price,bar_name,in_stock,item",
+                            function(rows){ _gfhOnlineHist = rows; });
+    var bzDone = pageBack("buyzone_history", "t,price",
+                          function(rows){ _gfhBzHist = rows; });
 
     // June's manual register entries (table lands with migration 004; [] until then).
     var juneDone = fetch(SB_URL + "/rest/v1/june_history?select=t,price&t=gte." + since + "&order=t.desc",
@@ -820,7 +861,7 @@
       .then(function(rows){ _gfhJuneHist = Array.isArray(rows) ? rows.slice().reverse() : []; })
       .catch(function(){ _gfhJuneHist = []; });
 
-    Promise.all([grab(), histDone, bzDone])
+    Promise.all([grab(), histDone, bzDone, juneDone])
       .then(function(){
         if(!all.length) return;
         all.reverse();                                // back to oldest -> newest for drawing
@@ -859,10 +900,10 @@
       host = el("gfhHistRows"); cnt = el("gfhHistCount");
     }
     if(!host) return;
-    var rows = _gfhOnlineHist || [];
+    var rows = gfhBarRows();                       // listing + manual entries, same as the chart line
     if(rows.length < 1){
       host.innerHTML = '<div style="opacity:.6">No recorded history in this window yet. ' +
-        'The collector writes one row per genuine Costco refresh (~8 min), only while in stock.</div>';
+        'The collector writes one row per genuine Costco refresh (~8 min), plus June’s manual entries.</div>';
       if(cnt) cnt.textContent = "0 changes";
       return;
     }
@@ -871,8 +912,8 @@
       var v = Number(r.price); if(!isFinite(v)) return;
       var barName = r.bar_name || "(bar not recorded)";
       var prev = lastByBar[barName];
-      if(prev === undefined) ev.push({ t: r.t, bar: barName, from: null, to: v });
-      else if(Math.abs(v - prev) > 0.001) ev.push({ t: r.t, bar: barName, from: prev, to: v });
+      if(prev === undefined) ev.push({ t: r.t, bar: barName, item: r.item, from: null, to: v });
+      else if(Math.abs(v - prev) > 0.001) ev.push({ t: r.t, bar: barName, item: r.item, from: prev, to: v });
       lastByBar[barName] = v;
     });
     function f2(n){ return "$" + n.toFixed(2); }
@@ -889,7 +930,10 @@
         '<span style="min-width:80px;font-weight:700">' + f2(e.to) + '</span>' +
         '<span style="min-width:110px;color:' + col + '">' + delta +
           (e.from != null ? ' <span style="opacity:.5">(was ' + f2(e.from) + ')</span>' : '') + '</span>' +
-        '<span style="opacity:.55">' + e.bar + '</span>' +
+        '<span style="opacity:.55">' + (e.item
+          ? '<a href="https://www.costco.com/.product.' + e.item + '.html" target="_blank" rel="noopener" ' +
+            'style="color:inherit;text-decoration:underline dotted">' + e.bar + ' ↗</a>'
+          : e.bar) + '</span>' +
       '</div>';
     });
     host.innerHTML = html;
@@ -898,11 +942,91 @@
     if(cnt) cnt.textContent = nchg + " change" + (nchg === 1 ? "" : "s");
   }
 
+  // ==========================================================================================
+  // RULE 16 — stock verification latch (2026-08-01).
+  //
+  // The feed lied: costcogoldinventory said the Rand bar (1943085) was IN STOCK while
+  // costco.com itself returned "product not available". No robot can re-check for us —
+  // Costco's Akamai wall 403s curl, PowerShell and headless Chrome, and bullion is excluded
+  // from the sitemaps — so verification is one HUMAN click in a real browser, and this table
+  // (stock_checks, migration 004) is the shared memory that makes one person's click flip
+  // every open dashboard + the alert engine at once. Fail-open: no verdict = trust the feed.
+  // A 'no' verdict counts only for the item it names, only while the feed says IN STOCK,
+  // and only for 6 hours; a newer 'yes' overrides it.
+  // ==========================================================================================
+  var CHECK_TTL_MS = 6 * 3600 * 1000;
+  var _gfhCheck = null;                       // latest stock_checks row for the current item
+  function checkVerdict(online){
+    if(!(online && online.in_stock && online.item && _gfhCheck)) return null;
+    if(String(_gfhCheck.item) !== String(online.item)) return null;
+    var age = Date.now() - Date.parse(_gfhCheck.checked_at);
+    if(!(isFinite(age) && age >= 0 && age < CHECK_TTL_MS)) return null;
+    return _gfhCheck.verdict === "no" ? "no" : "yes";
+  }
+  function loadCheck(rows){
+    var online = null;
+    (rows || []).forEach(function(r){ if(r.id === "online") online = r; });
+    if(!(online && online.in_stock && online.item)){ _gfhCheck = null; return Promise.resolve(rows); }
+    return fetch(SB_URL + "/rest/v1/stock_checks?item=eq." + encodeURIComponent(online.item) +
+                 "&select=item,verdict,checked_at&order=checked_at.desc&limit=1", { headers: H })
+      .then(function(r){ return r.ok ? r.json() : []; })
+      .then(function(cs){ _gfhCheck = (Array.isArray(cs) && cs[0]) ? cs[0] : null; return rows; })
+      .catch(function(){ return rows; });     // network blip -> keep the last-known verdict
+  }
+  function writeCheck(item, verdict, host){
+    fetch(SB_URL + "/rest/v1/stock_checks", {
+      method: "POST",
+      headers: Object.assign({ "Content-Type": "application/json", Prefer: "return=minimal" }, H),
+      body: JSON.stringify({ item: String(item), verdict: verdict, note: "dashboard click" })
+    }).then(function(r){
+      if(!r.ok && host) host.innerHTML = '<span style="opacity:.7">⚠ not saved — is migration 004 run?</span>';
+      else load();                            // re-read so THIS click repaints badge + rule 12 now
+    }).catch(function(){ if(host) host.innerHTML = '<span style="opacity:.7">⚠ offline — not saved</span>'; });
+  }
+  function mountVerify(online){
+    var s = el("inStockV"); if(!s || !s.parentNode) return;
+    var w = el("gfhVerify");
+    if(!w){
+      w = document.createElement("span");
+      w.id = "gfhVerify";
+      w.style.cssText = "margin-left:8px;font-size:11px;white-space:nowrap;display:inline-flex;gap:6px;align-items:center;";
+      s.parentNode.insertBefore(w, s.nextSibling);
+    }
+    if(!(online && online.in_stock && online.item)){ w.innerHTML = ""; return; }
+    var url  = "https://www.costco.com/.product." + online.item + ".html";
+    var link = '<a href="' + url + '" target="_blank" rel="noopener" ' +
+               'title="Open the listing on costco.com itself — the 2-second truth check (rule 16)" ' +
+               'style="color:inherit;opacity:.75;text-decoration:underline dotted">Costco ↗</a>';
+    function btn(id, label, title){
+      return '<button id="' + id + '" title="' + title + '" style="font:inherit;font-size:10px;' +
+             'padding:1px 7px;border-radius:9px;border:1px solid var(--line2,#888);' +
+             'background:transparent;color:inherit;cursor:pointer;opacity:.85">' + label + '</button>';
+    }
+    var v = checkVerdict(online);
+    if(v === "no")
+      w.innerHTML = link + btn("gfhCkYes", "✓ it's live now",
+        "Costco shows the listing again — clear the mismatch flag for everyone");
+    else if(v === "yes")
+      w.innerHTML = link + '<span style="opacity:.6" title="A human confirmed the listing live on costco.com">✓ verified ' +
+        (fmtT(_gfhCheck.checked_at) || "").slice(11) + '</span>' +
+        btn("gfhCkNo", "✗", "Costco says NO after all — flag the mismatch");
+    else
+      w.innerHTML = link + btn("gfhCkNo", "✗ Costco says NO?",
+        "Opened the link and got 404 / unavailable? One click flags it on every dashboard and mutes the restock alert (rule 16)");
+    var bn = el("gfhCkNo"), by = el("gfhCkYes");
+    if(bn) bn.addEventListener("click", function(){ bn.disabled = true; writeCheck(online.item, "no",  w); });
+    if(by) by.addEventListener("click", function(){ by.disabled = true; writeCheck(online.item, "yes", w); });
+  }
+
   function load(){
     nextAt = Date.now() + 60000;
     fetch(SB_URL + "/rest/v1/gold_prices?select=*", { headers: H })
       .then(function(r){ return r.json(); })
-      .then(function(rows){ if(Array.isArray(rows)) apply(rows); })
+      .then(function(rows){
+        if(!Array.isArray(rows)) return;
+        // verdict first, THEN apply — apply() folds the verdict into the ingest map
+        return loadCheck(rows).then(function(){ apply(rows); });
+      })
       .catch(function(){ /* keep last-good; applySheet's stale-guard greys after 3 min of no advance */ });
   }
 
@@ -937,7 +1061,7 @@
   function start(){
     var s = el("spotStatus"); if(s){ s.textContent = "● connecting…"; s.className = "spot-status"; }
     wirePull(); mountTimer(); load(); setInterval(load, 60000); setInterval(tickTimer, 1000);
-    mountSpotChart(); wireSpotHover(); renameFuturesChart(); loadSpotChart(); setInterval(loadSpotChart, 300000);   // chart refetches every 5 min
+    mountSpotChart(); wireSpotHover(); renameFuturesChart(); rewireOnlineBtn(); loadSpotChart(); setInterval(loadSpotChart, 300000);   // chart refetches every 5 min
     // SVG attributes cannot inherit CSS variables, so the palette is baked in at draw time.
     // Flipping the theme therefore left the chart in the old theme's colours until the next
     // redraw — briefly painting a near-black label plate onto the cream page. Redraw on the
