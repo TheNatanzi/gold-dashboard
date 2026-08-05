@@ -1168,7 +1168,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 8fc67ed · built 2026-08-05 05:22 UTC</span>
+    <span id="verStamp" class="tnum">version: 3444af0 · built 2026-08-05 05:46 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3401,11 +3401,21 @@
 
       // A single row can be BOTH a price move and a stock flip — say both, in the
       // order they matter. Stock first: whether you could buy it outranks the cents.
+      // STATUS ON EVERY ROW (Medi, 2026-08-04), not only on the row where it flipped.
+      // A label that appears only at the moment of change forces you to scroll back to
+      // work out what a bar was doing at any other line. Every row now states plainly
+      // whether that bar was buyable at that timestamp — so the timestamp on a SOLD OUT
+      // row IS the sell-out time, read directly.
+      // The flip row is the loud one: full colour and bold. Every other row carries the
+      // same label dimmed, so a change still catches the eye without the list shouting.
+      var flipped = (pstock !== null && pstock !== stock);
+      if(flipped){ if(stock) nBack++; else nOut++; }
+      var stockCol = stock ? "var(--good,#0f9d6b)" : "var(--bad,#d23b45)";
+      var chip = '<span style="min-width:96px;display:inline-block;color:' + stockCol +
+                 (flipped ? ';font-weight:700' : ';opacity:.45') + '">' +
+                 (stock ? "IN STOCK" : "SOLD OUT") + (flipped ? " ◀" : "") + '</span>';
+
       var tags = [];
-      if(pstock !== null && pstock !== stock){
-        if(stock){ tags.push('<b style="color:var(--good,#0f9d6b)">BACK IN STOCK</b>'); nBack++; }
-        else     { tags.push('<b style="color:var(--bad,#d23b45)">SOLD OUT</b>');      nOut++;  }
-      }
       // PRICE MOVE ONLY (Medi, 2026-08-04). The arrow and the amount ARE the message —
       // the old "(was $4,179.99)" restated a number already sitting one column to the
       // left, and a flat "▼ −0.00" was noise dressed up as an event. So: a real move
@@ -3427,7 +3437,8 @@
         '<span style="opacity:.6;min-width:112px">' + when + '</span>' +
         '<span style="min-width:86px;font-weight:700' + (stock ? '' : ';opacity:.5') + '">' +
           barHistFmt(price) + '</span>' +
-        '<span style="min-width:210px">' + tags.join(" · ") + '</span>' +
+        chip +
+        '<span style="min-width:92px">' + tags.join(" · ") + '</span>' +
         '<span style="opacity:.55">' +
           '<a href="https://www.costco.com/.product.' + r.item + '.html" target="_blank" rel="noopener" ' +
              'style="color:inherit;text-decoration:underline dotted">' +
