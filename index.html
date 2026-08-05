@@ -389,6 +389,12 @@
      Rendering both as a bare dash told Medi "no gold here" about a warehouse
      nobody had looked at. Dashed border = "no information", not "no bars". */
   .wi-lvl.blind{color:var(--ink-mute);opacity:.75;border-style:dashed;font-style:italic}
+  /* "We will never use this warehouse" — Medi's standing decision, not a reading.
+     Dimmest thing on the tab, and the row it sits in is dimmed too, so the eye
+     skips it while scanning for somewhere to drive. */
+  .wi-lvl.gone{color:var(--ink-mute);opacity:.45;border-style:dotted}
+  tr.wi-gone{opacity:.4}
+  tr.wi-gone .jb-name{text-decoration:line-through}
   /* Watch/email on a warehouse the bot cannot see. The control still works and
      still saves, but it must not look like live coverage. */
   .wi-tog.noalert{opacity:.62;border-style:dashed}
@@ -1373,7 +1379,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: f2e3a2a · built 2026-08-05 22:29 UTC</span>
+    <span id="verStamp" class="tnum">version: b735115 · built 2026-08-05 22:36 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3659,6 +3665,22 @@
     return Math.round(n/24)+"d ago";
   }
 
+  /* ---- warehouses we will never use -----------------------------------------
+     Medi's standing decision, NOT a stock reading, so it does not live in
+     WI_SNAP and it does not get deleted when migration 007 lands. WI_SNAP is a
+     temporary stand-in for a feed; this outlives it. The value is the reason,
+     and it is shown in the row's tooltip.
+
+     These stores stay in JSTORES on purpose. The roster is 45 and every
+     coverage tally -- including June's _cov, which feeds the verdict and the
+     BUY price -- counts against JSTORES.length. Dropping a store from the
+     roster to hide it here would quietly move a money number. This is a display
+     state and nothing more. */
+  const WI_GONE = {
+    napa:       "Never used — the vendor scans it but has never recorded any gold there",
+    morganhill: "Never used — not a warehouse the vendor covers at all"
+  };
+
   /* ---- manual snapshot ------------------------------------------------------
      Read by hand from costcogoldinventory.com (the same vendor that runs the
      Slack bot) on the date below, for SKU 1943308 — the 1 oz PAMP Lady Fortuna,
@@ -3696,14 +3718,11 @@
         as unknown; it was opened and read directly. That is how Vacaville,
         Elk Grove and Natomas below came to be marked sold out.
 
-     THE TWO STILL UNREAD are deliberately in neither list, so they render as
-     "not checked" rather than as a zero:
-       napa       — the vendor scans it (15m before this reading) but has never
-                    recorded ANY gold or silver there in 91 days. That is not
-                    the same as looking at this SKU and finding none, so it is
-                    not written down as one. A phone call settles it.
-       morganhill — the vendor has no such warehouse at all; searching its own
-                    zip 95037 returns Great Oaks and Gilroy instead.
+     THE OTHER TWO roster stores, napa and morganhill, are in neither list and
+     never will be: Medi has retired them for good. They are listed in WI_GONE
+     above and render as "unavailable", which outranks anything read here. Do
+     not add them back to either list, and do not read their absence as a gap in
+     this snapshot — nothing is missing.
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
@@ -4118,7 +4137,18 @@
       // In the unknown state every stock cell reads unknown. A stale row must never
       // render as a confident "in stock" — the Session-8 lesson, applied here.
       let lvlHtml, rowCls="";
-      if(state==="unknown"){
+      // PERMANENTLY UNAVAILABLE — checked FIRST, so it outranks the feed, the
+      // snapshot and the unknown state alike. This is not a stock reading and it
+      // never expires: Medi has decided these warehouses are not ones he will
+      // ever drive to, so the tab must stop offering them as somewhere to try.
+      // Anything else here would rot -- "not checked" reads as "go call them",
+      // and a live feed turning them green would put them back on the board.
+      if(WI_GONE[id]){
+        lvlHtml = "<span class='wi-lvl gone' title='"+esc(WI_GONE[id])+
+                  " — you have taken this warehouse off the list for good, so it is "+
+                  "not tracked and not worth a call.'>unavailable</span>";
+        rowCls = "wi-gone";
+      } else if(state==="unknown"){
         lvlHtml = "<span class='wi-lvl unknown'>Unknown</span>";
         rowCls = "unknown";
       } else if(s){
