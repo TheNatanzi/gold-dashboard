@@ -938,14 +938,20 @@
       d.className = "chartbox"; d.id = "gfhHistBox";
       d.innerHTML =
         '<summary class="chart-sum">' +
-          '<span class="cs-l"><span class="cs-ic">\ud83e\uddfe</span> Costco bar price history' +
-            '<span class="cs-sub">every bar, every size \u00b7 window follows the chart timeframe</span></span>' +
+          '<span class="cs-l"><span class="cs-ic">\ud83e\uddfe</span> Costco bar price history \u2014 all sizes' +
+            '<span class="cs-sub">every bar, every weight \u00b7 window follows the chart timeframe</span></span>' +
           '<span class="cs-r"><span class="cs-last" id="gfhHistCount">\u2014</span>' +
             '<span class="cs-toggle"><span class="cs-chev">\u25be</span></span></span>' +
         '</summary>' +
         '<div class="chart-body"><div id="gfhHistRows" ' +
           'style="font-family:monospace;font-size:12px;line-height:1.5;overflow-x:auto"></div></div>';
-      anchor.parentNode.insertBefore(d, anchor.nextSibling);
+      // MOVED TO THE BOTTOM (Medi, 2026-08-04). This used to sit directly under the chart,
+      // which put the 44-bar all-sizes list ahead of the numbers the page is actually for.
+      // The dashboard now carries its own "1 oz bar history" box up top; this one is the
+      // reference dump, so it belongs last. Appended to the chart box's own parent \u2014 the
+      // same container it already lived in \u2014 so it lands at the end of the page content
+      // without needing to know any other element's id.
+      anchor.parentNode.appendChild(d);
       host = el("gfhHistRows"); cnt = el("gfhHistCount");
     }
     if(!host) return;

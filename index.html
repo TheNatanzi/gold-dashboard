@@ -1168,7 +1168,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 5548fb7 · built 2026-08-05 04:20 UTC</span>
+    <span id="verStamp" class="tnum">version: 8fc67ed · built 2026-08-05 05:22 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3406,22 +3406,19 @@
         if(stock){ tags.push('<b style="color:var(--good,#0f9d6b)">BACK IN STOCK</b>'); nBack++; }
         else     { tags.push('<b style="color:var(--bad,#d23b45)">SOLD OUT</b>');      nOut++;  }
       }
-      // ALWAYS show the comparison when there is a previous price — including when the
-      // price did not move (Medi, 2026-08-04). A sold-out row used to print the badge and
-      // nothing else, which read as "price unknown" when in fact it was known and flat.
-      // "▼ −0.00 (was $4,179.99)" says the real thing: it sold out at the same price.
-      // Every 1oz bar is treated identically here; no bar gets a different rule.
-      if(prev === null){
-        tags.push('<span style="opacity:.6">first seen</span>');
-      }else{
+      // PRICE MOVE ONLY (Medi, 2026-08-04). The arrow and the amount ARE the message —
+      // the old "(was $4,179.99)" restated a number already sitting one column to the
+      // left, and a flat "▼ −0.00" was noise dressed up as an event. So: a real move
+      // prints its arrow and amount, and anything else prints nothing at all. Every 1oz
+      // bar follows this identical rule; no bar type is special-cased.
+      if(prev !== null){
         var diff = price - prev;
-        var moved = Math.abs(diff) > 0.001;
-        var up = diff > 0.001;                       // exactly flat renders as ▼ −0.00
-        tags.push('<span style="color:' + (moved ? (up ? 'var(--bad,#d23b45)' : 'var(--good,#0f9d6b)')
-                                                 : 'var(--ink-mute,#888)') + '">' +
-                  (up ? "▲ +" : "▼ −") + Math.abs(diff).toFixed(2) +
-                  '</span> <span style="opacity:.5">(was ' + barHistFmt(prev) + ')</span>');
-        if(moved) nPrice++;                          // a flat row is not a "price move"
+        if(Math.abs(diff) > 0.001){
+          var up = diff > 0;
+          tags.push('<span style="color:' + (up ? 'var(--bad,#d23b45)' : 'var(--good,#0f9d6b)') + '">' +
+                    (up ? "▲ +" : "▼ −") + Math.abs(diff).toFixed(2) + '</span>');
+          nPrice++;
+        }
       }
       // A price rise is red and a fall is green on purpose: this dashboard buys bars,
       // so a cheaper bar is the good news. Same convention as the rest of the page.
@@ -3430,7 +3427,7 @@
         '<span style="opacity:.6;min-width:112px">' + when + '</span>' +
         '<span style="min-width:86px;font-weight:700' + (stock ? '' : ';opacity:.5') + '">' +
           barHistFmt(price) + '</span>' +
-        '<span style="min-width:210px">' + (tags.length ? tags.join(" · ") : "—") + '</span>' +
+        '<span style="min-width:210px">' + tags.join(" · ") + '</span>' +
         '<span style="opacity:.55">' +
           '<a href="https://www.costco.com/.product.' + r.item + '.html" target="_blank" rel="noopener" ' +
              'style="color:inherit;text-decoration:underline dotted">' +
@@ -4530,14 +4527,20 @@
       d.className = "chartbox"; d.id = "gfhHistBox";
       d.innerHTML =
         '<summary class="chart-sum">' +
-          '<span class="cs-l"><span class="cs-ic">\ud83e\uddfe</span> Costco bar price history' +
-            '<span class="cs-sub">every bar, every size \u00b7 window follows the chart timeframe</span></span>' +
+          '<span class="cs-l"><span class="cs-ic">\ud83e\uddfe</span> Costco bar price history \u2014 all sizes' +
+            '<span class="cs-sub">every bar, every weight \u00b7 window follows the chart timeframe</span></span>' +
           '<span class="cs-r"><span class="cs-last" id="gfhHistCount">\u2014</span>' +
             '<span class="cs-toggle"><span class="cs-chev">\u25be</span></span></span>' +
         '</summary>' +
         '<div class="chart-body"><div id="gfhHistRows" ' +
           'style="font-family:monospace;font-size:12px;line-height:1.5;overflow-x:auto"></div></div>';
-      anchor.parentNode.insertBefore(d, anchor.nextSibling);
+      // MOVED TO THE BOTTOM (Medi, 2026-08-04). This used to sit directly under the chart,
+      // which put the 44-bar all-sizes list ahead of the numbers the page is actually for.
+      // The dashboard now carries its own "1 oz bar history" box up top; this one is the
+      // reference dump, so it belongs last. Appended to the chart box's own parent \u2014 the
+      // same container it already lived in \u2014 so it lands at the end of the page content
+      // without needing to know any other element's id.
+      anchor.parentNode.appendChild(d);
       host = el("gfhHistRows"); cnt = el("gfhHistCount");
     }
     if(!host) return;
