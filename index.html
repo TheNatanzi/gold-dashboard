@@ -721,6 +721,20 @@
         <span class="cs-toggle"><span class="cs-toggle-txt"></span><span class="cs-chev">▾</span></span></span>
     </summary>
     <div class="chart-body">
+      <!-- RIGHT NOW banner. Without it the list below reads as current state, when every
+           row is a past state - a bar that was in stock at 7:17 PM shows "IN STOCK"
+           forever, because that is what was true at 7:17 PM. This line is the only thing
+           on the box that describes the present. -->
+      <div id="barHistNow" style="padding:6px 8px;margin-bottom:8px;border-radius:var(--r-sm,6px);
+           background:var(--panel,#181818);font-weight:700">checking current stock…</div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;padding:2px 0;opacity:.45;
+                  font-family:var(--mono,monospace);font-size:11px;text-transform:uppercase;letter-spacing:.04em">
+        <span style="min-width:112px">when</span>
+        <span style="min-width:86px">price then</span>
+        <span style="min-width:96px">status then</span>
+        <span style="min-width:92px">change</span>
+        <span>bar</span>
+      </div>
       <div id="barHistRows" style="font-family:var(--mono,monospace);font-size:12px;line-height:1.55;overflow-x:auto">
         <div style="opacity:.6">loading…</div>
       </div>
@@ -1168,7 +1182,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 6253143 · built 2026-08-05 06:01 UTC</span>
+    <span id="verStamp" class="tnum">version: f9933b2 · built 2026-08-05 06:16 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3558,9 +3572,48 @@
     });
   }
 
+  /* ---------------------------------------------------------------------------
+     "RIGHT NOW" — current 1oz stock, read from the newest fetch.
+
+     The history list cannot answer this. bars_changes only returns rows where
+     something CHANGED, so a bar that sold out hours ago and has sat still since
+     has no recent row at all — its newest entry is whatever it last did, which
+     may say IN STOCK from this morning. Reading current state off that list is
+     exactly the mistake the list invites.
+
+     So this asks the raw table instead: newest timestamp, every 1oz bar in it,
+     counted. One fetch, one truth, and it is the only line in the box that
+     describes the present tense.
+     --------------------------------------------------------------------------- */
+  function pullBarNow(){
+    var url = SB_URL + "/rest/v1/bars_history?select=item,in_stock,price,t" +
+              "&weight_oz=gte.0.999&weight_oz=lte.1.001&order=t.desc&limit=80";
+    return sbFetch(url, { headers: sbH() }).then(function(res){
+      var el = $("barHistNow"); if(!el) return;
+      if(res.kind !== "ok" || !Array.isArray(res.data) || !res.data.length){
+        el.textContent = "current stock unavailable" +
+          (res.kind && res.kind !== "ok" ? " · " + res.kind : "");
+        el.style.color = "";
+        return;
+      }
+      var newest = res.data[0].t;
+      var snap = res.data.filter(function(x){ return x.t === newest; });
+      var inStock = snap.filter(function(x){ return x.in_stock === true; });
+      var d = new Date(newest);
+      var when = d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+      var any = inStock.length > 0;
+      el.style.color = any ? "var(--good,#0f9d6b)" : "var(--bad,#d23b45)";
+      el.textContent = "RIGHT NOW · " + inStock.length + " of " + snap.length +
+        " one-ounce bars in stock" +
+        (any ? " · cheapest " + barHistFmt(Math.min.apply(null, inStock.map(function(x){ return Number(x.price); }))) : "") +
+        " · checked " + when;
+    });
+  }
+
+  pullBarNow();
   pullBarHist();
   pullOnlinePrev();
-  setInterval(function(){ pullBarHist(); pullOnlinePrev(); }, 300000);   // recorder writes every ~8 min
+  setInterval(function(){ pullBarNow(); pullBarHist(); pullOnlinePrev(); }, 300000);  // recorder writes every ~8 min
 
   window.__gfhIngest = applySheet;   // public-page ingest hook (build-injected; unused in the artifact)
 })();
