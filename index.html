@@ -1168,7 +1168,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 3444af0 · built 2026-08-05 05:46 UTC</span>
+    <span id="verStamp" class="tnum">version: 6253143 · built 2026-08-05 06:01 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3390,8 +3390,24 @@
     }
     // Server returns newest-first, which is the order we display. Do not re-sort.
     var nPrice = 0, nOut = 0, nBack = 0, html = "";
-    rows.slice(0, BARHIST_SHOW).forEach(function(r){
-      var price = Number(r.price), prev = (r.prev_price == null ? null : Number(r.prev_price));
+    var shownRows = rows.slice(0, BARHIST_SHOW);
+    shownRows.forEach(function(r, ri){
+      var price = Number(r.price);
+      // DELTA IS AGAINST THE ROW BELOW, not against this bar's own previous price
+      // (Medi, 2026-08-04: "treat every gold bar 1oz type the same"). Every 1oz bar is
+      // one pool here, so the number answers "what changed since the line under this
+      // one" — which is what you actually read down the list. The per-bar comparison
+      // is still available in prev_price; it is deliberately not what is drawn.
+      //
+      // ONE EXCEPTION, and it is not a style choice: rows from the SAME fetch are skipped.
+      // A single scrape writes ~18 one-ounce bars all stamped the same second, so the row
+      // below is often just a different product in the same snapshot. Subtracting those
+      // printed things like "▼ −610.00" — which is not a price change, it is a $4,169
+      // Royal Canadian bar sitting next to a $4,779 Perth Mint. No time passed, so nothing
+      // changed, so nothing is drawn. Across timestamps the delta is real and is shown.
+      var below = shownRows[ri + 1];
+      var prev = (below && below.t !== r.t) ? Number(below.price) : null;
+      if(prev !== null && !isFinite(prev)) prev = null;
       if(!isFinite(price)) return;
       var stock = r.in_stock !== false;
       var pstock = (r.prev_in_stock == null) ? null : (r.prev_in_stock !== false);
@@ -3421,11 +3437,16 @@
       // left, and a flat "▼ −0.00" was noise dressed up as an event. So: a real move
       // prints its arrow and amount, and anything else prints nothing at all. Every 1oz
       // bar follows this identical rule; no bar type is special-cased.
+      // RED IF IT IS MINUS (Medi, 2026-08-04). Straight sign colouring: a minus number is
+      // red, a plus number is green. This overrides the buyer's-eye convention used
+      // elsewhere on the page (where a price RISE is the bad news) — here the colour just
+      // follows the sign, so the column reads at a glance without decoding anything.
       if(prev !== null){
         var diff = price - prev;
         if(Math.abs(diff) > 0.001){
           var up = diff > 0;
-          tags.push('<span style="color:' + (up ? 'var(--bad,#d23b45)' : 'var(--good,#0f9d6b)') + '">' +
+          tags.push('<span style="font-weight:700;color:' +
+                    (up ? 'var(--good,#0f9d6b)' : 'var(--bad,#d23b45)') + '">' +
                     (up ? "▲ +" : "▼ −") + Math.abs(diff).toFixed(2) + '</span>');
           nPrice++;
         }
