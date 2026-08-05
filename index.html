@@ -1365,7 +1365,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: bb205fd · built 2026-08-05 19:42 UTC</span>
+    <span id="verStamp" class="tnum">version: 7dd3b38 · built 2026-08-05 20:21 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3651,6 +3651,45 @@
     return Math.round(n/24)+"d ago";
   }
 
+  /* ---- manual snapshot ------------------------------------------------------
+     Read by hand from costcogoldinventory.com (the same vendor that runs the
+     Slack bot) on the date below, for SKU 1943308 — the 1 oz PAMP Lady Fortuna,
+     the only bar the profit model is built on.
+
+     WHY THIS EXISTS: migration 007 has not been applied, so every warehouse
+     endpoint 404s and the tab has nothing to show. This is a hand-carried
+     stand-in, NOT a feed. It never updates itself and it is never allowed to
+     look like it does — the banner says the date out loud and every row is
+     marked "snapshot".
+
+     IT IS ALSO STRICTLY BETTER IN ONE WAY: the vendor's site reports OUT OF
+     STOCK explicitly. The Slack feed never could — a store simply went missing
+     from the list, which is why "no bars" and "never looked" were the same
+     thing there. Here a real zero is a real zero, and it is recorded as one.
+
+     DELETE THIS the moment 007 lands and the live feed takes over. */
+  const WI_SNAP = {
+    at: "2026-08-05T10:40:00-07:00",
+    src: "costcogoldinventory.com",
+    sku: "1943308",
+    price: 4319.99,          // Costco shelf price that day; spot was $4,249.10
+    inStock: ["concord","danville","livermore","richmond","sanleandro","vallejo"],
+    soldOut: {antioch:"9d", brentwood:"14d", hayward:"6d", pleasanton:"today"}
+  };
+
+  // Turn the snapshot into the same row shape wiRenderNow/wiRenderTable already
+  // read, so nothing downstream needs to know where it came from.
+  function wiApplySnapshot(){
+    const ageH = (Date.now() - new Date(WI_SNAP.at).getTime())/36e5;
+    WI.stock = WI_SNAP.inStock.map(function(id){
+      const r = SMAP[id];
+      return { store_id:id, raw_name:(r?r.n:id), sku:WI_SNAP.sku, level:"in_stock",
+               availability_raw:"In Stock", units:null, units_upper:null,
+               observed_at:WI_SNAP.at, age_hours:ageH };
+    });
+    WI.snapAgeH = ageH;
+  }
+
   /* ---- read ---- */
   function wiPull(){
     return Promise.all([
@@ -3670,6 +3709,10 @@
         // to fall through to the unknown state, never to an empty "no stock" list.
         WI.err = bad.kind;
         WI.health = null;
+        // No live feed. Fall back to the hand-read snapshot rather than showing
+        // nothing — but keep WI.err set, so the banner still says out loud that
+        // this is not live.
+        wiApplySnapshot();
         wiRender();
         return;
       }
@@ -3744,6 +3787,18 @@
     el.classList.remove("fresh","stale","unknown");
 
     if(WI.err){
+      // A hand-read snapshot is better than nothing, but it is NOT a feed. It
+      // gets its own state and its own wording: the date, in full, every time.
+      if(WI.stock && WI.stock.length && WI.snapAgeH != null){
+        el.classList.add("stale");
+        el.innerHTML = "<span class='ic'>📋</span><b>Hand-read snapshot — "+
+          esc(fmtDT(WI_SNAP.at))+", not live.</b>"+
+          "<span class='sub'>The live feed is not connected yet (migration 007 is "+
+          "unapplied), so this is a manual reading from "+esc(WI_SNAP.src)+", taken "+
+          wiAgeTxt(WI.snapAgeH)+". It does NOT update. Costco was charging $"+
+          WI_SNAP.price.toFixed(2)+" that day. Call before you drive.</span>";
+        return "snapshot";
+      }
       el.classList.add("unknown");
       el.innerHTML = "<span class='ic'>🚨</span><b>We don't know what's in stock.</b>"+
         "<span class='sub'>Couldn't reach the database ("+esc(WI.err)+"). "+
@@ -4021,7 +4076,9 @@
           return "<span class='wi-lvl "+esc(x.level)+"'>"+
                  "<b>"+esc(WI_SKU_TXT[x.sku]||x.sku)+"</b> "+
                  esc(WI_LEVEL_TXT[x.level]||x.level)+"</span>";
-        }).join(" ");
+        }).join(" ") + (state==="snapshot"
+          ? "<span class='wi-lvl blind' title='From the hand-read snapshot of "+
+            esc(fmtDT(WI_SNAP.at))+", not a live feed.'>snapshot</span>" : "");
         // 'unknown' means the Availability field was absent — the bot listed the
         // store as FOUND but did not say how much. That is a place with bars and
         // it gets the gold tint. It is 46% of real observations; rendering it as
@@ -4030,6 +4087,21 @@
         // Across all sizes: any real sighting wins the gold tint. Only when EVERY
         // size is unreadable does the row fall back to the flagged amber.
         rowCls = list.some(function(x){ return x.level!=="unrecognised"; }) ? "best" : "stale";
+      } else if(state==="snapshot"){
+        // The snapshot's own three answers, kept distinct. This source reports a
+        // REAL out-of-stock, which the Slack feed never could, so a confirmed
+        // zero is shown as one instead of being flattened into a dash.
+        const so = WI_SNAP.soldOut[id];
+        if(so){
+          lvlHtml = "<span class='wi-lvl none' title='Confirmed OUT of 1 oz gold in the "+
+                    esc(fmtDT(WI_SNAP.at))+" snapshot — last had it "+esc(so)+" ago.'>"+
+                    "sold out <i>· snapshot</i></span>";
+          rowCls = "todo";
+        } else {
+          lvlHtml = "<span class='wi-lvl blind' title='This warehouse was not in the "+
+                    "hand-read snapshot, so there is no reading either way.'>not checked</span>";
+          rowCls = "todo";
+        }
       } else if(!w.wh){
         // The bot does not scan this warehouse at all (w.wh is the row from the
         // warehouses table, and it is null for the 18 roster stores outside the
