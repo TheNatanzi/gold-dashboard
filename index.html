@@ -1391,7 +1391,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: a068d8a · built 2026-08-06 01:02 UTC</span>
+    <span id="verStamp" class="tnum">version: 7680b0c · built 2026-08-06 03:00 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -1508,14 +1508,23 @@
 
   // Costco split-tender spreads one bar's cost across cards → POOL total credit.
   // Whole bars only: floor(pooled credit / buy). Profit fills highest-reward cards first.
-  function computeBP(rows, buy, lossP){
+  function computeBP(rows, buy, lossP, prem){
     const pool=rows.filter(x=>x.barP>0 && avail[x.c.name] && !mcLocked(x.c)).sort((a,b)=>b.eff-a.eff);
+    // ONE BAR IS ONE TRANSACTION, so it is bought in ONE place. A Mastercard in the pool
+    // means the split-tender is happening on Costco.com, and Costco.com charges $10 more
+    // per bar -- which every card in that basket then pays, not just the Mastercard. An
+    // all-Visa pool is the register, and pays nothing extra.
+    // Known simplification, stated rather than hidden: this treats the pool as a single
+    // basket. Buying some bars in store and some online is a mix this band cannot express.
+    const online = pool.some(x=>x.c.net==="mc");
+    const up = (online && isFinite(prem)) ? Number(prem) : 0;
+    const barCost = buy + up, barLoss = lossP + up;
     let totCredit=0; pool.forEach(x=>totCredit+=x.c.limit);
-    const totBars=Math.floor(totCredit/buy);
-    const deployed=totBars*buy;
+    const totBars=Math.floor(totCredit/barCost);
+    const deployed=totBars*barCost;
     let spendLeft=deployed, reward=0;
     for(const x of pool){ const use=Math.min(x.c.limit,spendLeft); reward+=use*(x.eff/100); spendLeft-=use; if(spendLeft<=0)break; }
-    const totProfit=reward-totBars*lossP, unused=totCredit-deployed;
+    const totProfit=reward-totBars*barLoss, unused=totCredit-deployed;
     _bpBars=totBars;   // the coverage band answers "she found N, can I afford them?"
     $("bpCredit").textContent=money(totCredit);
     $("bpBars").textContent=totBars+(totBars===1?" bar":" bars");
@@ -1524,10 +1533,12 @@
     $("bpUnused").textContent=money(unused);
   }
 
-  function rowHTML(c, rankTxt, eff, barP, barG, buy){
+  function rowHTML(c, rankTxt, eff, barP, barG, buy, up){
+    // Say the surcharge out loud on the chip. A per-bar figure that is $9.80 worse than
+    // the card above it, with nothing on screen explaining why, reads as a bug.
     const netChip = c.net==="visa"
       ? `<span class="chip visa">VISA · in-store+online</span>`
-      : `<span class="chip mc">MC · online only</span>`;
+      : `<span class="chip mc">MC · online only${up>0?` · +${money(up)}/bar`:``}</span>`;
     const tkChip = c.tk>0 ? `<span class="chip tk">+Taekus ${c.biller} ${c.tk}%</span>` : `<span class="chip notk">no Taekus</span>`;
     const typeChip = c.type==="Business"
       ? `<span class="chip biz">● BUSINESS</span>`
@@ -1548,9 +1559,28 @@
       <div class="col-bar ${barG>=0?'good':'bad'}">${money(barG)}<span class="u">GENERIC</span></div>
       <div class="col-catch">${c.catch}</div>`;
   }
-  function computeCard(c, buy, lossP, lossG){
+  /* ONLINE COSTS $10 MORE, AND THE MASTERCARD PAYS IT (Medi, 2026-08-05).
+     `buy` is ALWAYS an in-store basis — either June's register price, or the online
+     listing converted back to the register with `impliedInStore = online - prem`.
+     Every card used to be priced off that one number, including the Mastercard, which
+     can ONLY be spent on Costco.com. So the online card was quietly credited with the
+     register price while actually paying the online one.
+
+     The error is NOT the $10. It is $10 × (1 − reward), because the higher price also
+     earns slightly more cashback: at Citi Double Cash's 2% the per-bar figure was
+     overstated by $9.80 (it read −$33.09 when the truth is −$42.89).
+
+     `prem` is DOLLARS, not a percent. gold_prices.premium is a PERCENT and the two have
+     been mixed up before — that invented a $7.10 gap with no error on screen. Do not
+     pass a percent in here. */
+  function computeCard(c, buy, lossP, lossG, prem){
     const eff=c.card+c.tk;
-    return {c, eff, barP:(eff/100)*buy-lossP, barG:(eff/100)*buy-lossG};
+    const up  = (c.net==="mc" && isFinite(prem)) ? Number(prem) : 0;  // online-only surcharge
+    const b   = buy + up;
+    // loss is buy − sell, so a costlier bar loses exactly `up` more. Recomputing from the
+    // passed-in losses keeps ONE definition of the sell side.
+    return {c, eff, buy:b, up:up,
+            barP:(eff/100)*b-(lossP+up), barG:(eff/100)*b-(lossG+up)};
   }
 
   function compute(){
@@ -1640,7 +1670,9 @@
 
     // alert gauge uses Chase Ink floor
     const hero=OWNED.find(c=>c.hero);
-    const h=computeCard(hero,buy,lossP,lossG);
+    // The hero (Chase Ink) is a Visa, so prem never applies to it — passed anyway so this
+    // call and the matrix call below can never drift apart.
+    const h=computeCard(hero,buy,lossP,lossG,prem);
     const heroSel=barType==="pamp"?h.barP:h.barG;
     const usedLoss=barType==="pamp"?lossP:lossG;
     $("mBuy").textContent=money(buy);
@@ -1665,7 +1697,7 @@
     else{v.className="verdict no";v.textContent=`✗ No-go — need ${money(floorV-heroSel)} more/bar`;}
 
     // matrix: fixed order, Visa group then MC divider then MC group
-    const rows=OWNED.slice().sort((a,b)=>a.order-b.order).map(c=>computeCard(c,buy,lossP,lossG));
+    const rows=OWNED.slice().sort((a,b)=>a.order-b.order).map(c=>computeCard(c,buy,lossP,lossG,prem));
     const mx=$("matrix"); mx.innerHTML=""; let mcDone=false;
     rows.forEach(x=>{
       if(x.c.net==="mc" && !mcDone){
@@ -1680,14 +1712,17 @@
       const win=(barType==="pamp"?x.barP:x.barG)>=0;
       el.className="card "+(x.c.hero?"pinned ":"")+(win?"win":"");
       const rankTxt=x.c.hero?"★":String(x.c.order);
-      el.innerHTML=rowHTML(x.c, rankTxt, x.eff, x.barP, x.barG, buy);
+      // x.buy, not buy: the Mastercard's row must quote the price IT pays.
+      el.innerHTML=rowHTML(x.c, rankTxt, x.eff, x.barP, x.barG, x.buy, x.up);
       mx.appendChild(el);
     });
 
     // BUYING POWER band — split into its own fn so an availability toggle recomputes
     // ONLY the band (avail is its only input) and never rebuilds the matrix / drops focus.
-    _bp={rows, buy, lossP};
-    computeBP(rows, buy, lossP);
+    // prem rides along: the availability toggle re-runs computeBP on its own, and without
+    // it that path would silently price an online basket at the register price again.
+    _bp={rows, buy, lossP, prem};
+    computeBP(rows, buy, lossP, prem);
 
     // dataset.t is set ONLY by a real live read. Falling back to nowStr() printed the current
     // clock next to a build-time constant on every keystroke — exactly the false "just pulled"
@@ -1946,7 +1981,7 @@
   $("matrix").addEventListener("change",e=>{
     const cb=e.target.closest('input[type=checkbox][data-card]'); if(!cb)return;
     avail[cb.dataset.card]=cb.checked;
-    if(_bp) computeBP(_bp.rows,_bp.buy,_bp.lossP);  // band only → keeps checkbox focus
+    if(_bp) computeBP(_bp.rows,_bp.buy,_bp.lossP,_bp.prem);  // band only → keeps checkbox focus
     // computeBP just moved _bpBars, and the coverage band's affordability sentence quotes it.
     // Without this the two disagree on screen until the next 30s poll — at the exact moment
     // Medi has just told the app a card is unavailable.
