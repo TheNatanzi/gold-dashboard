@@ -1351,8 +1351,12 @@
           <tr>
             <th>Warehouse</th>
             <th>Tier</th>
-            <th>Bot says</th>
-            <th>June says</th>
+            <!-- "PAMP only" is the honest header: both items the bot tracks and the
+                 whole hand-read snapshot are the PAMP Lady Fortuna. June's column is
+                 NOT PAMP-only — she counts Pamp and generic bars separately, which is
+                 why the two columns can disagree without either being wrong. -->
+            <th>Bot says <span style="opacity:.5;font-weight:400">· PAMP only</span></th>
+            <th>June says <span style="opacity:.5;font-weight:400">· Pamp + generic</span></th>
             <th class="r">Seen</th>
             <th>Watch</th>
             <th>Email</th>
@@ -1387,7 +1391,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 36711ea · built 2026-08-06 00:32 UTC</span>
+    <span id="verStamp" class="tnum">version: a068d8a · built 2026-08-06 01:02 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -1448,7 +1452,7 @@
      catch:"Verified 3% at Costco + Synchrony Taekus — your best per-bar card. In-store OK."},
     {name:"U.S. Bank Smartly (4%)", biller:"U.S. Bank", net:"visa", card:4.0, tk:0, type:"Personal", order:4, limit:10000,
      catch:"Needs ~$100k parked at U.S. Bancorp; $10k/mo cap. In-store OK."},
-    {name:"Citi Double Cash", biller:"Citi", net:"mc", card:2.0, tk:0, type:"Personal", order:5, limit:8000,
+    {name:"Citi Double Cash", biller:"Citi", net:"mc", card:2.0, tk:0, type:"Personal", order:5, limit:8300,
      catch:"Personal MC → no Taekus (2% only). Mastercard = Costco.com online only."},
   ];
   // credit-limit availability — default every card ON (balance available)
@@ -3655,7 +3659,14 @@
   // Only the 1 oz has ever actually been in stock, but the ½ oz is tracked and
   // could appear at any time — so it gets its own row rather than being collapsed
   // into whichever sighting happened to be newest.
-  const WI_SKU_TXT = { "1943308":"1oz", "1942925":"½oz" };
+  //
+  // SAY "PAMP" OUT LOUD (Medi, 2026-08-05). These read "1oz" / "½oz", which made
+  // the whole tab look like it was reporting gold in general. It never was —
+  // BOTH tracked items are PAMP, and the hand-read snapshot is SKU 1943308 only.
+  // Medi asked whether PAMP specifically was in stock; the answer was already on
+  // screen and simply never labelled. This is a wording fix, not new data — do
+  // not add a non-PAMP item here without changing these labels back.
+  const WI_SKU_TXT = { "1943308":"PAMP 1oz", "1942925":"PAMP ½oz" };
 
   const WI_LEVEL_TXT = {
     in_stock:"In stock",
@@ -3734,7 +3745,7 @@
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-08-05T15:20:00-07:00",
+    at: "2026-08-05T17:58:00-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
     price: 4319.99,          // Costco shelf price that day; spot was $4,248.20
@@ -3746,10 +3757,11 @@
               "santarosa","sunnyvale","tracy"],
     // 17 of the 45, with how long since the store last had one. The three marked
     // "read from the store page" are the truncation trap in note 2 above.
-    soldOut: {antioch:"9d", brentwood:"14d", hayward:"7d", pleasanton:"today",
+    soldOut: {antioch:"9d", brentwood:"14d", pleasanton:"today",
+              hayward:"today",   // was 7d at 15:20 — it restocked and sold out again
               saccalexpo:"15d", gilroy:"10d", lodi:"9d", newark:"today",
               riverbank:"9d", rohnertpark:"16d", sjsenter:"today",
-              santacruz:"14d", stockton:"8d", woodland:"11d",
+              santacruz:"14d", stockton:"9d", woodland:"11d",
               vacaville:"1mo",   // read from the store page, not the rail
               elkgrove:"2mo",    // read from the store page, not the rail
               sacnatomas:"1mo"}  // read from the store page, not the rail
@@ -4182,9 +4194,10 @@
         // zero is shown as one instead of being flattened into a dash.
         const so = WI_SNAP.soldOut[id];
         if(so){
-          lvlHtml = "<span class='wi-lvl none' title='Confirmed OUT of 1 oz gold in the "+
-                    esc(fmtDT(WI_SNAP.at))+" snapshot — last had it "+esc(so)+" ago.'>"+
-                    "sold out <i>· snapshot</i></span>";
+          lvlHtml = "<span class='wi-lvl none' title='Confirmed OUT of the 1 oz PAMP Lady "+
+                    "Fortuna in the "+esc(fmtDT(WI_SNAP.at))+" snapshot — last had it "+
+                    esc(so)+" ago.'>"+
+                    "<b>PAMP 1oz</b> sold out <i>· snapshot</i></span>";
           rowCls = "todo";
         } else {
           lvlHtml = "<span class='wi-lvl blind' title='This warehouse was not in the "+
