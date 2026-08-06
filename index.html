@@ -70,6 +70,12 @@
     --bad:#f2686f; --bad-bg:rgba(242,104,111,.12);
     --warn:#eab54c; --warn-bg:rgba(234,181,76,.12);
     --closed:#ef8b3c;
+    /* PAMP purple (Medi, 2026-08-05). The 1 oz bar history lists every 1 oz bar
+       Costco sells, but the profit model is built on ONE of them — the PAMP
+       Suisse Lady Fortuna. Purple marks his bar so he can find it without
+       reading names. Deliberately not green or red: those two already mean
+       "price fell" and "price rose" in the CHANGE column of the same table. */
+    --pamp:#c08cf0;
     /* DAY-OLD yellow — the exact tokens June's call sheet uses, so 24–48h data
        looks identical on both screens. Loud on purpose. */
     --day:#f5d44e; --day-bg:rgba(245,212,78,.15); --day-line:#c9a52c;
@@ -87,6 +93,8 @@
     --bad:#d23b45; --bad-bg:rgba(210,59,69,.10);
     --warn:#b07d17; --warn-bg:rgba(176,125,23,.12);
     --closed:#c05a12;
+    /* Darker purple for the light theme — #c08cf0 is unreadable on cream. */
+    --pamp:#7b3fb8;
     --day:#8a6a00; --day-bg:#fdf3c9; --day-line:#e8c73f;
     --shadow:0 1px 0 rgba(255,255,255,.6) inset, 0 16px 34px -26px rgba(0,0,0,.35);
   }
@@ -1379,7 +1387,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: b735115 · built 2026-08-05 22:36 UTC</span>
+    <span id="verStamp" class="tnum">version: 36711ea · built 2026-08-06 00:32 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -4449,6 +4457,7 @@
                  (stock ? "IN STOCK" : "SOLD OUT") + (flipped ? " ◀" : "") + '</span>';
 
       var tags = [];
+      var isPamp = /\bpamp\b/i.test(r.bar_name || "");
       // PRICE MOVE ONLY (Medi, 2026-08-04). The arrow and the amount ARE the message —
       // the old "(was $4,179.99)" restated a number already sitting one column to the
       // left, and a flat "▼ −0.00" was noise dressed up as an event. So: a real move
@@ -4477,7 +4486,14 @@
           barHistFmt(price) + '</span>' +
         chip +
         '<span style="min-width:92px">' + tags.join(" · ") + '</span>' +
-        '<span style="opacity:.55">' +
+        // PAMP IN PURPLE (Medi, 2026-08-05). This table lists every 1 oz bar Costco
+        // sells, but only the PAMP Suisse Lady Fortuna is the one the profit model
+        // prices. Matched on the NAME, not the item number, because Costco has
+        // shipped the same bar under more than one SKU — keying on 1943308 alone
+        // would silently stop colouring it the next time that happens. The opacity
+        // is lifted too: .55 grey plus purple reads as muddy, not as "mine".
+        '<span style="opacity:' + (isPamp ? '1' : '.55') +
+          (isPamp ? ';color:var(--pamp,#c08cf0);font-weight:600' : '') + '">' +
           '<a href="https://www.costco.com/.product.' + r.item + '.html" target="_blank" rel="noopener" ' +
              'style="color:inherit;text-decoration:underline dotted">' +
              (r.bar_name || "(bar not recorded)") + ' ↗</a></span>' +
