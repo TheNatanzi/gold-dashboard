@@ -1391,7 +1391,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 7680b0c · built 2026-08-06 03:00 UTC</span>
+    <span id="verStamp" class="tnum">version: f20b5e0 · built 2026-08-07 18:23 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3751,7 +3751,15 @@
      from the list, which is why "no bars" and "never looked" were the same
      thing there. Here a real zero is a real zero, and it is recorded as one.
 
-     HOW THE 45 WERE READ (2026-08-05, widened from the first 11):
+     ⚠ RE-READ 2026-08-07 11:20 PT — THE BAY AREA SOLD OUT. In-stock fell from
+     26 of 45 to 11 in two days. Fifteen warehouses emptied, most of them within
+     the last 24 hours (17 rows now read "today" or "1d"), and every tier-1 store
+     except Concord is gone. Concord and Danville are the only close ones left.
+     Costco's shelf price did NOT move — still $4,319.99 — but spot rose to
+     $4,334.80, so the bar is now BELOW spot (−0.3%), which is almost certainly
+     what emptied the shelves. Read this as a sell-out wave, not a data error.
+
+     HOW THE 45 WERE READ (method unchanged since 2026-08-05, widened from 11):
      The first pass covered only the 11 starred favourites. This one covers the
      whole roster, read from the Warehouse Finder over 11 zip searches — 94596,
      94080, 95112, 95687, 95401, 95814, 95205, 95060, plus 94550, 94560 and
@@ -3780,26 +3788,30 @@
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-08-05T17:58:00-07:00",
+    at: "2026-08-07T11:20:00-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
-    price: 4319.99,          // Costco shelf price that day; spot was $4,248.20
-    // 26 of the 45. Read from the row carrying SKU 1943308, not the store badge.
-    inStock: ["concord","danville","livermore","richmond","sanleandro","vallejo",
-              "sjalmaden","ssf","fairfield","fostercity","fremont","sjgreatoaks",
-              "manteca","modesto","mountainview","sjne","novato","ranchocordova",
-              "redwoodcity","ssfairport","sacstockton","sf","santaclara",
-              "santarosa","sunnyvale","tracy"],
-    // 17 of the 45, with how long since the store last had one. The three marked
-    // "read from the store page" are the truncation trap in note 2 above.
-    soldOut: {antioch:"9d", brentwood:"14d", pleasanton:"today",
-              hayward:"today",   // was 7d at 15:20 — it restocked and sold out again
-              saccalexpo:"15d", gilroy:"10d", lodi:"9d", newark:"today",
-              riverbank:"9d", rohnertpark:"16d", sjsenter:"today",
-              santacruz:"14d", stockton:"9d", woodland:"11d",
-              vacaville:"1mo",   // read from the store page, not the rail
-              elkgrove:"2mo",    // read from the store page, not the rail
-              sacnatomas:"1mo"}  // read from the store page, not the rail
+    price: 4319.99,          // unchanged since 08-05; spot had risen to $4,334.80,
+                             // putting the bar 0.3% BELOW spot — hence the sell-out
+    // 11 of the 45 (was 26 on 08-05). Read from the row carrying SKU 1943308,
+    // never the store badge.
+    inStock: ["concord","danville","fostercity","modesto","novato","sanleandro",
+              "santarosa","sf","sacstockton","sjalmaden","sjgreatoaks"],
+    // 32 of the 45, with how long since the store last had one. "today" and "1d"
+    // dominate because most of these emptied inside the last 24 hours.
+    // The three marked "store page" are the rail-truncation trap in note 2 above,
+    // re-opened and re-read today rather than carried over.
+    soldOut: {ssf:"today", manteca:"today", sjne:"today", ranchocordova:"today",
+              ssfairport:"today", santaclara:"today", sunnyvale:"today", tracy:"today",
+              fairfield:"1d", fremont:"1d", hayward:"1d", livermore:"1d",
+              mountainview:"1d", newark:"1d", pleasanton:"1d", redwoodcity:"1d",
+              richmond:"1d", sjsenter:"1d", vallejo:"1d",
+              stockton:"10d", antioch:"11d", lodi:"11d", riverbank:"11d",
+              gilroy:"12d", woodland:"13d", santacruz:"15d", brentwood:"16d",
+              saccalexpo:"17d", rohnertpark:"18d",
+              vacaville:"1mo",   // store page, re-read 2026-08-07
+              elkgrove:"2mo",    // store page, re-read 2026-08-07
+              sacnatomas:"1mo"}  // store page, re-read 2026-08-07
   };
 
   // Turn the snapshot into the same row shape wiRenderNow/wiRenderTable already
