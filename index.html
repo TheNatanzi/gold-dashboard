@@ -1391,7 +1391,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: e3a845a · built 2026-08-08 03:20 UTC</span>
+    <span id="verStamp" class="tnum">version: 992f405 · built 2026-08-08 18:19 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -4071,10 +4071,24 @@
       // Until feed_health exposes a last_full_scan_at, this flags only sightings
       // that are BOTH superseded and old enough for it to matter (6h+), which
       // catches "yesterday's bars" without crying wolf on this morning's.
-      const feedAge = Number(WI.health && WI.health.age_hours);
+      // NOT Number(), and this is the SAME trap already called out on the freshness
+      // banner below: Number(null) is 0. With migration 007 applied but nothing yet
+      // ingested, feed_health() returns a real row whose age_hours is NULL — so
+      // feedAge became 0, "the feed spoke 0 hours ago", and every snapshot sighting
+      // was stamped ⚠ superseded by a message that does not exist. On 2026-08-08
+      // that put a warning on all 11 in-stock chips and printed the self-
+      // contradicting "11 sightings · 11 not seen in the latest scan".
+      //
+      // Nothing can be superseded by a feed that has never spoken. No last-posted
+      // time => no staleness verdict at all, which is the honest answer and leaves
+      // the chips showing their own age instead.
+      const rawFeedAge = (WI.health && WI.health.age_hours != null)
+        ? Number(WI.health.age_hours) : NaN;
+      const feedSpoke  = !WI.noFeed && isFinite(rawFeedAge);
       const isStale = function(s){
+        if(!feedSpoke) return false;
         const a = Number(s.age_hours);
-        return !isNaN(a) && !isNaN(feedAge) && a > feedAge + 0.5 && a >= 6;
+        return !isNaN(a) && a > rawFeedAge + 0.5 && a >= 6;
       };
       const nStale = live.filter(isStale).length;
 
