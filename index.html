@@ -1391,7 +1391,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: f20b5e0 · built 2026-08-07 18:23 UTC</span>
+    <span id="verStamp" class="tnum">version: e3a845a · built 2026-08-08 03:20 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3868,6 +3868,21 @@
           if(!prev || String(c.called_at) > String(prev.called_at)) WI.calls[c.store_id]=c;
         });
       }
+      // MIGRATION 007 LANDED 2026-08-07, and it exposed this hole the day it did.
+      // Before 007 the four endpoints 404'd, so every load took the WI.err path and
+      // fell back to the hand-read snapshot. Now they answer 200 with an EMPTY feed
+      // (nothing has ingested a Slack message yet), so this success path ran with
+      // zero stock rows and painted 43 of 45 warehouses "Unknown" — strictly worse
+      // than the real reading taken hours earlier. A working database is not the
+      // same as a working feed.
+      //
+      // So: reachable DB + a feed that has NEVER posted = still no feed, and the
+      // snapshot is the best thing we own. Deliberately keyed on last_posted_at
+      // being null (never ingested), NOT on a stale feed — once messages exist,
+      // silence is a real signal and must render as "unknown", never as a snapshot
+      // dressed up as current.
+      WI.noFeed = !WI.health || !WI.health.last_posted_at;
+      if(WI.noFeed && !WI.stock.length) wiApplySnapshot();
       WI.loaded = true;
       wiRender();
       wiPullPatterns();
@@ -3923,23 +3938,35 @@
     const el = $("wiHealth");
     el.classList.remove("fresh","stale","unknown");
 
-    if(WI.err){
-      // A hand-read snapshot is better than nothing, but it is NOT a feed. It
-      // gets its own state and its own wording: the date, in full, every time.
+    // A hand-read snapshot is better than nothing, but it is NOT a feed. It gets
+    // its own state and its own wording: the date, in full, every time.
+    // Reached two ways now — database unreachable (WI.err), or database fine but
+    // the feed has never ingested a message (WI.noFeed). The reason differs and the
+    // banner says which; what must NOT differ is that a real reading beats "Unknown".
+    if(WI.err || WI.noFeed){
       if(WI.stock && WI.stock.length && WI.snapAgeH != null){
         el.classList.add("stale");
         el.innerHTML = "<span class='ic'>📋</span><b>Hand-read snapshot — "+
           esc(fmtDT(WI_SNAP.at))+", not live.</b>"+
-          "<span class='sub'>The live feed is not connected yet (migration 007 is "+
-          "unapplied), so this is a manual reading from "+esc(WI_SNAP.src)+", taken "+
-          wiAgeTxt(WI.snapAgeH)+". It does NOT update. Costco was charging $"+
+          "<span class='sub'>"+
+          (WI.err
+            ? "Couldn't reach the database ("+esc(WI.err)+"), so this is a manual reading from "
+            : "Migration 007 is applied, but no scan has been ingested yet — the feed is "+
+              "empty, so this is a manual reading from ")+
+          esc(WI_SNAP.src)+", taken "+wiAgeTxt(WI.snapAgeH)+
+          ". It does NOT update. Costco was charging $"+
           WI_SNAP.price.toFixed(2)+" that day. Call before you drive.</span>";
         return "snapshot";
       }
+      // No snapshot to fall back on either. Say which of the two failures it was —
+      // "couldn't reach the database" would be a lie when the database answered fine
+      // and simply had nothing in it.
       el.classList.add("unknown");
       el.innerHTML = "<span class='ic'>🚨</span><b>We don't know what's in stock.</b>"+
-        "<span class='sub'>Couldn't reach the database ("+esc(WI.err)+"). "+
-        "This is NOT the same as “nothing in stock” — do not act on an empty list below.</span>";
+        "<span class='sub'>"+
+        (WI.err ? "Couldn't reach the database ("+esc(WI.err)+")."
+                : "The database is reachable but no scan has ever been ingested.")+
+        " This is NOT the same as “nothing in stock” — do not act on an empty list below.</span>";
       return "unknown";
     }
     if(!WI.health || !WI.health.last_posted_at){
