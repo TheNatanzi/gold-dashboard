@@ -1401,7 +1401,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 1a65611 · built 2026-08-11 23:34 UTC</span>
+    <span id="verStamp" class="tnum">version: 7928982 · built 2026-08-11 23:51 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -4193,12 +4193,26 @@
       return {store_id:s.id, roster:s, wh:whById[s.id]||null};
     });
 
+    // Does this warehouse have bars right now? "In stock" = a live or hand-read
+    // sighting that actually reports metal (in_stock / low / yes-no-count), NOT an
+    // unreadable row. Stores with stock ride to the TOP of the table (Medi's rule,
+    // 2026-08-11) so the places worth driving to are never buried below sold-out ones.
+    const hasStock = function(id){
+      const list = stockBy[id];
+      return !!(list && list.some(function(x){
+        return x.level==="in_stock" || x.level==="low" || x.level==="unknown";
+      }));
+    };
+
     const rows = all.filter(function(w){
       const t = wiEffTier(w.store_id);
       if(wiWatchedOnly && !wiWatched(w.store_id)) return false;
       // A warehouse with no tier at all can never be hidden by the tier menu.
       return t==null || !!wiTiersOn[t];
     }).sort(function(a,b){
+      // 1) in-stock first, 2) then tier 1→4, 3) then nearest.
+      const sa=hasStock(a.store_id)?0:1, sb=hasStock(b.store_id)?0:1;
+      if(sa!==sb) return sa-sb;
       const ta=wiEffTier(a.store_id)||9, tb=wiEffTier(b.store_id)||9;
       if(ta!==tb) return ta-tb;
       return (a.roster.mi||999)-(b.roster.mi||999);
