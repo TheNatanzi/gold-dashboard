@@ -59,6 +59,9 @@
      CSS before. June's call sheet has always had it; this page did not. -->
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Gold Flip — Profit Dashboard</title>
+<!-- Restore the saved theme BEFORE first paint, so a reload can't flash the default
+     theme and then snap. themeBtn writes alchemy_theme; this reads it back. -->
+<script>try{var _t=localStorage.getItem("alchemy_theme");if(_t==="light"||_t==="dark")document.documentElement.setAttribute("data-theme",_t);}catch(e){}</script>
 <style>
   /* ============ TOKENS ============ */
   :root{
@@ -694,6 +697,13 @@
     .colhead{display:none}
     .card .col-catch{grid-column:1/-1}
     .card .col-eff{grid-column:2}
+    /* Grid items default to min-width:auto, which refuses to shrink below their
+       content — the 1fr/auto tracks then pushed the card ~10px past a 375px
+       viewport and produced a horizontal scrollbar. Let the tracks shrink and let
+       long text wrap instead of forcing the page wide. */
+    .card{min-width:0}
+    .card>*{min-width:0}
+    .cname,.col-catch,.col-bar{overflow-wrap:anywhere}
   }
   .rank{font-family:var(--mono);font-size:13px;color:var(--ink-mute);text-align:center}
   .rank.medal{font-size:15px}
@@ -1391,7 +1401,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 3184d48 · built 2026-08-11 17:01 UTC</span>
+    <span id="verStamp" class="tnum">version: 1a65611 · built 2026-08-11 23:34 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -1991,6 +2001,8 @@
     const cur=document.documentElement.getAttribute("data-theme");
     const next=cur==="light"?"dark":"light";
     document.documentElement.setAttribute("data-theme",next);
+    // Persist so the choice survives a reload (the early-restore script in <head> reads it).
+    try{ localStorage.setItem("alchemy_theme", next); }catch(e){}
     // The chart paints colours into SVG attributes, so it cannot inherit the new tokens —
     // it has to be redrawn or it keeps the old theme's grid and candle colours.
     try{ drawChart(_chartTF); }catch(e){}
@@ -3941,7 +3953,7 @@
     if(WI.err || WI.noFeed){
       if(WI.stock && WI.stock.length && WI.snapAgeH != null){
         el.classList.add("stale");
-        el.innerHTML = "<span class='ic'>📋</span><b>Hand-read snapshot — "+
+        el.innerHTML = "<span class='ic'>📋</span><b>Hand-read — "+
           esc(fmtDT(WI_SNAP.at))+", not live.</b>"+
           "<span class='sub'>"+
           (WI.err
@@ -4260,9 +4272,7 @@
           return "<span class='wi-lvl "+esc(x.level)+"'>"+
                  "<b>"+esc(WI_SKU_TXT[x.sku]||x.sku)+"</b> "+
                  esc(WI_LEVEL_TXT[x.level]||x.level)+"</span>";
-        }).join(" ") + (state==="snapshot"
-          ? "<span class='wi-lvl blind' title='From the hand-read snapshot of "+
-            esc(fmtDT(WI_SNAP.at))+", not a live feed.'>snapshot</span>" : "");
+        }).join(" ");
         // 'unknown' means the Availability field was absent — the bot listed the
         // store as FOUND but did not say how much. That is a place with bars and
         // it gets the gold tint. It is 46% of real observations; rendering it as
@@ -4278,13 +4288,13 @@
         const so = WI_SNAP.soldOut[id];
         if(so){
           lvlHtml = "<span class='wi-lvl none' title='Confirmed OUT of the 1 oz PAMP Lady "+
-                    "Fortuna in the "+esc(fmtDT(WI_SNAP.at))+" snapshot — last had it "+
+                    "Fortuna in the "+esc(fmtDT(WI_SNAP.at))+" hand-read reading — last had it "+
                     esc(so)+" ago.'>"+
-                    "<b>PAMP 1oz</b> sold out <i>· snapshot</i></span>";
+                    "<b>PAMP 1oz</b> sold out</span>";
           rowCls = "todo";
         } else {
           lvlHtml = "<span class='wi-lvl blind' title='This warehouse was not in the "+
-                    "hand-read snapshot, so there is no reading either way.'>not checked</span>";
+                    "hand-read reading, so there is no reading either way.'>not checked</span>";
           rowCls = "todo";
         }
       } else if(!w.wh){
@@ -4341,7 +4351,9 @@
         "<td>"+tsel+"</td>"+
         "<td>"+lvlHtml+"</td>"+
         "<td>"+juneHtml+"</td>"+
-        "<td class='r'>"+(state==="unknown" ? "—" : (s ? wiAgeTxt(s.age_hours) : "—"))+"</td>"+
+        "<td class='r'>"+(state==="unknown" ? "—"
+            : (s ? wiAgeTxt(s.age_hours)
+                 : (state==="snapshot" ? wiAgeTxt(WI.snapAgeH) : "—")))+"</td>"+
         "<td><button class='wi-tog"+noAlertCls+"' type='button' data-act='watch' data-id='"+esc(id)+"' "+
             "aria-pressed='"+(watched?"true":"false")+"'"+noAlert+" "+
             "aria-label='"+(watched?"Stop watching ":"Watch ")+esc(r.n||id)+
