@@ -1391,7 +1391,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 992f405 · built 2026-08-08 18:19 UTC</span>
+    <span id="verStamp" class="tnum">version: 555cb11 · built 2026-08-11 08:05 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3788,30 +3788,25 @@
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-08-07T11:20:00-07:00",
+    at: "2026-08-11T01:05:04-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
-    price: 4319.99,          // unchanged since 08-05; spot had risen to $4,334.80,
-                             // putting the bar 0.3% BELOW spot — hence the sell-out
-    // 11 of the 45 (was 26 on 08-05). Read from the row carrying SKU 1943308,
-    // never the store badge.
-    inStock: ["concord","danville","fostercity","modesto","novato","sanleandro",
-              "santarosa","sf","sacstockton","sjalmaden","sjgreatoaks"],
-    // 32 of the 45, with how long since the store last had one. "today" and "1d"
-    // dominate because most of these emptied inside the last 24 hours.
-    // The three marked "store page" are the rail-truncation trap in note 2 above,
-    // re-opened and re-read today rather than carried over.
-    soldOut: {ssf:"today", manteca:"today", sjne:"today", ranchocordova:"today",
-              ssfairport:"today", santaclara:"today", sunnyvale:"today", tracy:"today",
-              fairfield:"1d", fremont:"1d", hayward:"1d", livermore:"1d",
-              mountainview:"1d", newark:"1d", pleasanton:"1d", redwoodcity:"1d",
-              richmond:"1d", sjsenter:"1d", vallejo:"1d",
-              stockton:"10d", antioch:"11d", lodi:"11d", riverbank:"11d",
-              gilroy:"12d", woodland:"13d", santacruz:"15d", brentwood:"16d",
-              saccalexpo:"17d", rohnertpark:"18d",
-              vacaville:"1mo",   // store page, re-read 2026-08-07
-              elkgrove:"2mo",    // store page, re-read 2026-08-07
-              sacnatomas:"1mo"}  // store page, re-read 2026-08-07
+    price: 4439.99,
+    // Written by warehouse-inventory/daily_pull.py — see DAILY-PULL.md.
+    // 2 of the 45, keyed on the row carrying the SKU, never the store badge.
+    inStock: ["sacstockton", "santarosa"],
+    // 41 of the 45. Stores whose rail rows were truncated were opened and
+    // read from their own page this run, not carried forward.
+    soldOut: {antioch:"15d", brentwood:"19d", concord:"3d", danville:"3d",
+              elkgrove:"2m", fairfield:"4d", fostercity:"2d", fremont:"5d",
+              gilroy:"16d", hayward:"5d", livermore:"5d", lodi:"15d", manteca:"4d",
+              modesto:"1d", mountainview:"5d", newark:"5d", novato:"3d",
+              pleasanton:"5d", ranchocordova:"4d", redwoodcity:"5d", richmond:"5d",
+              riverbank:"15d", rohnertpark:"22d", saccalexpo:"21d", sacnatomas:"1m",
+              sanleandro:"2d", santaclara:"3d", santacruz:"19d", sf:"today",
+              sjalmaden:"2d", sjgreatoaks:"2d", sjne:"4d", sjsenter:"5d", ssf:"3d",
+              ssfairport:"2d", stockton:"14d", sunnyvale:"4d", tracy:"3d",
+              vacaville:"1m", vallejo:"5d", woodland:"17d"}
   };
 
   // Turn the snapshot into the same row shape wiRenderNow/wiRenderTable already
