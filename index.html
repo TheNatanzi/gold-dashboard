@@ -924,57 +924,11 @@
     <button type="button" id="pxAlertX">Dismiss</button>
   </div>
 
-  <!-- COVERAGE — June's round, promoted out of the accordion into the headline -->
-  <section class="covband" id="covBand" aria-label="Warehouse coverage from June's calling round">
-    <div class="cb-top">
-      <svg class="cb-ring" width="62" height="62" viewBox="0 0 62 62" aria-hidden="true">
-        <circle cx="31" cy="31" r="26" fill="none" stroke="var(--line2)" stroke-width="7"></circle>
-        <circle id="cbRingFill" cx="31" cy="31" r="26" fill="none" stroke="var(--gold)" stroke-width="7"
-                stroke-linecap="round" stroke-dasharray="0 163.4"
-                transform="rotate(-90 31 31)"></circle>
-        <!-- font set in CSS: var() is not valid in an SVG presentation attribute and the
-             number silently fell back to the default serif. -->
-        <text id="cbRingTxt" x="31" y="35.5" text-anchor="middle"
-              font-size="15" font-weight="700" fill="var(--gold)">0%</text>
-      </svg>
-      <div class="cb-stats">
-        <div class="cb-s">
-          <span class="k">Warehouses called</span>
-          <span class="v gold" id="cbCalled">0 of 45</span>
-          <span class="sub" id="cbCalledSub">nobody has been phoned yet</span>
-        </div>
-        <div class="cb-s">
-          <span class="k">Bars found</span>
-          <span class="v" id="cbBars">0</span>
-          <span class="sub" id="cbBarsSub">0 Pamp / 0 Generic</span>
-        </div>
-        <div class="cb-s">
-          <span class="k">Needs re-calling</span>
-          <span class="v mute" id="cbStale">0</span>
-          <span class="sub" id="cbStaleSub">nothing over a day old</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="cb-near">
-      <span class="cb-title">Where the bars are</span>
-      <div class="cb-chips" id="cbNear"><span class="cb-chip none">No warehouse has confirmed bars yet</span></div>
-    </div>
-
-    <div class="cb-afford" id="cbAfford">Waiting on June's first call.</div>
-
-    <!-- June's register price vs the online lookup: do they agree? -->
-    <div class="pxagree">
-      <span class="cb-title">Price check — June's register vs the online listing</span>
-      <div class="px-row">
-        <div class="px-f"><span class="k">June · in store</span><span class="v" id="pxJune">—</span></div>
-        <div class="px-f"><span class="k">Costco.com · listed</span><span class="v mute" id="pxOnline">—</span></div>
-        <div class="px-f"><span class="k">Online implies in store</span><span class="v mute" id="pxImplied">—</span></div>
-        <div class="px-f"><span class="k">Gap</span><span class="v" id="pxGap">—</span></div>
-      </div>
-      <div class="px-verdict" id="pxVerdict">No price recorded yet — nothing to compare.</div>
-    </div>
-  </section>
+  <!-- COVERAGE band (June's-round ring + "price check" panel) REMOVED 2026-08-11 —
+       redundant with the Warehouse tab, where June's-round header already shows
+       "N of 45 called · bars", and stock lives. renderCoverage() early-returns when
+       #covBand is absent, so nothing downstream breaks; _cov (which feeds BUY and the
+       verdict) is still computed in renderJune(). To restore: git revert this change. -->
 
 
   <!-- ALERT GAUGE (full-width band) -->
@@ -1408,7 +1362,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 0bfc177 · built 2026-08-12 00:43 UTC</span>
+    <span id="verStamp" class="tnum">version: 99e75fa · built 2026-08-12 01:04 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3016,8 +2970,10 @@
     "</tr>";
   }
 
-  /* ---- the always-visible coverage band ---- */
+  /* ---- the coverage band (removed from the dashboard 2026-08-11; kept as a no-op
+     so a future restore of #covBand just works, and nothing crashes meanwhile) ---- */
   function renderCoverage(){
+    if(!$("covBand")) return;   // band removed — _cov still computed in renderJune()
     const pctDone = _cov.total ? _cov.called/_cov.total : 0;
     const C=2*Math.PI*26;
     const fill=$("cbRingFill"), rtxt=$("cbRingTxt");
