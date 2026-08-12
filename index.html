@@ -406,6 +406,13 @@
   .wi-lvl.gone{color:var(--ink-mute);opacity:.45;border-style:dotted}
   tr.wi-gone{opacity:.4}
   tr.wi-gone .jb-name{text-decoration:line-through}
+  /* Watch + Email columns HIDDEN until a live inventory tracker exists (Medi,
+     2026-08-11) — a restock alert can't fire without one, so the controls only
+     promised coverage we don't have. The buttons still exist in the DOM (state is
+     preserved); this hides columns 6 (Watch) and 7 (Email) of the 8-column table.
+     TO RESTORE: delete this one block. */
+  #wiTable th:nth-child(6), #wiTable th:nth-child(7),
+  #wiBody td:nth-child(6), #wiBody td:nth-child(7){ display:none; }
   /* Watch/email on a warehouse the bot cannot see. The control still works and
      still saves, but it must not look like live coverage. */
   .wi-tog.noalert{opacity:.62;border-style:dashed}
@@ -1401,7 +1408,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 7928982 · built 2026-08-11 23:51 UTC</span>
+    <span id="verStamp" class="tnum">version: 0bfc177 · built 2026-08-12 00:43 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
