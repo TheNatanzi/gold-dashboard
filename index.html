@@ -233,6 +233,25 @@
   /* Same caption treatment the delta card uses, now shared by the June card's source line. */
   .capcard .cap-sub{font-family:var(--mono);font-size:10px;color:var(--ink-mute)}
 
+  /* Elemetal sell riding in the top spot bar (moved out of the trio 2026-08-11). Green to
+     echo the old elecard accent — it is a SELL price, the one good number on the page. */
+  .elespot .sd-v{color:var(--good)}
+
+  /* ===== CONDENSED PRICE + HISTORY STRIP (2026-08-11) =====
+     One bar carries: the active BUY basis (June OR Online, never both), the online
+     "checked" time + prev-price line, the stock badge, and the history toggle. It reuses
+     the chartbox accordion so the price-change / sell-out history folds in behind SHOW. */
+  .chart-sum.condensed{padding:11px 16px;flex-wrap:wrap;gap:8px 14px}
+  .strip-price{display:inline-flex;align-items:baseline;gap:7px;white-space:nowrap}
+  .strip-lab{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--gold)}
+  .strip-tag{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mute)}
+  .strip-v{font-family:var(--mono);font-size:18px;font-weight:680;color:var(--gold)}
+  .strip-meta{font-family:var(--mono);font-size:10.5px;color:var(--ink-mute);font-weight:400;letter-spacing:.02em}
+  /* This box lists price/stock history, not a chart — relabel the shared toggle text. */
+  #barHistBox .cs-toggle-txt::after{content:"Show history"}
+  #barHistBox[open] .cs-toggle-txt::after{content:"Hide history"}
+
   /* ============ COVERAGE BAND — June's round, promoted out of the accordion ============
      Medi has to see, without clicking anything: how much of the map is covered, where the
      bars are, how far away they are, and whether he can afford them. */
@@ -784,6 +803,16 @@
         <span class="sd-v tnum" id="deltaV">—</span>
         <span class="sd-stamp" id="deltaStamp">—</span>
       </div>
+      <!-- Elemetal sell price, moved out of the trio into the top bar's dead space
+           (Medi, 2026-08-11). Same ids (eleV/eleSub/eleStamp) so compute() keeps writing
+           them unchanged — money invariant preserved. eleSub/eleStamp stay in the DOM but
+           hidden: they carry long, wrapping text that has no room in the compact bar. -->
+      <div class="spot-delta elespot" title="Elemetal sell price · Pamp bar (sheet + $10 call-in)">
+        <span class="sd-lab">🏦 Elemetal sell · Pamp</span>
+        <span class="sd-v tnum" id="eleV">—</span>
+        <span class="sd-stamp" id="eleStamp" hidden>—</span>
+        <span id="eleSub" hidden>—</span>
+      </div>
       <div class="spot-side">
         <span class="spot-status" id="spotStatus">◉ manual · auto-sync off</span>
         <!-- The PULL button lived here. The live layer refreshes every 60s on its own, so
@@ -850,10 +879,21 @@
        ONE OUNCE ONLY, on purpose: the feed lists ~44 gold bars across 11 weights, and
        the other sizes are not what gets flipped. The all-sizes view lives on the
        brother's live page. -->
+  <!-- CONDENSED STRIP (2026-08-11): the old online card + the "1 oz bar history" bar folded
+       into one. The summary carries the ACTIVE BUY basis (June or Online — only the one
+       driving BUY, per Medi), the online checked-time + prev-price line, and the stock badge.
+       SHOW opens the price-change / sell-out history that used to be its own box. -->
   <details class="chartbox" id="barHistBox">
-    <summary class="chart-sum">
-      <span class="cs-l"><span class="cs-ic">🧾</span> 1&nbsp;oz bar history
-        <span class="cs-sub">every price change &amp; sell-out · last 7 days</span></span>
+    <summary class="chart-sum condensed">
+      <span class="cs-l">
+        <span class="strip-price">
+          <b class="strip-lab" id="apLab">June</b><span class="strip-tag">buy basis</span>
+          <span class="strip-v tnum" id="apV">—</span>
+        </span>
+        <span class="instock" id="inStockV">in stock</span>
+        <span class="strip-meta">checked <span id="onlineTimeV">—</span></span>
+        <span class="strip-meta" id="onlinePrevV">—</span>
+      </span>
       <span class="cs-r"><span class="cs-last" id="barHistCount">—</span>
         <span class="cs-toggle"><span class="cs-toggle-txt"></span><span class="cs-chev">▾</span></span></span>
     </summary>
@@ -879,41 +919,11 @@
     </div>
   </details>
 
-  <!-- TRIO: June · Online · Costco→spot delta -->
-  <div class="trio">
-    <div class="capcard june">
-      <div class="cap-t"><div class="lab"><span class="ic">📝</span> June's in-store price</div><span class="ro">read-only</span></div>
-      <div class="cap-row">
-        <div class="cap-f"><span class="k">1oz price</span><span class="val" id="junePriceV">—</span></div>
-        <div class="cap-f"><span class="k">Captured · form submit</span><span class="val time" id="juneTimeV">—</span></div>
-      </div>
-      <div class="cap-sub" id="juneSrc">seed value · no call round imported yet</div>
-    </div>
-    <div class="capcard online">
-      <div class="cap-t">
-        <div class="lab"><span class="ic">🌐</span> Online price</div>
-        <span class="instock" id="inStockV">in stock</span>
-      </div>
-      <div class="cap-row">
-        <div class="cap-f"><span class="k">Online 1oz price</span><span class="val" id="onlinePriceV">—</span></div>
-        <div class="cap-f"><span class="k">Checked · last lookup</span><span class="val time" id="onlineTimeV">—</span></div>
-      </div>
-      <!-- Previous price + WHEN it changed (2026-08-04). "Checked" above only says when we
-           last looked; it says nothing about when the number last actually moved. Read from
-           online_history, the same series the chart's Costco line draws. -->
-      <div class="cap-sub" id="onlinePrevV">—</div>
-      <button class="pull sm" id="onlinePullBtn" title="Ask Claude to look up the current Costco online price">
-        <span class="dot"></span> PULL ONLINE
-      </button>
-      <div class="online-req" id="onlineReq"></div>
-    </div>
-    <div class="capcard deltacard elecard">
-      <div class="cap-t"><div class="lab"><span class="ic">🏦</span> Elemetal pays · Pamp</div></div>
-      <div class="dv tnum" id="eleV">—</div>
-      <div class="cap-sub" id="eleSub">spot − $10 Pamp · − $20 generic</div>
-      <div class="stamp" id="eleStamp">—</div>
-    </div>
-  </div>
+  <!-- TRIO REMOVED 2026-08-11 — Elemetal moved to the top spot bar; June + Online folded
+       into the condensed strip above (which owns #inStockV, #onlineTimeV, #onlinePrevV now).
+       #eleV/#eleSub/#eleStamp live in the spot bar; renderCFG() guards the dropped ids
+       (#junePriceV, #juneTimeV, #onlinePriceV) so their absence never crashes.
+       The PULL ONLINE button dropped with the Online card; type "pull online" to Claude. -->
 
   <!-- PRICE WENT UP — fires when June's newly saved price is HIGHER than the one before it.
        Costco raising the shelf price is the single event that can kill a flip, so it gets its
@@ -1362,7 +1372,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 99e75fa · built 2026-08-12 01:04 UTC</span>
+    <span id="verStamp" class="tnum">version: 990c332 · built 2026-08-12 02:02 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -1612,6 +1622,15 @@
     // Costco -> spot delta = bar price over live spot
     $("deltaV").textContent = signMoney(buy-spot);
 
+    // Condensed strip (2026-08-11): show ONLY the active BUY basis — June OR Online,
+    // whichever compute() just decided drives BUY (_juneOverridden). value = buy, the exact
+    // number every card below is priced from, so the strip can never quote a stale basis.
+    const apVEl=$("apV");
+    if(apVEl){
+      apVEl.textContent = money(buy);
+      const apLabEl=$("apLab"); if(apLabEl) apLabEl.textContent = _juneOverridden ? "Online" : "June";
+    }
+
     // Elemetal card (took the delta's old square in the trio). Discounts come from the
     // engine sheet when it has them (BUYERS offsets), else the CFG defaults — the same
     // precedence the profit math above uses, so this card can never show a rate the
@@ -1756,26 +1775,33 @@
   }
 
   function renderCFG(){
-    $("junePriceV").textContent=money(CFG.junePrice);
+    // GUARDED (2026-08-11): the trio's June/Online cards were removed, so #junePriceV,
+    // #juneTimeV and #onlinePriceV no longer exist. #onlineTimeV and #inStockV moved into
+    // the condensed strip and DO exist. Each write is if(el)-guarded so a dropped id is a
+    // no-op, never a crash (same pattern renderCoverage() uses for the removed #covBand).
+    const jpEl=$("junePriceV"); if(jpEl) jpEl.textContent=money(CFG.junePrice);
     // Show the timestamp of the price BUY is actually using — not CFG.juneTime, which on a
     // fresh load is still the seed literal and invented a capture time for a price nobody
     // captured. When the phoned-in price has expired and been dropped, say so.
     const at = buyPriceAt();
-    $("juneTimeV").textContent = at ? fmtDT(at)
+    const jtEl=$("juneTimeV");
+    if(jtEl) jtEl.textContent = at ? fmtDT(at)
       : (priceState()==="expired-dropped" ? "expired — not in use" : "not captured yet");
-    $("onlinePriceV").textContent=money(CFG.onlinePrice);
-    $("onlineTimeV").textContent=fmtDT(CFG.onlineTime);
+    const opEl=$("onlinePriceV"); if(opEl) opEl.textContent=money(CFG.onlinePrice);
+    const otEl=$("onlineTimeV"); if(otEl) otEl.textContent=fmtDT(CFG.onlineTime);
     // Three states, not two (rule 16): the amber one means the feed and Costco.com disagree
     // — a human checked and the listing is not really buyable. Never show green for a claim
     // a human has just disproven.
     const s=$("inStockV");
-    if(CFG.inStock && CFG.costcoOk===false){
-      s.textContent="feed: in · costco: no"; s.className="instock warn";
-      s.title="The stock feed says IN STOCK but a check of costco.com itself says the listing is not buyable (rule 16).";
-    } else {
-      s.textContent=CFG.inStock?"in stock":"out of stock";
-      s.className="instock"+(CFG.inStock?"":" out");
-      s.title="";
+    if(s){
+      if(CFG.inStock && CFG.costcoOk===false){
+        s.textContent="feed: in · costco: no"; s.className="instock warn";
+        s.title="The stock feed says IN STOCK but a check of costco.com itself says the listing is not buyable (rule 16).";
+      } else {
+        s.textContent=CFG.inStock?"in stock":"out of stock";
+        s.className="instock"+(CFG.inStock?"":" out");
+        s.title="";
+      }
     }
   }
 
@@ -1937,11 +1963,13 @@
     }
     setTimeout(()=>btn.disabled=false,650); });
 
+  // GUARDED (2026-08-11): the PULL ONLINE button dropped with the Online card. if(obtn)
+  // keeps this from throwing (a null.addEventListener would have killed every later listener).
   const obtn=$("onlinePullBtn");
-  obtn.addEventListener("click",()=>{ if(obtn.disabled)return; obtn.disabled=true;
+  if(obtn) obtn.addEventListener("click",()=>{ if(obtn.disabled)return; obtn.disabled=true;
     const t=nowStr(); const r=$("onlineReq");
-    r.textContent=`↻ New online price requested ${t} — tell Claude "pull online" and I'll fetch Costco.com, then update it here.`;
-    r.style.display="block";
+    if(r){ r.textContent=`↻ New online price requested ${t} — tell Claude "pull online" and I'll fetch Costco.com, then update it here.`;
+      r.style.display="block"; }
     setTimeout(()=>obtn.disabled=false,650); });
 
   $("spot").addEventListener("input",function(){
