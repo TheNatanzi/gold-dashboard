@@ -1372,7 +1372,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 320df1b · built 2026-08-12 17:01 UTC</span>
+    <span id="verStamp" class="tnum">version: 5b192a6 · built 2026-08-13 17:02 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3791,25 +3791,23 @@
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-08-12T10:01:37-07:00",
+    at: "2026-08-13T10:02:09-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
-    price: 4469.99,
+    price: 4429.99,
     // Written by warehouse-inventory/daily_pull.py — see DAILY-PULL.md.
-    // 1 of the 45, keyed on the row carrying the SKU, never the store badge.
-    inStock: ["santarosa"],
-    // 42 of the 45. Stores whose rail rows were truncated were opened and
+    // 27 of the 45, keyed on the row carrying the SKU, never the store badge.
+    inStock: ["brentwood", "concord", "danville", "fostercity", "fremont", "livermore",
+              "manteca", "modesto", "mountainview", "newark", "novato", "pleasanton",
+              "ranchocordova", "redwoodcity", "richmond", "sacstockton", "sanleandro",
+              "santaclara", "santarosa", "sf", "sjalmaden", "sjgreatoaks", "sjne",
+              "ssf", "ssfairport", "sunnyvale", "tracy"],
+    // 16 of the 45. Stores whose rail rows were truncated were opened and
     // read from their own page this run, not carried forward.
-    soldOut: {antioch:"16d", brentwood:"20d", concord:"4d", danville:"4d",
-              elkgrove:"2m", fairfield:"5d", fostercity:"3d", fremont:"6d",
-              gilroy:"17d", hayward:"6d", livermore:"6d", lodi:"16d", manteca:"5d",
-              modesto:"2d", mountainview:"6d", newark:"6d", novato:"4d",
-              pleasanton:"6d", ranchocordova:"5d", redwoodcity:"6d", richmond:"6d",
-              riverbank:"16d", rohnertpark:"23d", saccalexpo:"22d", sacnatomas:"1m",
-              sacstockton:"1d", sanleandro:"3d", santaclara:"4d", santacruz:"20d",
-              sf:"1d", sjalmaden:"3d", sjgreatoaks:"3d", sjne:"5d", sjsenter:"6d",
-              ssf:"4d", ssfairport:"4d", stockton:"15d", sunnyvale:"5d", tracy:"4d",
-              vacaville:"1m", vallejo:"6d", woodland:"18d"}
+    soldOut: {antioch:"today", elkgrove:"2m", fairfield:"today", gilroy:"18d",
+              hayward:"today", lodi:"17d", riverbank:"17d", rohnertpark:"24d",
+              saccalexpo:"23d", sacnatomas:"1m", santacruz:"21d", sjsenter:"today",
+              stockton:"16d", vacaville:"1m", vallejo:"today", woodland:"19d"}
   };
 
   // Turn the snapshot into the same row shape wiRenderNow/wiRenderTable already
