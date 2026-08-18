@@ -7,8 +7,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Alchemy — Lock</title>
-<!-- ALCHEMY-LOCK-HONESTY v2 · 2026-08-18 · dashboard can never show "watching"/green while no watcher heartbeats -->
-<meta name="alchemy-build" content="honesty-v2-2026-08-18" />
+<!-- ALCHEMY-LOCK-HONESTY v3 · 2026-08-18 · honest heartbeat + native iframe auto-fit (no inner scroll) -->
+<meta name="alchemy-build" content="honesty-v3-2026-08-18" />
 <style>
   :root{
     --bg:#0e1116; --card:#171b22; --line:#232833; --ink:#e8edf4; --mut:#8a93a3;
@@ -48,6 +48,17 @@
   .badge.error{background:rgba(224,83,58,.16);color:var(--death)}
 
   .price{font-size:54px;font-weight:800;letter-spacing:-.02em;margin:8px 0 0;line-height:1;font-variant-numeric:tabular-nums}
+
+  /* Prominent 15-minute grace countdown (the headline timer). */
+  .gracebar{margin-top:12px;display:none}
+  .gracebar.on{display:block}
+  .gracebar .grow{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px}
+  .gracebar .glabel{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+  .gracebar .gbig{font-size:34px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1;letter-spacing:-.01em}
+  .gracebar.grace .gbig{color:var(--grace)} .gracebar.death .gbig{color:var(--death);font-size:24px}
+  .gtrack{height:8px;border-radius:999px;background:#0f131a;border:1px solid var(--line);overflow:hidden}
+  .gfill{height:100%;width:100%;background:linear-gradient(90deg,var(--ok),var(--grace));transition:width .5s linear}
+  .gracebar.death .gfill{background:var(--death);width:100%!important}
   .price .arrow{font-size:26px;margin-left:8px}
   .sub{color:var(--mut);font-size:12px;margin-top:8px;display:flex;align-items:center;gap:8px}
   .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none}
@@ -104,6 +115,11 @@
     <span id="badge" class="badge idle">IDLE</span>
     <div class="price" id="price">$—<span class="arrow" id="arrow"></span></div>
     <div class="sub"><span class="dot" id="statusDot"></span><span id="updated">no active session</span></div>
+    <!-- Prominent 15-minute grace countdown (headline timer). -->
+    <div class="gracebar" id="graceBar">
+      <div class="grow"><span class="glabel">Grace ends in</span><span class="gbig" id="graceBig">15:00</span></div>
+      <div class="gtrack"><div class="gfill" id="graceFill"></div></div>
+    </div>
   </div>
 
   <!-- 3 · Live chart (centerpiece) -->
@@ -178,6 +194,17 @@
   const hhmm  = (iso) => { try{ return new Date(iso).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false}); }catch(_){ return '—'; } };
   const hhmmss= (iso) => { try{ return new Date(iso).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}); }catch(_){ return '—'; } };
   const ageWords = (ms) => { if(ms==null||ms<0) return '—'; const s=Math.floor(ms/1000); if(s<60) return s+'s ago'; const m=Math.floor(s/60); if(m<60) return m+'m ago'; return Math.floor(m/60)+'h ago'; };
+
+  // Auto-fit inside the dashboard iframe: tell the parent our real content height so it can size the
+  // frame exactly (no inner scrollbar, looks native — not "a page inside a page"). Harmless standalone.
+  let lastPostedH = 0;
+  function postHeight(){
+    try{
+      const h = Math.ceil(document.documentElement.scrollHeight);
+      if(Math.abs(h-lastPostedH) > 2){ lastPostedH = h; parent.postMessage({ type:'alchemy-lock-height', height:h }, '*'); }
+    }catch(_){}
+  }
+  window.addEventListener('load', postHeight);
 
   // Cache of last good data — kept across fetch failures so the screen never blanks.
   const cache = { sess:null, ticks:[], control:null, ok:false, everLoaded:false };
@@ -414,16 +441,25 @@
     if(ageMs!=null){ aEl.textContent=clock(ageMs); if(ageMs>90000) aWrap.classList.add('amber'); }
     else aEl.textContent='—';
 
-    // Grace countdown = GRACE_MS − (latestTickOnPage − highOnPage).
-    const gEl=$('tGrace');
+    // Grace countdown = GRACE_MS − (latestTickOnPage − highOnPage). Drives BOTH the small tile and the
+    // prominent headline bar. Only meaningful while a watcher is alive and a session is active.
+    const gEl=$('tGrace'), gBar=$('graceBar'), gBig=$('graceBig'), gFill=$('graceFill');
     const ph = sess ? (sess.phase||'grace') : null;
-    if(active && ph==='grace' && sess.high_on_page_ts && latest){
-      const rem = GRACE_MS - (latest.ts - new Date(sess.high_on_page_ts).getTime());
-      gEl.textContent = clock(Math.max(0,rem));
-    } else if(active && ph==='sudden_death'){
+    gBar.className='gracebar';
+    if(active && watcherAlive && ph==='grace' && sess.high_on_page_ts && latest){
+      // Count down live against the wall clock (feed time ≈ wall, drift-guarded <90s) so it ticks every
+      // second. The watcher still makes the authoritative grace decision on on-page time.
+      const rem = Math.max(0, GRACE_MS - (now - new Date(sess.high_on_page_ts).getTime()));
+      gEl.textContent = clock(rem);
+      gBig.textContent = clock(rem);
+      gFill.style.width = Math.max(0, Math.min(100, rem/GRACE_MS*100)) + '%';
+      gBar.classList.add('on','grace');
+    } else if(active && watcherAlive && ph==='sudden_death'){
       gEl.textContent = 'sudden death';
+      gBig.textContent = 'SUDDEN DEATH';
+      gBar.classList.add('on','death');
     } else {
-      gEl.textContent = '—';
+      gEl.textContent = '—';   // no live watcher / no session → no fake countdown
     }
 
     // Chart.
@@ -437,6 +473,9 @@
     } else {
       log.innerHTML = '<div>—</div>';
     }
+
+    // Keep the embedding iframe sized to our content (native fit, no inner scrollbar).
+    postHeight();
   }
 
   // ── Controls: write lock_control.command only (no PIN) ────────────────────
