@@ -7,8 +7,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Alchemy — Lock</title>
-<!-- ALCHEMY-LOCK-HONESTY v3 · 2026-08-18 · honest heartbeat + native iframe auto-fit (no inner scroll) -->
-<meta name="alchemy-build" content="honesty-v3-2026-08-18" />
+<!-- ALCHEMY-LOCK-HONESTY v4 · 2026-08-18 · STOP resolves cleanly when there's nothing to cancel -->
+<meta name="alchemy-build" content="honesty-v4-2026-08-18" />
 <style>
   :root{
     --bg:#0e1116; --card:#171b22; --line:#232833; --ink:#e8edf4; --mut:#8a93a3;
@@ -346,7 +346,11 @@
     // the targeted session flips to cancelled.
     const startPickedUp = active && watcherAlive;
     if(startPendingSince!=null && startPickedUp) startPendingSince = null;    // confirmed watching
-    const stopConfirmed = stopPendingSince!=null && sess && sess.id===stopTargetId && sess.status==='cancelled';
+    // STOP is confirmed when the targeted session actually cancels — OR when there's simply nothing
+    // active to cancel (idle watcher / already ended), so STOP never hangs forever on a no-op.
+    const stopConfirmed = stopPendingSince!=null && (
+      (sess && sess.id===stopTargetId && sess.status==='cancelled') || !active
+    );
     if(stopConfirmed){ stopPendingSince = null; stopTargetId = null; }
 
     const startStale = startPendingSince!=null && (now-startPendingSince) > START_PICKUP_MS && !startPickedUp;
