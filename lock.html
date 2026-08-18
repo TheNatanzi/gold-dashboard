@@ -1,0 +1,384 @@
+<!-- dashboard/lock-tab.html — Alchemy "Lock" tab. Static page (GitHub Pages, NOT localhost) reading
+     Supabase with the anon key (RLS-limited: read live state + write lock_control.command only).
+     NO PIN. Fill window.SUPABASE_URL + window.SUPABASE_ANON_KEY at deploy time. -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Alchemy — Lock</title>
+<style>
+  :root{
+    --bg:#0e1116; --card:#171b22; --line:#232833; --ink:#e8edf4; --mut:#8a93a3;
+    --grace:#e0a72b; --death:#e0533a; --ok:#2fbf71; --accent:#5b9bff;
+    --band:rgba(47,191,113,.12); --amber:#e0a72b;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:14px;max-width:520px;margin:0 auto}
+  h1{font-size:15px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);margin:2px 0 12px;font-weight:600}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+
+  /* Health banner — the machine's independent scream channel. */
+  .health{display:none;background:var(--death);color:#fff;border-radius:14px;padding:14px 16px;margin-bottom:12px;box-shadow:0 0 0 3px rgba(224,83,58,.28)}
+  .health.on{display:block;animation:pulse 1.6s ease-in-out infinite}
+  .health .ht{font-weight:800;letter-spacing:.06em;font-size:14px;text-transform:uppercase;margin-bottom:3px}
+  .health .hd{font-size:14px;line-height:1.35;opacity:.96}
+  .health .ha{font-size:12px;opacity:.85;margin-top:5px}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 3px rgba(224,83,58,.28)}50%{box-shadow:0 0 0 6px rgba(224,83,58,.12)}}
+
+  .badge{display:inline-block;padding:5px 12px;border-radius:999px;font-weight:700;font-size:13px;letter-spacing:.08em}
+  .badge.idle{background:#20262f;color:var(--mut)}
+  .badge.grace{background:rgba(224,167,43,.16);color:var(--grace)}
+  .badge.sudden_death{background:rgba(224,83,58,.16);color:var(--death)}
+  .badge.sent{background:rgba(47,191,113,.16);color:var(--ok)}
+  .badge.stopped{background:#20262f;color:var(--mut)}
+  .badge.error{background:rgba(224,83,58,.16);color:var(--death)}
+
+  .price{font-size:54px;font-weight:800;letter-spacing:-.02em;margin:8px 0 0;line-height:1;font-variant-numeric:tabular-nums}
+  .price .arrow{font-size:26px;margin-left:8px}
+  .sub{color:var(--mut);font-size:12px;margin-top:8px;display:flex;align-items:center;gap:8px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none}
+  .dot.warn{background:var(--amber)} .dot.off{background:var(--death)}
+
+  /* Chart */
+  .chartwrap{margin-top:4px}
+  svg.chart{width:100%;height:auto;display:block;touch-action:pan-y}
+  .legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;font-size:11px;color:var(--mut)}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .legend i{width:14px;height:0;border-top-width:2px;border-top-style:solid;display:inline-block}
+  .swatch{width:12px;height:10px;border-radius:2px;display:inline-block}
+  .empty{color:var(--mut);font-size:13px;text-align:center;padding:34px 0}
+
+  /* Tiles */
+  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .tile{background:#0f131a;border:1px solid var(--line);border-radius:12px;padding:11px 12px}
+  .tile .tk{color:var(--mut);font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+  .tile .tv{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:3px;letter-spacing:-.01em}
+  .tile .tv.small{font-size:18px}
+  .tile.amber{border-color:rgba(224,167,43,.5);background:rgba(224,167,43,.06)}
+  .tile.bad .tv{color:var(--death)}
+  .tile.good .tv{color:var(--ok)}
+
+  .btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  button{border:0;border-radius:12px;padding:16px;font-size:17px;font-weight:800;color:#fff;cursor:pointer}
+  .start{background:var(--ok)} .stop{background:var(--death)} button:disabled{opacity:.45;cursor:default}
+  .msg{color:var(--mut);font-size:13px;text-align:center;margin-top:10px;min-height:18px}
+
+  .log{max-height:190px;overflow:auto;font-variant-numeric:tabular-nums;font-size:13px}
+  .log div{padding:4px 0;border-top:1px solid var(--line);color:var(--mut)}
+  .log div:first-child{border-top:0} .log b{color:var(--ink)}
+  .cardhdr{color:var(--mut);font-size:11px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+</style>
+</head>
+<body>
+  <h1>Alchemy · 15-Minute Machine</h1>
+
+  <!-- 5 · Red health banner (independent scream channel) -->
+  <div class="health" id="health">
+    <div class="ht" id="healthTitle">Machine unhealthy</div>
+    <div class="hd" id="healthDetail">—</div>
+    <div class="ha" id="healthAge">—</div>
+  </div>
+
+  <!-- 2 · Phase badge + one big price -->
+  <div class="card">
+    <span id="badge" class="badge idle">IDLE</span>
+    <div class="price" id="price">$—<span class="arrow" id="arrow"></span></div>
+    <div class="sub"><span class="dot" id="statusDot"></span><span id="updated">no active session</span></div>
+  </div>
+
+  <!-- 3 · Live chart (centerpiece) -->
+  <div class="card chartwrap">
+    <div class="cardhdr">Session</div>
+    <div id="chartArea"><div class="empty">Waiting for the first read…</div></div>
+    <div class="legend">
+      <span><i style="border-color:var(--accent)"></i>Price</span>
+      <span><i style="border-color:var(--ok)"></i>High (ratchets up)</span>
+      <span><i style="border-color:var(--grace);border-top-style:dashed"></i>Sell (high − $10)</span>
+      <span><span class="swatch" style="background:var(--band)"></span>Safe zone</span>
+    </div>
+  </div>
+
+  <!-- 4 · Tiles -->
+  <div class="card">
+    <div class="tiles">
+      <div class="tile" id="tHighWrap"><div class="tk">Anchor HIGH</div><div class="tv" id="tHigh">—</div></div>
+      <div class="tile" id="tPriceWrap"><div class="tk">Current price</div><div class="tv" id="tPrice">—</div></div>
+      <div class="tile" id="tCushionWrap"><div class="tk">Cushion to sell</div><div class="tv small" id="tCushion">—</div></div>
+      <div class="tile" id="tAgeWrap"><div class="tk">Last read age</div><div class="tv" id="tAge">—</div></div>
+    </div>
+    <div class="tiles" style="margin-top:10px">
+      <div class="tile"><div class="tk">Grace ends in</div><div class="tv small" id="tGrace">—</div></div>
+      <div class="tile"><div class="tk">Sell line</div><div class="tv small" id="tSell">—</div></div>
+    </div>
+  </div>
+
+  <!-- 1 · Controls -->
+  <div class="card">
+    <div class="btns">
+      <button class="start" id="startBtn">START LOCK</button>
+      <button class="stop" id="stopBtn">STOP</button>
+    </div>
+    <div class="msg" id="msg">Tap START when you buy · STOP to cancel (no email)</div>
+  </div>
+
+  <div class="card">
+    <div class="cardhdr">Tick log</div>
+    <div class="log" id="log"><div>—</div></div>
+  </div>
+
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+  // Publishable (anon) key only — RLS keeps the public page safe (read live state; write only
+  // lock_control.command). This is the same public key the profit dashboard already exposes. A host
+  // page may still override via window.SUPABASE_URL / window.SUPABASE_ANON_KEY.
+  const SUPABASE_URL = window.SUPABASE_URL || 'https://cuubqcxzvyiryxcygadh.supabase.co';
+  const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'sb_publishable_vuJ1bfkLjpPNbrouZb_3eQ_9dSJXlep';
+  const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // Domain constants (locked).
+  const STOP_USD = 10, GRACE_MS = 15*60*1000, SEND_AGE_CAP_MS = 14*60*1000;
+
+  const $ = (id) => document.getElementById(id);
+  const fmt$ = (n) => (n==null || !isFinite(n)) ? '—' : '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const clock = (ms) => { if(ms==null||!isFinite(ms)||ms<0) return '0:00'; const s=Math.floor(ms/1000); return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; };
+  const hhmm  = (iso) => { try{ return new Date(iso).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false}); }catch(_){ return '—'; } };
+  const hhmmss= (iso) => { try{ return new Date(iso).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}); }catch(_){ return '—'; } };
+  const ageWords = (ms) => { if(ms==null||ms<0) return '—'; const s=Math.floor(ms/1000); if(s<60) return s+'s ago'; const m=Math.floor(s/60); if(m<60) return m+'m ago'; return Math.floor(m/60)+'h ago'; };
+
+  // Cache of last good data — kept across fetch failures so the screen never blanks.
+  const cache = { sess:null, ticks:[], control:null, ok:false, everLoaded:false };
+  let lastArrow = '';
+
+  async function fetchData(){
+    // Latest session.
+    const s = await sb.from('lock_sessions').select('*').order('started_at',{ascending:false}).limit(1).maybeSingle();
+    if(s.error) throw s.error;
+    const sess = s.data || null;
+
+    // Ticks for that session, oldest→newest, up to ~200.
+    let ticks = [];
+    if(sess){
+      const t = await sb.from('lock_ticks').select('on_page_ts,price,note').eq('session_id',sess.id).order('on_page_ts',{ascending:true}).limit(200);
+      if(t.error) throw t.error;
+      ticks = (t.data||[]).filter(r=>r && r.price!=null).map(r=>({ ts:new Date(r.on_page_ts).getTime(), price:Number(r.price), note:r.note||'' , iso:r.on_page_ts})).filter(r=>isFinite(r.ts)&&isFinite(r.price));
+    }
+
+    // Control row (health + we write command here). Select '*' so the page still works BEFORE the
+    // health-columns migration (001) is applied — health is simply absent until then.
+    const c = await sb.from('lock_control').select('*').eq('id',1).maybeSingle();
+    if(c.error) throw c.error;
+
+    cache.sess = sess; cache.ticks = ticks; cache.control = c.data || null;
+    cache.ok = true; cache.everLoaded = true;
+  }
+
+  async function poll(){
+    try{ await fetchData(); }
+    catch(e){ cache.ok = false; /* keep last view */ }
+    render();
+  }
+
+  // ── Derived phase label ──────────────────────────────────────────────────
+  function phaseInfo(sess){
+    if(!sess) return { cls:'idle', label:'IDLE' };
+    const st = sess.status, ph = sess.phase || 'grace';
+    if(st==='sent')      return { cls:'sent',        label:'🔒 LOCK SENT' };
+    if(st==='cancelled') return { cls:'stopped',     label:'STOPPED' };
+    if(st==='error')     return { cls:'error',       label:'ERROR' };
+    if(ph==='sudden_death') return { cls:'sudden_death', label:'SUDDEN DEATH' };
+    return { cls:'grace', label:'GRACE' };
+  }
+
+  // ── SVG chart ────────────────────────────────────────────────────────────
+  // Plots price line, ratcheting HIGH step line, SELL line (high−$10),
+  // shaded safe-zone band between them, and dots at each new high.
+  function buildChart(ticks){
+    const area = $('chartArea');
+    if(!ticks || ticks.length===0){ area.innerHTML = '<div class="empty">Waiting for the first read…</div>'; return; }
+
+    const W=340, H=180, padL=40, padR=8, padT=12, padB=20;
+    const iw = W-padL-padR, ih = H-padT-padB;
+
+    // Running max (high) + sell line + new-high flags.
+    let run=-Infinity;
+    const pts = ticks.map((t,i)=>{
+      const isNewHigh = t.price>run+1e-9;
+      if(t.price>run) run=t.price;
+      return { ...t, high:run, sell:run-STOP_USD, newHigh:isNewHigh };
+    });
+
+    // y-domain from all series with padding.
+    let lo=Infinity, hi=-Infinity;
+    pts.forEach(p=>{ lo=Math.min(lo,p.price,p.sell); hi=Math.max(hi,p.high,p.price); });
+    if(!isFinite(lo)||!isFinite(hi)) { area.innerHTML='<div class="empty">Waiting for the first read…</div>'; return; }
+    if(hi-lo < 1){ hi+=1; lo-=1; }               // avoid flat/zero range
+    const padY=(hi-lo)*0.10; lo-=padY; hi+=padY;
+
+    const t0=pts[0].ts, t1=pts[pts.length-1].ts;
+    const span=Math.max(1,(t1-t0));
+    const X = (ts)=> padL + ( pts.length===1 ? iw/2 : (ts-t0)/span*iw );
+    const Y = (v)=> padT + (1-(v-lo)/(hi-lo))*ih;
+
+    // Stepped points for a non-decreasing series (step-after).
+    const stepPts = (key)=>{
+      const out=[];
+      for(let i=0;i<pts.length;i++){
+        if(i>0) out.push([X(pts[i].ts), Y(pts[i-1][key])]); // horizontal carry
+        out.push([X(pts[i].ts), Y(pts[i][key])]);           // jump
+      }
+      return out;
+    };
+    const highStep = stepPts('high');
+    const sellStep = stepPts('sell');
+
+    // Safe-zone band polygon = high step (L→R) then sell step (R→L).
+    const bandPts = highStep.concat(sellStep.slice().reverse());
+    const bandPath = bandPts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ')+' Z';
+    const toPoly = (arr)=>arr.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+    const priceLine = pts.map(p=>X(p.ts).toFixed(1)+','+Y(p.price).toFixed(1)).join(' ');
+
+    // Y gridlines / labels (3).
+    const gl=[];
+    for(let g=0;g<=2;g++){
+      const v=lo+(hi-lo)*g/2, y=Y(v);
+      gl.push(`<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="var(--line)" stroke-width="1"/>`);
+      gl.push(`<text x="${padL-5}" y="${(y+3).toFixed(1)}" text-anchor="end" font-size="9" fill="var(--mut)">${Math.round(v)}</text>`);
+    }
+    // X time labels (first / last).
+    const xlab = `<text x="${padL}" y="${H-6}" font-size="9" fill="var(--mut)">${hhmm(pts[0].iso)}</text>`+
+                 (pts.length>1?`<text x="${W-padR}" y="${H-6}" text-anchor="end" font-size="9" fill="var(--mut)">${hhmm(pts[pts.length-1].iso)}</text>`:'');
+
+    // New-high dots.
+    const dots = pts.filter(p=>p.newHigh).map(p=>`<circle cx="${X(p.ts).toFixed(1)}" cy="${Y(p.high).toFixed(1)}" r="2.6" fill="var(--ok)"/>`).join('');
+    // Latest price marker.
+    const last=pts[pts.length-1];
+    const lastDot=`<circle cx="${X(last.ts).toFixed(1)}" cy="${Y(last.price).toFixed(1)}" r="3.4" fill="var(--accent)" stroke="var(--card)" stroke-width="1.5"/>`;
+
+    const bandEl  = bandPts.length ? `<path d="${bandPath}" fill="var(--band)" stroke="none"/>` : '';
+    const sellEl  = sellStep.length>1 ? `<polyline points="${toPoly(sellStep)}" fill="none" stroke="var(--grace)" stroke-width="1.6" stroke-dasharray="4 3"/>` : '';
+    const highEl  = highStep.length>1 ? `<polyline points="${toPoly(highStep)}" fill="none" stroke="var(--ok)" stroke-width="1.6"/>` : '';
+    const priceEl = pts.length>1 ? `<polyline points="${priceLine}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>` : '';
+
+    area.innerHTML =
+      `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Session price chart">`+
+        gl.join('')+ bandEl + sellEl + highEl + priceEl + dots + lastDot + xlab +
+      `</svg>`;
+  }
+
+  // ── Full render from cache (runs after each fetch and every 1s) ───────────
+  function render(){
+    const now = Date.now();
+    const { sess, ticks, control } = cache;
+
+    // Health banner.
+    const hEl=$('health');
+    if(control && control.health==='unhealthy'){
+      hEl.classList.add('on');
+      $('healthDetail').textContent = control.health_detail || 'The machine reported a problem.';
+      $('healthAge').textContent = control.health_at ? ('reported '+ageWords(now-new Date(control.health_at).getTime())+' · '+hhmmss(control.health_at)) : '';
+    } else {
+      hEl.classList.remove('on');
+    }
+
+    // Badge.
+    const pi=phaseInfo(sess);
+    const badge=$('badge'); badge.className='badge '+pi.cls; badge.textContent=pi.label;
+
+    const latest = ticks.length ? ticks[ticks.length-1] : null;
+    const prev   = ticks.length>1 ? ticks[ticks.length-2] : null;
+    const price  = latest ? latest.price : null;
+
+    // Big price + arrow (vs previous tick).
+    let arrow='';
+    if(price!=null && prev){ arrow = price>prev.price?'▲' : price<prev.price?'▼' : lastArrow; }
+    lastArrow = arrow || lastArrow;
+    const aColor = arrow==='▲'?'var(--ok)':arrow==='▼'?'var(--death)':'var(--mut)';
+    $('price').innerHTML = fmt$(price)+`<span class="arrow" style="color:${aColor}">${arrow}</span>`;
+
+    // Sub line: freshness + connection.
+    const ageMs = latest ? now-latest.ts : null;
+    const dot=$('statusDot');
+    if(!cache.ok){ dot.className='dot off'; $('updated').textContent = cache.everLoaded ? 'reconnecting…' : 'connecting…'; }
+    else if(!sess){ dot.className='dot'; $('updated').textContent='no active session'; }
+    else if(!latest){ dot.className='dot warn'; $('updated').textContent='session open — waiting for first read'; }
+    else { dot.className = ageMs>90000?'dot warn':'dot'; $('updated').textContent='last read '+hhmmss(latest.iso)+' · '+ageWords(ageMs); }
+
+    // HIGH / sell line.
+    const high = (sess && sess.high!=null) ? Number(sess.high) : (ticks.length? Math.max(...ticks.map(t=>t.price)) : null);
+    const sell = high!=null ? high-STOP_USD : null;
+
+    // Tiles.
+    $('tHigh').textContent  = fmt$(high);
+    $('tPrice').textContent = fmt$(price);
+    $('tSell').textContent  = fmt$(sell);
+
+    // Cushion to sell = price − (high − 10).
+    const cWrap=$('tCushionWrap'), cEl=$('tCushion');
+    cWrap.className='tile';
+    if(price!=null && sell!=null){
+      const cushion = price - sell;
+      if(cushion>=0){ cEl.textContent='$'+cushion.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+' above'; cWrap.classList.add('good'); }
+      else { cEl.textContent='BELOW SELL'; cWrap.classList.add('bad'); }
+    } else { cEl.textContent='—'; }
+
+    // Last-read age tile (amber if >90s).
+    const aWrap=$('tAgeWrap'), aEl=$('tAge'); aWrap.className='tile';
+    if(ageMs!=null){ aEl.textContent=clock(ageMs); if(ageMs>90000) aWrap.classList.add('amber'); }
+    else aEl.textContent='—';
+
+    // Grace countdown = GRACE_MS − (latestTickOnPage − highOnPage).
+    const gEl=$('tGrace');
+    const active = sess && sess.status==='active';
+    const ph = sess ? (sess.phase||'grace') : null;
+    if(active && ph==='grace' && sess.high_on_page_ts && latest){
+      const rem = GRACE_MS - (latest.ts - new Date(sess.high_on_page_ts).getTime());
+      gEl.textContent = clock(Math.max(0,rem));
+    } else if(active && ph==='sudden_death'){
+      gEl.textContent = 'sudden death';
+    } else {
+      gEl.textContent = '—';
+    }
+
+    // Chart.
+    buildChart(ticks);
+
+    // Tick log (newest first).
+    const log=$('log');
+    if(ticks.length){
+      log.innerHTML = ticks.slice().reverse().slice(0,60).map(t=>
+        `<div><b>${hhmmss(t.iso)}</b> ${fmt$(t.price)}${t.note?' · '+String(t.note).slice(0,48):''}</div>`).join('');
+    } else {
+      log.innerHTML = '<div>—</div>';
+    }
+  }
+
+  // ── Controls: write lock_control.command only (no PIN) ────────────────────
+  async function sendCommand(command){
+    const btn = command==='start' ? $('startBtn') : $('stopBtn');
+    btn.disabled = true;
+    try{
+      const { error } = await sb.from('lock_control').update({ command, requested_at:new Date().toISOString() }).eq('id',1);
+      if(error) throw error;
+      $('msg').textContent = command==='start'
+        ? 'Started — the PC is now watching. Walk away.'
+        : 'Stopped — session cancelled, no email.';
+    }catch(e){
+      $('msg').textContent = 'Could not reach the machine — try again. ('+(e.message||'error')+')';
+    }
+    // Re-enable ~1.5s later to prevent a double-fire.
+    setTimeout(()=>{ btn.disabled=false; }, 1500);
+    // Pull fresh state shortly after.
+    setTimeout(poll, 800);
+  }
+  $('startBtn').onclick = ()=>sendCommand('start');
+  $('stopBtn').onclick  = ()=>sendCommand('stop');
+
+  // Fetch every ~4s; re-render (countdowns/age) every 1s.
+  poll();
+  setInterval(poll, 4000);
+  setInterval(render, 1000);
+</script>
+</body>
+</html>
