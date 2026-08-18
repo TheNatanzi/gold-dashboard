@@ -7,6 +7,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Alchemy — Lock</title>
+<!-- ALCHEMY-LOCK-HONESTY v2 · 2026-08-18 · dashboard can never show "watching"/green while no watcher heartbeats -->
+<meta name="alchemy-build" content="honesty-v2-2026-08-18" />
 <style>
   :root{
     --bg:#0e1116; --card:#171b22; --line:#232833; --ink:#e8edf4; --mut:#8a93a3;
@@ -25,6 +27,17 @@
   .health .hd{font-size:14px;line-height:1.35;opacity:.96}
   .health .ha{font-size:12px;opacity:.85;margin-top:5px}
   @keyframes pulse{0%,100%{box-shadow:0 0 0 3px rgba(224,83,58,.28)}50%{box-shadow:0 0 0 6px rgba(224,83,58,.12)}}
+
+  /* Amber "waiting for the PC to pick it up" notice — informational, NOT an alarm (no pulse). */
+  .notice{display:none;background:rgba(224,167,43,.14);border:1px solid rgba(224,167,43,.5);color:var(--amber);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+  .notice.on{display:block}
+  .notice .nt{font-weight:800;letter-spacing:.04em;font-size:13px;text-transform:uppercase;margin-bottom:3px}
+  .notice .nd{font-size:13px;line-height:1.35;color:var(--ink);opacity:.9}
+  .spin{display:inline-block;width:11px;height:11px;border:2px solid rgba(224,167,43,.35);border-top-color:var(--amber);border-radius:50%;animation:sp .8s linear infinite;vertical-align:-1px;margin-right:6px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  /* Green "watching ✓" confirm chip on the message line. */
+  .msg.ok{color:var(--ok);font-weight:700}
+  .msg.warn{color:var(--death);font-weight:700}
 
   .badge{display:inline-block;padding:5px 12px;border-radius:999px;font-weight:700;font-size:13px;letter-spacing:.08em}
   .badge.idle{background:#20262f;color:var(--mut)}
@@ -78,6 +91,12 @@
     <div class="ht" id="healthTitle">Machine unhealthy</div>
     <div class="hd" id="healthDetail">—</div>
     <div class="ha" id="healthAge">—</div>
+  </div>
+
+  <!-- 1b · Amber notice — WAITING-FOR-PICKUP / STOP-pending (informational, not an alarm) -->
+  <div class="notice" id="notice">
+    <div class="nt" id="noticeTitle"><span class="spin"></span>Waiting for the PC…</div>
+    <div class="nd" id="noticeDetail">—</div>
   </div>
 
   <!-- 2 · Phase badge + one big price -->
@@ -139,6 +158,19 @@
 
   // Domain constants (locked).
   const STOP_USD = 10, GRACE_MS = 15*60*1000, SEND_AGE_CAP_MS = 14*60*1000;
+
+  // ── Watcher-liveness thresholds (the whole point of the honesty fix) ──────
+  // The watcher writes lock_control.health_at on a heartbeat. If that timestamp is fresh the PC is
+  // alive; if it is stale the PC is dead/absent — and a stale 'ok' must NEVER read as green.
+  const WATCHER_ALIVE_MS = 45*1000;   // fresh heartbeat < 45s  => watcher is alive
+  const HEALTH_STALE_MS  = 60*1000;   // heartbeat > 60s (or never) => UNHEALTHY / RED, ignore stored 'ok'
+  const START_PICKUP_MS  = 12*1000;   // after START, a live watcher must pick it up within ~12s
+  const STOP_PICKUP_MS   = 12*1000;   // after STOP, the session must go 'cancelled' within ~12s
+
+  // Client-tracked intent: the moment the phone tapped START / STOP. Cleared once confirmed by real
+  // state (a fresh watching session / a cancelled session). Drives the honest toast + banners.
+  let startPendingSince = null, stopPendingSince = null;
+  let stopTargetId = null;   // which session STOP was aimed at (so we confirm THAT one cancelled)
 
   const $ = (id) => document.getElementById(id);
   const fmt$ = (n) => (n==null || !isFinite(n)) ? '—' : '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -272,15 +304,68 @@
     const now = Date.now();
     const { sess, ticks, control } = cache;
 
-    // Health banner.
+    const active = sess && sess.status==='active';
+
+    // ── Watcher liveness (heartbeat freshness) — the honesty core ───────────
+    // A stale/absent heartbeat means NO watcher is running, no matter what the stored health string says.
+    const hbAt   = (control && control.health_at) ? new Date(control.health_at).getTime() : null;
+    const hbAge  = (hbAt!=null && isFinite(hbAt)) ? (now - hbAt) : null;      // null = never sent a heartbeat
+    const watcherAlive   = hbAge!=null && hbAge < WATCHER_ALIVE_MS;           // fresh  (<45s)
+    const heartbeatStale = hbAge==null || hbAge > HEALTH_STALE_MS;            // dead/absent (>60s or never)
+    const hbLine = hbAge==null ? 'no heartbeat ever received' : ('last heartbeat '+ageWords(hbAge));
+
+    // ── Resolve the phone's START/STOP intent against real state ────────────
+    // START is "picked up" once the watcher opens a session AND is heartbeating. STOP is confirmed once
+    // the targeted session flips to cancelled.
+    const startPickedUp = active && watcherAlive;
+    if(startPendingSince!=null && startPickedUp) startPendingSince = null;    // confirmed watching
+    const stopConfirmed = stopPendingSince!=null && sess && sess.id===stopTargetId && sess.status==='cancelled';
+    if(stopConfirmed){ stopPendingSince = null; stopTargetId = null; }
+
+    const startStale = startPendingSince!=null && (now-startPendingSince) > START_PICKUP_MS && !startPickedUp;
+    const stopStale  = stopPendingSince !=null && (now-stopPendingSince)  > STOP_PICKUP_MS  && !stopConfirmed;
+
+    // ── RED health banner (priority: worst truth wins) ──────────────────────
     const hEl=$('health');
-    if(control && control.health==='unhealthy'){
+    let red = null;
+    if(heartbeatStale && active){
+      red = { t:'⚠️ Watcher died mid-session', d:'The PC stopped heart-beating while a session was open — nothing is watching the price now. Restart it on the PC (start-alchemy.bat).', a:hbLine };
+    } else if(heartbeatStale){
+      red = { t:'⚠️ No watcher running on the PC', d:'Nothing is watching. START only leaves a note — the PC must be running to act on it. Start it on the PC (run start-alchemy.bat, or it can auto-start at logon).', a:hbLine };
+    } else if(startStale){
+      red = { t:'⚠️ START was not picked up', d:'The PC is not watching yet. Start it on the PC (start-alchemy.bat) — a buy left unwatched will not get locked.', a:hbLine };
+    } else if(control && control.health==='unhealthy'){
+      red = { t:'Machine unhealthy', d:(control.health_detail||'The machine reported a problem.'), a:'reported '+hbLine };
+    }
+    if(red){
       hEl.classList.add('on');
-      $('healthDetail').textContent = control.health_detail || 'The machine reported a problem.';
-      $('healthAge').textContent = control.health_at ? ('reported '+ageWords(now-new Date(control.health_at).getTime())+' · '+hhmmss(control.health_at)) : '';
+      $('healthTitle').textContent = red.t;
+      $('healthDetail').textContent = red.d;
+      $('healthAge').textContent = red.a + (control && control.health_at ? ' · '+hhmmss(control.health_at) : '');
     } else {
       hEl.classList.remove('on');
     }
+
+    // ── AMBER notice — WAITING-FOR-PICKUP / STOP-pending (only when NOT red) ─
+    const nEl=$('notice');
+    let note = null;
+    if(!red && startPendingSince!=null && !startPickedUp){
+      note = { t:'Waiting for the PC to pick up START…', d:'START sent. Confirming a watcher opens the session and is heart-beating before we say it is watching.' };
+    } else if(!red && stopPendingSince!=null && !stopConfirmed){
+      note = { t:'Waiting for the PC to cancel…', d:'STOP sent. Confirming the session actually cancels before we say it stopped.' };
+    }
+    if(note){ nEl.classList.add('on'); $('noticeTitle').innerHTML='<span class="spin"></span>'+note.t; $('noticeDetail').textContent=note.d; }
+    else nEl.classList.remove('on');
+
+    // ── Honest message line under the buttons ───────────────────────────────
+    const mEl=$('msg'); mEl.className='msg';
+    if(startStale || (stopStale && heartbeatStale)){ mEl.textContent='No watcher running — start it on the PC.'; mEl.classList.add('warn'); }
+    else if(startPendingSince!=null){ mEl.textContent='START sent — waiting for the PC to pick it up…'; }
+    else if(stopPendingSince!=null){ mEl.textContent='STOP sent — waiting for the PC to cancel…'; }
+    else if(active && watcherAlive){ mEl.textContent='PC is watching ✓ — walk away.'; mEl.classList.add('ok'); }
+    else if(sess && sess.status==='cancelled' && !heartbeatStale){ mEl.textContent='Stopped ✓ — session cancelled, no email.'; }
+    else if(sess && sess.status==='sent'){ mEl.textContent='🔒 Lock email sent.'; mEl.classList.add('ok'); }
+    else { mEl.textContent='Tap START when you buy · STOP to cancel (no email)'; }
 
     // Badge.
     const pi=phaseInfo(sess);
@@ -301,7 +386,8 @@
     const ageMs = latest ? now-latest.ts : null;
     const dot=$('statusDot');
     if(!cache.ok){ dot.className='dot off'; $('updated').textContent = cache.everLoaded ? 'reconnecting…' : 'connecting…'; }
-    else if(!sess){ dot.className='dot'; $('updated').textContent='no active session'; }
+    else if(active && heartbeatStale){ dot.className='dot off'; $('updated').textContent='watcher offline · '+hbLine; }  // never green when the PC is dead
+    else if(!sess){ dot.className = heartbeatStale?'dot off':'dot'; $('updated').textContent = heartbeatStale ? 'no watcher · '+hbLine : 'idle · watcher alive'; }
     else if(!latest){ dot.className='dot warn'; $('updated').textContent='session open — waiting for first read'; }
     else { dot.className = ageMs>90000?'dot warn':'dot'; $('updated').textContent='last read '+hhmmss(latest.iso)+' · '+ageWords(ageMs); }
 
@@ -330,7 +416,6 @@
 
     // Grace countdown = GRACE_MS − (latestTickOnPage − highOnPage).
     const gEl=$('tGrace');
-    const active = sess && sess.status==='active';
     const ph = sess ? (sess.phase||'grace') : null;
     if(active && ph==='grace' && sess.high_on_page_ts && latest){
       const rem = GRACE_MS - (latest.ts - new Date(sess.high_on_page_ts).getTime());
@@ -361,16 +446,19 @@
     try{
       const { error } = await sb.from('lock_control').update({ command, requested_at:new Date().toISOString() }).eq('id',1);
       if(error) throw error;
-      $('msg').textContent = command==='start'
-        ? 'Started — the PC is now watching. Walk away.'
-        : 'Stopped — session cancelled, no email.';
+      // The command is only a NOTE in Supabase. It does NOT mean anything is watching. Record the intent
+      // and let render() tell the truth once real state confirms a watcher picked it up (or didn't).
+      if(command==='start'){ startPendingSince = Date.now(); stopPendingSince = null; }
+      else { stopPendingSince = Date.now(); stopTargetId = (cache.sess && cache.sess.status==='active') ? cache.sess.id : (cache.sess ? cache.sess.id : null); startPendingSince = null; }
+      render();
     }catch(e){
-      $('msg').textContent = 'Could not reach the machine — try again. ('+(e.message||'error')+')';
+      $('msg').textContent = 'Could not reach Supabase — command NOT sent. Try again. ('+(e.message||'error')+')';
+      $('msg').className = 'msg warn';
     }
     // Re-enable ~1.5s later to prevent a double-fire.
     setTimeout(()=>{ btn.disabled=false; }, 1500);
-    // Pull fresh state shortly after.
-    setTimeout(poll, 800);
+    // Poll quickly a few times so pickup/cancel is detected within seconds, not the 4s cadence.
+    setTimeout(poll, 700); setTimeout(poll, 2500); setTimeout(poll, 5000); setTimeout(poll, 9000);
   }
   $('startBtn').onclick = ()=>sendCommand('start');
   $('stopBtn').onclick  = ()=>sendCommand('stop');
