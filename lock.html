@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Alchemy — Lock</title>
 <!-- ALCHEMY-LOCK-HONESTY v4 · 2026-08-18 · STOP resolves cleanly when there's nothing to cancel -->
-<meta name="alchemy-build" content="honesty-v4-2026-08-18" />
+<meta name="alchemy-build" content="honesty-v5-2026-08-19-nofreeze" />
 <style>
   :root{
     --bg:#0e1116; --card:#171b22; --line:#232833; --ink:#e8edf4; --mut:#8a93a3;
@@ -207,7 +207,7 @@
   window.addEventListener('load', postHeight);
 
   // Cache of last good data — kept across fetch failures so the screen never blanks.
-  const cache = { sess:null, ticks:[], control:null, ok:false, everLoaded:false };
+  const cache = { sess:null, ticks:[], control:null, ok:false, everLoaded:false, lastOkAt:0, lastPollAt:0 };
   let lastArrow = '';
 
   async function fetchData(){
@@ -230,10 +230,11 @@
     if(c.error) throw c.error;
 
     cache.sess = sess; cache.ticks = ticks; cache.control = c.data || null;
-    cache.ok = true; cache.everLoaded = true;
+    cache.ok = true; cache.everLoaded = true; cache.lastOkAt = Date.now();
   }
 
   async function poll(){
+    cache.lastPollAt = Date.now();
     try{ await fetchData(); }
     catch(e){ cache.ok = false; /* keep last view */ }
     render();
@@ -333,6 +334,13 @@
 
     const active = sess && sess.status==='active';
 
+    // ── Connection freshness (is OUR OWN polling alive?) ────────────────────
+    // Mobile browsers PAUSE a background tab's timers, so the poll silently stops and the screen freezes
+    // on old data. If we haven't had a SUCCESSFUL fetch in >15s the display can't be trusted as live —
+    // say so honestly (and don't derive "watcher died" from a heartbeat we haven't refreshed).
+    const fetchAge = cache.everLoaded ? (now - cache.lastOkAt) : null;
+    const connStale = fetchAge!=null && fetchAge > 15000;
+
     // ── Watcher liveness (heartbeat freshness) — the honesty core ───────────
     // A stale/absent heartbeat means NO watcher is running, no matter what the stored health string says.
     const hbAt   = (control && control.health_at) ? new Date(control.health_at).getTime() : null;
@@ -359,6 +367,7 @@
     // ── RED health banner (priority: worst truth wins) ──────────────────────
     const hEl=$('health');
     let red = null;
+    if(!connStale){
     if(heartbeatStale && active){
       red = { t:'⚠️ Watcher died mid-session', d:'The PC stopped heart-beating while a session was open — nothing is watching the price now. Restart it on the PC (start-alchemy.bat).', a:hbLine };
     } else if(heartbeatStale){
@@ -367,6 +376,7 @@
       red = { t:'⚠️ START was not picked up', d:'The PC is not watching yet. Start it on the PC (start-alchemy.bat) — a buy left unwatched will not get locked.', a:hbLine };
     } else if(control && control.health==='unhealthy'){
       red = { t:'Machine unhealthy', d:(control.health_detail||'The machine reported a problem.'), a:'reported '+hbLine };
+    }
     }
     if(red){
       hEl.classList.add('on');
@@ -416,7 +426,8 @@
     // Sub line: freshness + connection.
     const ageMs = latest ? now-latest.ts : null;
     const dot=$('statusDot');
-    if(!cache.ok){ dot.className='dot off'; $('updated').textContent = cache.everLoaded ? 'reconnecting…' : 'connecting…'; }
+    if(connStale){ dot.className='dot off'; $('updated').textContent='📵 screen paused — reconnecting, data may be stale ('+ageWords(fetchAge)+')'; }
+    else if(!cache.ok){ dot.className='dot off'; $('updated').textContent = cache.everLoaded ? 'reconnecting…' : 'connecting…'; }
     else if(active && heartbeatStale){ dot.className='dot off'; $('updated').textContent='watcher offline · '+hbLine; }  // never green when the PC is dead
     else if(!sess){ dot.className = heartbeatStale?'dot off':'dot'; $('updated').textContent = heartbeatStale ? 'no watcher · '+hbLine : 'idle · watcher alive'; }
     else if(!latest){ dot.className='dot warn'; $('updated').textContent='session open — waiting for first read'; }
@@ -510,6 +521,15 @@
   poll();
   setInterval(poll, 4000);
   setInterval(render, 1000);
+
+  // Mobile browsers PAUSE background-tab timers, so the 4s poll stops when the tab is hidden or the
+  // phone screen sleeps — the display then freezes on old data (the "frozen phone" bug). Re-fetch the
+  // INSTANT the tab is seen again, from every event a mobile browser might use to resume a tab.
+  const wake = ()=>{ if(!document.hidden) poll(); };
+  document.addEventListener('visibilitychange', wake);
+  window.addEventListener('pageshow', wake);   // bfcache restore (back/forward, tab switch)
+  window.addEventListener('focus', wake);
+  window.addEventListener('online', wake);
 </script>
 </body>
 </html>
