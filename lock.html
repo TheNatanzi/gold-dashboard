@@ -8,7 +8,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Alchemy — Lock</title>
 <!-- ALCHEMY-LOCK-HONESTY v4 · 2026-08-18 · STOP resolves cleanly when there's nothing to cancel -->
-<meta name="alchemy-build" content="honesty-v5-2026-08-19-nofreeze" />
+<!-- richmail-v1 · 2026-08-19 · END NOW button (two-tap confirm) + rich multi-shot lock email -->
+<meta name="alchemy-build" content="richmail-v1-2026-08-19-endnow" />
 <style>
   :root{
     --bg:#0e1116; --card:#171b22; --line:#232833; --ink:#e8edf4; --mut:#8a93a3;
@@ -86,6 +87,10 @@
   .btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   button{border:0;border-radius:12px;padding:16px;font-size:17px;font-weight:800;color:#fff;cursor:pointer}
   .start{background:var(--ok)} .stop{background:var(--death)} button:disabled{opacity:.45;cursor:default}
+  /* END NOW — manual lock. Amber at rest; turns RED + pulses when armed for the confirming second tap. */
+  .btns3{display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px}
+  .end{background:var(--grace);color:#1a1205;letter-spacing:.02em}
+  .end.armed{background:var(--death);color:#fff;animation:pulse 1s ease-in-out infinite}
   .msg{color:var(--mut);font-size:13px;text-align:center;margin-top:10px;min-height:18px}
 
   .log{max-height:190px;overflow:auto;font-variant-numeric:tabular-nums;font-size:13px}
@@ -154,6 +159,11 @@
       <button class="start" id="startBtn">START LOCK</button>
       <button class="stop" id="stopBtn">STOP</button>
     </div>
+    <div class="btns3">
+      <!-- END NOW — lock + email the best still-valid shot right now. Enabled only during an active
+           session. Two-tap confirm so an accidental tap NEVER sends. -->
+      <button class="end" id="endBtn" disabled>END NOW &amp; LOCK</button>
+    </div>
     <div class="msg" id="msg">Tap START when you buy · STOP to cancel (no email)</div>
   </div>
 
@@ -182,11 +192,13 @@
   const HEALTH_STALE_MS  = 60*1000;   // heartbeat > 60s (or never) => UNHEALTHY / RED, ignore stored 'ok'
   const START_PICKUP_MS  = 12*1000;   // after START, a live watcher must pick it up within ~12s
   const STOP_PICKUP_MS   = 12*1000;   // after STOP, the session must go 'cancelled' within ~12s
+  const END_ARM_MS       = 4000;      // END NOW two-tap window: the armed state auto-cancels after ~4s
 
-  // Client-tracked intent: the moment the phone tapped START / STOP. Cleared once confirmed by real
-  // state (a fresh watching session / a cancelled session). Drives the honest toast + banners.
-  let startPendingSince = null, stopPendingSince = null;
+  // Client-tracked intent: the moment the phone tapped START / STOP / END. Cleared once confirmed by real
+  // state (a fresh watching session / a cancelled session / a 'sent' session). Drives the honest toast + banners.
+  let startPendingSince = null, stopPendingSince = null, endPendingSince = null;
   let stopTargetId = null;   // which session STOP was aimed at (so we confirm THAT one cancelled)
+  let endArmed = false, endArmTimer = null;   // END NOW two-tap confirm state
 
   const $ = (id) => document.getElementById(id);
   const fmt$ = (n) => (n==null || !isFinite(n)) ? '—' : '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -400,13 +412,25 @@
 
     // ── Honest message line under the buttons ───────────────────────────────
     const mEl=$('msg'); mEl.className='msg';
+    // END NOW confirms the instant the session flips to 'sent' (the PC actually locked + emailed).
+    if(endPendingSince!=null && sess && sess.status==='sent') endPendingSince=null;
     if(startStale || (stopStale && heartbeatStale)){ mEl.textContent='No watcher running — start it on the PC.'; mEl.classList.add('warn'); }
+    else if(endPendingSince!=null && heartbeatStale){ mEl.textContent='No watcher — END NOW only left a note. Start the PC.'; mEl.classList.add('warn'); }
+    else if(endPendingSince!=null){ mEl.textContent='Ending — waiting for the PC to lock…'; }
     else if(startPendingSince!=null){ mEl.textContent='START sent — waiting for the PC to pick it up…'; }
     else if(stopPendingSince!=null){ mEl.textContent='STOP sent — waiting for the PC to cancel…'; }
     else if(active && watcherAlive){ mEl.textContent='PC is watching ✓ — walk away.'; mEl.classList.add('ok'); }
     else if(sess && sess.status==='cancelled' && !heartbeatStale){ mEl.textContent='Stopped ✓ — session cancelled, no email.'; }
-    else if(sess && sess.status==='sent'){ mEl.textContent='🔒 Lock email sent.'; mEl.classList.add('ok'); }
+    else if(sess && sess.status==='sent'){ mEl.textContent='🔒 Locked ✓ — email sent.'; mEl.classList.add('ok'); }
     else { mEl.textContent='Tap START when you buy · STOP to cancel (no email)'; }
+
+    // ── END NOW button state: enabled ONLY during an active session; disabled while ending / when idle ──
+    const endBtn=$('endBtn');
+    if(!endArmed){
+      const canEnd = active;                       // nothing to end unless a session is live
+      endBtn.disabled = !canEnd || endPendingSince!=null;
+      endBtn.textContent = endPendingSince!=null ? 'Ending…' : 'END NOW & LOCK';
+    }
 
     // Badge.
     const pi=phaseInfo(sess);
@@ -495,15 +519,16 @@
 
   // ── Controls: write lock_control.command only (no PIN) ────────────────────
   async function sendCommand(command){
-    const btn = command==='start' ? $('startBtn') : $('stopBtn');
+    const btn = command==='start' ? $('startBtn') : command==='end' ? $('endBtn') : $('stopBtn');
     btn.disabled = true;
     try{
       const { error } = await sb.from('lock_control').update({ command, requested_at:new Date().toISOString() }).eq('id',1);
       if(error) throw error;
       // The command is only a NOTE in Supabase. It does NOT mean anything is watching. Record the intent
       // and let render() tell the truth once real state confirms a watcher picked it up (or didn't).
-      if(command==='start'){ startPendingSince = Date.now(); stopPendingSince = null; }
-      else { stopPendingSince = Date.now(); stopTargetId = (cache.sess && cache.sess.status==='active') ? cache.sess.id : (cache.sess ? cache.sess.id : null); startPendingSince = null; }
+      if(command==='start'){ startPendingSince = Date.now(); stopPendingSince = null; endPendingSince = null; }
+      else if(command==='end'){ endPendingSince = Date.now(); startPendingSince = null; stopPendingSince = null; }
+      else { stopPendingSince = Date.now(); stopTargetId = (cache.sess && cache.sess.status==='active') ? cache.sess.id : (cache.sess ? cache.sess.id : null); startPendingSince = null; endPendingSince = null; }
       render();
     }catch(e){
       $('msg').textContent = 'Could not reach Supabase — command NOT sent. Try again. ('+(e.message||'error')+')';
@@ -516,6 +541,31 @@
   }
   $('startBtn').onclick = ()=>sendCommand('start');
   $('stopBtn').onclick  = ()=>sendCommand('stop');
+
+  // ── END NOW · mandatory two-tap confirm (an accidental single tap must NEVER send an email) ─────────
+  // First tap ARMS the button (turns red "Tap again to LOCK + email") and auto-cancels after ~4s.
+  // Second tap within that window issues command='end'. Disarm on any auto-cancel or successful issue.
+  const endBtn = $('endBtn');
+  function disarmEnd(){
+    endArmed = false;
+    if(endArmTimer){ clearTimeout(endArmTimer); endArmTimer = null; }
+    endBtn.classList.remove('armed');
+    endBtn.textContent = endPendingSince!=null ? 'Ending…' : 'END NOW & LOCK';
+  }
+  endBtn.onclick = ()=>{
+    if(endBtn.disabled) return;
+    if(!endArmed){
+      endArmed = true;
+      endBtn.classList.add('armed');
+      endBtn.textContent = 'Tap again to LOCK + email';
+      if(endArmTimer) clearTimeout(endArmTimer);
+      endArmTimer = setTimeout(disarmEnd, END_ARM_MS);   // accidental single tap self-cancels — no email
+      return;
+    }
+    // Confirmed second tap.
+    disarmEnd();
+    sendCommand('end');
+  };
 
   // Fetch every ~4s; re-render (countdowns/age) every 1s.
   poll();
