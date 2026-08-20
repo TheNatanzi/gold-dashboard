@@ -678,6 +678,16 @@
   .rbar .rf{height:100%;border-radius:6px;background:var(--gold)}
   .rbar .rf.chk{opacity:.45}
   .rbar .rv{font-family:var(--mono);font-size:11px;font-weight:800;width:52px;flex:none;text-align:right}
+  .res-tw{overflow-x:auto;margin:8px 0 4px;border:1px solid var(--line);border-radius:10px}
+  .res-tbl{width:100%;border-collapse:collapse;font-size:12px;min-width:640px}
+  .res-tbl th{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-align:left;color:var(--ink-mute);
+    text-transform:uppercase;padding:7px 9px;border-bottom:1px solid var(--line);background:var(--panel);white-space:nowrap}
+  .res-tbl td{padding:7px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+  .res-tbl tr:last-child td{border-bottom:none}
+  .res-tbl .n{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:700}
+  .res-tbl .tot{color:var(--gold)}
+  .res-tbl .stc{font-family:var(--mono);font-size:9px;font-weight:800;white-space:nowrap}
+  .res-tbl .stc.ok{color:var(--good)} .res-tbl .stc.chk{color:var(--warn)} .res-tbl .stc.deny{color:var(--bad)}
   .res-sum{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 2px}
   .res-sum .c{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 14px;text-align:center}
   .res-sum .c b{display:block;font-size:20px;font-family:var(--mono)}
@@ -1086,16 +1096,16 @@
         <div class="rbar"><span class="rl">WF Signify (IF rail proves)</span><div class="rt"><div class="rf chk" style="width:81%"></div></div><span class="rv">4.13%?</span></div>
       </div>
       <div class="rx-grp">
-        <h6>✅ Verified</h6>
-        <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>Chase Ink Premier 2.5%</b> — flat king, Visa in-warehouse; safe velocity = 1 full turn/cycle (Chase = most shutdown-documented issuer).</span></div>
-        <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>Costco Anywhere Biz Visa 2% + Citi rail 1.8% = 3.8%</b> — best biz rate; catch: card reward pays as a February certificate (locked ~a year).</span></div>
-        <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>BofA Biz Advantage Unlimited 2.625%</b> — real but gated: $100k at Merrill, Mastercard (online only), tiny $5–10k credit lines, MS-hostile bank.</span></div>
-      </div>
-      <div class="rx-grp">
-        <h6>🟡 Needs verify</h6>
-        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>Spark Cash Plus ~2.9% yr-1</b> — rates verified; the open question is whether the $2k/$500k kicker repeats after year 1 (test #6).</span></div>
-        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>WF Signify Business Cash → 4.13%</b> — hangs entirely on the WF teller test (#1). Small reported limits ($2.5–14k).</span></div>
-        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>Citi AA Business (Medi's pick)</b> — 65k-mile SUB on $4k = one bar order; 1 mi/$ ≈1.4% + Citi rail 1.8%. Verify the rail on a biz card + apply via aa.com. Never cycle it.</span></div>
+        <h6>The card table</h6>
+        <div class="res-tw"><table class="res-tbl">
+          <tr><th>Name</th><th>Visa/MC</th><th>%Card</th><th>%Taekus</th><th>%Total</th><th>Limits</th><th>Requirements</th><th>Status</th></tr>
+          <tr><td><b>Costco Anywhere Biz Visa</b> (Citi)</td><td>Visa</td><td class="n">2.00%</td><td class="n">+1.80%</td><td class="n tot">3.80%</td><td>no earn cap · reward = Feb certificate (locked ~1 yr)</td><td>Costco membership · rail = phone, 1 debit/day</td><td><span class="stc ok">✅ VERIFIED</span></td></tr>
+          <tr><td><b>Chase Ink Premier</b></td><td>Visa</td><td class="n">2.50%</td><td class="n">—</td><td class="n tot">2.50%</td><td>no earn cap · lines $10k–50k+ · 1 full turn/cycle MAX</td><td>biz entity · $195 AF</td><td><span class="stc ok">✅ VERIFIED</span></td></tr>
+          <tr><td><b>BofA Biz Advantage Unl.</b></td><td>MC</td><td class="n">2.625%</td><td class="n">—</td><td class="n tot">2.625%</td><td>no earn cap · lines TINY ($5–10k)</td><td>$100k at Merrill (Plat Honors) · MS-hostile bank</td><td><span class="stc ok">✅ VERIFIED</span></td></tr>
+          <tr><td><b>Spark Cash Plus</b> (yr 1)</td><td>Visa</td><td class="n">2% (+kickers ~2.9%)</td><td class="n">—</td><td class="n tot">~2.9%</td><td>NO preset limit (dynamic) · repay-&amp;-rerun OK</td><td>biz · $150 AF (refunded ≥$150k/yr) · verify $500k kicker repeats</td><td><span class="stc chk">🟡 VERIFY</span></td></tr>
+          <tr><td><b>WF Signify Biz Cash</b></td><td>Visa</td><td class="n">2.00%</td><td class="n">+2.13%?</td><td class="n tot">4.13%?</td><td>lines small ($2.5–14k DPs)</td><td>hangs on WF teller test (#1)</td><td><span class="stc chk">🟡 VERIFY</span></td></tr>
+          <tr><td><b>Citi AA Business</b> (Medi's pick)</td><td>MC</td><td class="n">1 mi/$ ≈1.4%</td><td class="n">+1.80%</td><td class="n tot">~3.2%</td><td>no miles cap · NEVER cycle (famous shutdown card)</td><td>sole prop OK · $99 AF wv yr1 · SUB 65k/$4k via aa.com</td><td><span class="stc chk">🟡 VERIFY</span></td></tr>
+        </table></div>
       </div>
       <div class="rx-grp">
         <h6>❌ Denied — verified and out</h6>
@@ -1120,16 +1130,16 @@
         <div class="rbar"><span class="rl">Samsung Galaxy (test)</span><div class="rt"><div class="rf chk" style="width:58%"></div></div><span class="rv">3.00%?</span></div>
       </div>
       <div class="rx-grp">
-        <h6>✅ Verified</h6>
-        <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>Venmo CC 3% + Taekus 2.13% = 5.13% 🏆</b> — THE HERO, proven by Medi, unbeaten by ~150 censused cards. Visa: register + online. No known earn cap.</span></div>
-        <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>Synchrony Premier 2% + Taekus = 4.13%</b> — same proven rail, second lane; Mastercard → Costco.com only. Uncapped.</span></div>
-        <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>Citi Double Cash 2% + phone rail 1.8% = 3.8%</b> — 1 debit payment/day; rail post-ban check pending (test #3).</span></div>
-        <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>US Bank Smartly 4%</b> — barely worth it and kept: $4,800/yr max ($10k/mo cap) if the $100k can sit at US Bancorp anyway.</span></div>
-      </div>
-      <div class="rx-grp">
-        <h6>🟡 Needs verify</h6>
-        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>Samsung Galaxy Card 3% uncapped</b> — tap-to-pay Visa, no metals exclusion found, works in-warehouse in theory; zero Costco DPs on earth (test #2). Ramp slowly — Barclays shutdown risk at volume.</span></div>
-        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>WF Active Cash 2% + branch rail = 4.13%</b> — the biggest potential unlock; one $10 teller test (test #1).</span></div>
+        <h6>The card table</h6>
+        <div class="res-tw"><table class="res-tbl">
+          <tr><th>Name</th><th>Visa/MC</th><th>%Card</th><th>%Taekus</th><th>%Total</th><th>Limits</th><th>Requirements</th><th>Status</th></tr>
+          <tr><td><b>Venmo CC 🏆</b> (Synchrony)</td><td>Visa</td><td class="n">3.00%</td><td class="n">+2.13%</td><td class="n tot">5.13%</td><td>no earn cap known · credit line + payoff cycle</td><td>Venmo account · proven by Medi</td><td><span class="stc ok">✅ VERIFIED</span></td></tr>
+          <tr><td><b>Synchrony Premier</b></td><td>MC</td><td class="n">2.00%</td><td class="n">+2.13%</td><td class="n tot">4.13%</td><td>NO earn cap</td><td>none — same proven rail</td><td><span class="stc ok">✅ VERIFIED</span></td></tr>
+          <tr><td><b>US Bank Smartly</b></td><td>Visa</td><td class="n">4.00%</td><td class="n">—</td><td class="n tot">4.00%</td><td><b>4% only on $10k spend/mo</b> (~2 bars)</td><td>$100k parked at US Bancorp (can hold stocks)</td><td><span class="stc ok">✅ VERIFIED</span></td></tr>
+          <tr><td><b>Citi Double Cash</b></td><td>MC</td><td class="n">2.00%</td><td class="n">+1.80%</td><td class="n tot">3.80%</td><td>no earn cap · rail = 1 debit payment/day</td><td>none · rail post-ban check = test #3</td><td><span class="stc ok">✅ VERIFIED</span></td></tr>
+          <tr><td><b>WF Active Cash</b></td><td>Visa</td><td class="n">2.00%</td><td class="n">+2.13%?</td><td class="n tot">4.13%?</td><td>no earn cap · branch-pay limits unknown</td><td>WF teller test (#1) — biggest unlock</td><td><span class="stc chk">🟡 VERIFY</span></td></tr>
+          <tr><td><b>Samsung Galaxy Card</b> (Barclays)</td><td>Visa</td><td class="n">3.00%</td><td class="n">—</td><td class="n tot">3.00%</td><td>UNCAPPED · ramp slowly (shutdown risk)</td><td>Samsung Wallet device (watch OK) · tap test #2</td><td><span class="stc chk">🟡 VERIFY</span></td></tr>
+        </table></div>
       </div>
       <div class="rx-grp">
         <h6>❌ Denied — verified and out</h6>
@@ -1145,17 +1155,17 @@
         <h4>Debit — the rails and the register cards</h4>
         <p class="md">~100 cards censused worldwide (DEBIT-CARD-CENSUS.md). Flat always-on rates only; promos ignored.</p></div></div>
       <div class="rx-grp">
-        <h6>✅ Verified</h6>
-        <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>Taekus 2.13% 👑</b> — earns on credit-card bill payments (the whole stack's engine). CLOSED to new users — protect Medi's card.</span></div>
-        <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>PayPal Debit 5% Groceries-includes-Costco</b> — MCC-level, stamps DP + no metals exclusion in T&amp;C. $1,000/mo cap; since 8/1/26 rewards redeem at PayPal checkout (not cash). Gold-specific test pending (#4).</span></div>
-      </div>
-      <div class="rx-grp">
-        <h6>🟡 Needs verify</h6>
-        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>Fold+ (Visa)</b> — 1.5% BTC flat; its Bill Pay reportedly earns on CREDIT-CARD payments = only living Taekus successor (test #5). $10/mo.</span></div>
-        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>Krak Card (Kraken)</b> — 2% USD/BTC uncapped at $50k Kraken balance; days old, terms may shift.</span></div>
-        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>X Money 3%</b> — exclusion list is MCC 5094 (coin stores); Costco = 5300 passes on paper. Invite-gated; patch risk.</span></div>
-        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>ether.fi Cash 3%</b> (first $2k/mo, SCR token) — only foreign fintech open to US residents; confirm CA on the state list.</span></div>
-        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>Bluevine biz 1.5% uncapped</b> — best flat US debit; needs a biz-debit use-case.</span></div>
+        <h6>The debit table</h6>
+        <div class="res-tw"><table class="res-tbl">
+          <tr><th>Name</th><th>Visa/MC</th><th>%Card</th><th>Limits</th><th>Requirements</th><th>Status</th></tr>
+          <tr><td><b>Taekus 👑</b></td><td>MC</td><td class="n tot">2.13% <span style="font-weight:400">(incl. CC bill pay)</span></td><td>none known</td><td>CLOSED to new users — protect Medi's card</td><td><span class="stc ok">✅ VERIFIED</span></td></tr>
+          <tr><td><b>PayPal Debit</b></td><td>MC</td><td class="n tot">5% <span style="font-weight:400">(Groceries = Costco)</span></td><td>$1,000 spend/mo (=$50) · rewards redeem at PayPal checkout since 8/1</td><td>re-pick category EVERY month · gold test #4</td><td><span class="stc ok">✅ VERIFIED</span></td></tr>
+          <tr><td><b>Fold+</b></td><td>Visa</td><td class="n tot">1.5% BTC <span style="font-weight:400">(+ bill-pay earn?)</span></td><td>$10k rewards wallet · 30-day lock</td><td>$10/mo Fold+ · bill-pay test #5 (Taekus successor?)</td><td><span class="stc chk">🟡 VERIFY</span></td></tr>
+          <tr><td><b>Krak Card</b> (Kraken)</td><td>Visa</td><td class="n tot">0.5–2% USD/BTC</td><td>NO caps</td><td>2% needs $50k avg Kraken balance · brand-new 8/18</td><td><span class="stc chk">🟡 VERIFY</span></td></tr>
+          <tr><td><b>X Money</b></td><td>Visa</td><td class="n tot">3.00%</td><td>none · limited by debit balance</td><td>invite + X sub · MCC 5094-only exclusion (5300 passes) · patch risk</td><td><span class="stc chk">🟡 VERIFY</span></td></tr>
+          <tr><td><b>ether.fi Cash</b></td><td>Visa</td><td class="n tot">3% <span style="font-weight:400">(SCR token)</span></td><td>full rate on first $2k/mo, then 1%</td><td>USDC-funded · confirm CA on state list</td><td><span class="stc chk">🟡 VERIFY</span></td></tr>
+          <tr><td><b>Bluevine Business</b></td><td>MC</td><td class="n tot">1.5%</td><td>UNCAPPED</td><td>free biz checking · needs a biz-debit use-case</td><td><span class="stc chk">🟡 VERIFY</span></td></tr>
+        </table></div>
       </div>
       <div class="rx-grp">
         <h6>❌ Denied — verified and out</h6>
@@ -2064,7 +2074,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 1d88ae6 · built 2026-08-20 18:52 UTC</span>
+    <span id="verStamp" class="tnum">version: 5c99b72 · built 2026-08-20 20:19 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
