@@ -2074,7 +2074,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 5c99b72 · built 2026-08-20 20:19 UTC</span>
+    <span id="verStamp" class="tnum">version: 3a963a7 · built 2026-08-20 20:31 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -5269,24 +5269,31 @@
     return "$" + Number(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
   }
 
-  function renderBarHist(rows, err){
+  function renderBarHist(rows, err, manual){
     var host = $("barHistRows"), cnt = $("barHistCount"), foot = $("barHistFoot");
     if(!host) return;
+    // MANUAL ENTRIES (Medi, 2026-08-20): phone calls and typed shelf prices from the
+    // shared list's append-only logs, interleaved by time below. null = that log's
+    // fetch failed, which is reported in the footer rather than silently shown as "none".
+    var manCalls  = (manual && manual.calls)  || [];
+    var manPrices = (manual && manual.prices) || [];
+    var manFail   = !!manual && (manual.calls === null || manual.prices === null);
     if(err){
       host.innerHTML = '<div style="opacity:.7">could not load bar history — ' + err + '</div>';
       if(cnt) cnt.textContent = "—";
       if(foot) foot.textContent = "the recorder writes one row per bar per Costco fetch (~8 min)";
       return;
     }
-    if(!rows.length){
+    if(!rows.length && !manCalls.length && !manPrices.length){
       host.innerHTML = '<div style="opacity:.6">No 1&nbsp;oz events recorded yet in the last ' +
         BARHIST_DAYS + ' days. Recording began 2026-08-04; the list fills as prices move.</div>';
       if(cnt) cnt.textContent = "0 events";
       if(foot) foot.textContent = "";
       return;
     }
-    // Server returns newest-first, which is the order we display. Do not re-sort.
-    var nPrice = 0, nOut = 0, nBack = 0, html = "";
+    // Server returns newest-first. Feed rows keep that order for the delta math; the
+    // final display list is re-sorted by time only to slot the manual entries in.
+    var nPrice = 0, nOut = 0, nBack = 0, pieces = [];
     var shownRows = rows.slice(0, BARHIST_SHOW);
     shownRows.forEach(function(r, ri){
       var price = Number(r.price);
@@ -5352,7 +5359,7 @@
       // A price rise is red and a fall is green on purpose: this dashboard buys bars,
       // so a cheaper bar is the good news. Same convention as the rest of the page.
 
-      html += '<div style="display:flex;gap:14px;flex-wrap:wrap;padding:4px 0;border-bottom:1px solid var(--line)">' +
+      pieces.push({t: r.t, html: '<div style="display:flex;gap:14px;flex-wrap:wrap;padding:4px 0;border-bottom:1px solid var(--line)">' +
         '<span style="opacity:.6;min-width:112px">' + when + '</span>' +
         '<span style="min-width:86px;font-weight:700' + (stock ? '' : ';opacity:.5') + '">' +
           barHistFmt(price) + '</span>' +
@@ -5369,16 +5376,61 @@
           '<a href="https://www.costco.com/.product.' + r.item + '.html" target="_blank" rel="noopener" ' +
              'style="color:inherit;text-decoration:underline dotted">' +
              (r.bar_name || "(bar not recorded)") + ' ↗</a></span>' +
-      '</div>';
+      '</div>'});
     });
-    host.innerHTML = html;
+
+    // MANUAL ENTRIES — amber-tinted rows so a human claim never masquerades as a feed
+    // reading. Calls carry no price (the shelf price is its own log), so that cell is a dash.
+    var nManual = 0;
+    function escTxt(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+    function manWhen(t){ var d = new Date(t);
+      return d.toLocaleDateString("en-US",{month:"short",day:"numeric"}) + " " +
+             d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}); }
+    var MAN_ROW = 'display:flex;gap:14px;flex-wrap:wrap;padding:4px 0;' +
+                  'border-bottom:1px solid var(--line);background:rgba(217,169,63,.06)';
+    manCalls.forEach(function(c){
+      if(!c || !c.called_at || isNaN(new Date(c.called_at))) return;
+      nManual++;
+      var okC = c.in_stock ? "var(--good,#0f9d6b)" : "var(--bad,#d23b45)";
+      var who = c.called_by === "june" ? "June" : c.called_by === "medi" ? "Medi" : (c.called_by || "?");
+      var bars = (Number(c.pamp)||0) + "P / " + (Number(c.generic)||0) + "G";
+      pieces.push({t: c.called_at, html: '<div style="' + MAN_ROW + '">' +
+        '<span style="opacity:.6;min-width:112px">' + manWhen(c.called_at) + '</span>' +
+        '<span style="min-width:86px;opacity:.4">—</span>' +
+        '<span style="min-width:96px;display:inline-block;font-weight:700;color:' + okC + '">' +
+          (c.in_stock ? "IN STOCK" : "SOLD OUT") + '</span>' +
+        '<span style="min-width:92px;font-weight:700;color:var(--warn,#d9a93f)">📞 call</span>' +
+        '<span style="color:var(--warn,#d9a93f)">' + escTxt(c.store_name || "?") + " warehouse — " +
+          (c.in_stock ? bars + " in stock" : "sold out") + " · called by " + escTxt(who) +
+          (c.note ? " · “" + escTxt(c.note) + "”" : "") + '</span></div>'});
+    });
+    manPrices.forEach(function(p){
+      if(!p || !p.updated_at || isNaN(new Date(p.updated_at)) || !isFinite(Number(p.price))) return;
+      nManual++;
+      var who = p.updated_by === "june" ? "June" : p.updated_by === "medi" ? "Medi" : (p.updated_by || "?");
+      pieces.push({t: p.updated_at, html: '<div style="' + MAN_ROW + '">' +
+        '<span style="opacity:.6;min-width:112px">' + manWhen(p.updated_at) + '</span>' +
+        '<span style="min-width:86px;font-weight:700">' + barHistFmt(p.price) + '</span>' +
+        '<span style="min-width:96px;opacity:.4">—</span>' +
+        '<span style="min-width:92px;font-weight:700;color:var(--warn,#d9a93f)">✍ price</span>' +
+        '<span style="color:var(--warn,#d9a93f)">warehouse shelf price typed in by ' + escTxt(who) + '</span></div>'});
+    });
+
+    // Stable sort, newest first. Feed rows from the same scrape share a timestamp and
+    // keep their server order; manual rows slot in wherever their clock puts them.
+    pieces.sort(function(a,b){ return new Date(b.t) - new Date(a.t); });
+    host.innerHTML = pieces.map(function(p){ return p.html; }).join("");
     if(cnt) cnt.textContent = (nPrice + nOut + nBack) + " events";
     // NO SILENT TRUNCATION — if rows were dropped, say how many and why.
     var noteTrunc = rows.length > BARHIST_SHOW
       ? " · showing newest " + BARHIST_SHOW + " of " + rows.length
       : "";
     if(foot) foot.textContent = nPrice + " price moves · " + nOut + " sell-outs · " +
-                                nBack + " restocks" + noteTrunc;
+                                nBack + " restocks" +
+                                " · " + nManual + " manual entries" +
+                                (manFail ? " · ⚠ some manual entries could not be loaded" : "") +
+                                noteTrunc;
   }
 
   // GET, not POST, and that is not a style choice. sbFetch deliberately throws away the
@@ -5387,6 +5439,24 @@
   // one call that is a read wearing a POST's clothes. bars_changes is declared STABLE,
   // so PostgREST accepts it as GET with the arguments as query parameters — which keeps
   // this call inside sbFetch, where the timeout and the error kinds live.
+  // The manual logs are separate tables, fetched alongside the feed events. A failed
+  // log fetch returns null for that log — renderBarHist reports it instead of hiding it.
+  function pullManualLog(){
+    var since = new Date(Date.now() - BARHIST_DAYS*864e5).toISOString();
+    var qc = SB_URL + "/rest/v1/alchemy_calls_log" +
+             "?select=store_name,in_stock,pamp,generic,note,called_at,called_by" +
+             "&called_at=gte." + encodeURIComponent(since) +
+             "&order=called_at.desc&limit=200";
+    var qp = SB_URL + "/rest/v1/alchemy_price_log" +
+             "?select=price,updated_at,updated_by" +
+             "&updated_at=gte." + encodeURIComponent(since) +
+             "&order=updated_at.desc&limit=200";
+    return Promise.all([sbFetch(qc,{headers:sbH()}), sbFetch(qp,{headers:sbH()})])
+      .then(function(rs){
+        return { calls:  rs[0].kind === "ok" && Array.isArray(rs[0].data) ? rs[0].data : null,
+                 prices: rs[1].kind === "ok" && Array.isArray(rs[1].data) ? rs[1].data : null };
+      });
+  }
   function pullBarHist(){
     var since = new Date(Date.now() - BARHIST_DAYS*864e5).toISOString();
     var url = SB_URL + "/rest/v1/rpc/bars_changes" +
@@ -5394,13 +5464,14 @@
               "&lim="   + BARHIST_LIM +
               // 0.999–1.001 rather than = 1: weight_oz is parsed off the page as a float.
               "&min_oz=0.999&max_oz=1.001";
-    return sbFetch(url, { headers: sbH() }).then(function(res){
-      if(res.kind === "ok" && Array.isArray(res.data)) return renderBarHist(res.data, null);
+    return Promise.all([sbFetch(url, { headers: sbH() }), pullManualLog()]).then(function(rs){
+      var res = rs[0], manual = rs[1];
+      if(res.kind === "ok" && Array.isArray(res.data)) return renderBarHist(res.data, null, manual);
       renderBarHist([], res.kind === "timeout" ? "timed out"
                       : res.kind === "network" ? "offline"
                       : res.kind === "http"    ? ("server said " + res.status)
                       : res.kind === "parse"   ? "unreadable reply"
-                      : "unexpected reply");
+                      : "unexpected reply", manual);
     });
   }
 
