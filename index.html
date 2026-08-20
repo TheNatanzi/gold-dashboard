@@ -964,7 +964,7 @@
   <!-- ALERT GAUGE (full-width band) -->
   <div class="gaugebar">
     <div class="gb-left">
-      <div class="gauge-title">◎ Alert floor · Chase Ink 2.6% (no Taekus)</div>
+      <div class="gauge-title">◎ Alert floor · Chase Ink 2.5% (no Taekus)</div>
       <div class="gauge-head"><span class="t">Distance to $25/bar alert</span><span class="v" id="gaugeVal">—</span></div>
       <div class="track"><div class="fill" id="gaugeFill" style="width:0%"></div></div>
       <div class="verdict no" id="verdict">—</div>
@@ -1016,7 +1016,7 @@
   </div>
 
   <div class="note">
-    <b>How to read it:</b> the alert floor is Chase Ink 2.6% with <b>no Taekus</b> — your worst case. When even THAT bar clears <b>+$25</b>, every card clears more. •
+    <b>How to read it:</b> the alert floor is Chase Ink 2.5% with <b>no Taekus</b> — your worst case. When even THAT bar clears <b>+$25</b>, every card clears more. •
     <b>BUY</b> = June's captured price (or online if in stock and higher). <b>SELL</b> = live spot − Elemetal's discount ($10 Pamp / $20 Generic). •
     <b>Venmo = verified 3%</b> + Synchrony Taekus 2.13% = 5.13% → best per-bar card. •
     <b>Citi Double Cash</b> (personal MC) takes <b>no Taekus</b> → 2% only. •
@@ -1392,7 +1392,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 29750da · built 2026-08-19 17:01 UTC</span>
+    <span id="verStamp" class="tnum">version: afddb91 · built 2026-08-20 00:40 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -1445,7 +1445,7 @@
   // OWNED cards in Medi's fixed order. Visa in-store first, then MC online-only below the divider.
   // NOTE: Citi Double Cash = personal Mastercard → does NOT accept Taekus (tk:0).
   const OWNED = [
-    {name:"Chase Ink Business", biller:"Chase", net:"visa", card:2.6, tk:0, type:"Business", hero:true, order:1, limit:20000,
+    {name:"Chase Ink Business", biller:"Chase", net:"visa", card:2.5, tk:0, type:"Business", hero:true, order:1, limit:20000,
      catch:"Alert-floor card. Best as a sign-up-bonus min-spend, not steady flips."},
     {name:"Costco Anywhere Visa Business", biller:"Citi", net:"visa", card:2.0, tk:1.8, type:"Business", order:2, limit:15000,
      catch:"Your Costco Citi Business card. Reward paid once/yr as a Feb certificate. In-store OK."},
