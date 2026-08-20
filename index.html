@@ -670,6 +670,18 @@
   /* extra status chips for the Memberships cap board + card rotation (reuse .rx-srow .st) */
   .rx-srow .st.open{color:var(--good)} .rx-srow .st.cap{color:var(--bad)} .rx-srow .st.unk{color:var(--ink-mute)}
   .rx-srow .st.biz{color:var(--good)} .rx-srow .st.pers{color:var(--warn)}
+  /* Research tab status chips (semantic: verified / needs-verify / denied) + rate bars */
+  .rx-srow .st.ok{color:var(--good)} .rx-srow .st.chk{color:var(--warn)} .rx-srow .st.deny{color:var(--bad)}
+  .rbar{display:flex;align-items:center;gap:8px;margin:5px 0}
+  .rbar .rl{font-family:var(--mono);font-size:11px;width:190px;flex:none;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rbar .rt{flex:1;height:12px;background:var(--line);border-radius:6px;overflow:hidden}
+  .rbar .rf{height:100%;border-radius:6px;background:var(--gold)}
+  .rbar .rf.chk{opacity:.45}
+  .rbar .rv{font-family:var(--mono);font-size:11px;font-weight:800;width:52px;flex:none;text-align:right}
+  .res-sum{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 2px}
+  .res-sum .c{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 14px;text-align:center}
+  .res-sum .c b{display:block;font-size:20px;font-family:var(--mono)}
+  .res-sum .c span{font-size:10px;color:var(--ink-mute);letter-spacing:.06em}
   .rx-room{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--good);white-space:nowrap;margin-left:auto;flex:none}
   .rx-room.cap{color:var(--bad)} .rx-room.unk{color:var(--ink-mute)}
 
@@ -926,6 +938,7 @@
     <button class="tabbtn" role="tab" data-tab="rules" aria-selected="false" id="tabBtnRules">📋 Rules
       <span class="tb-chip" id="tabRuleChip">—</span></button>
     <button class="tabbtn" role="tab" data-tab="planned" aria-selected="false" id="tabBtnPlanned">🗓️ Planned</button>
+    <button class="tabbtn" role="tab" data-tab="research" aria-selected="false" id="tabBtnResearch">🔬 Research</button>
     <!-- The chip rides on the TAB so the in-stock count is readable without opening
          it — same trick as the Rules tab's call-day verdict. -->
     <button class="tabbtn" role="tab" data-tab="inv" aria-selected="false" id="tabBtnInv">🏬 Warehouses
@@ -990,6 +1003,168 @@
       <div class="rx-srow"><span class="st brainstorm">IDEA</span><span class="tx"><b>Elemetal email template</b> — a ready-made email to send Elemetal when forwarding a locked price. <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
       <div class="rx-srow"><span class="st brainstorm">IDEA</span><span class="tx"><b>On-page accounting</b> — track each gold buy and its profit right on the dashboard (a simple built-in ledger). <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
       <div class="rx-srow"><span class="st brainstorm">IDEA</span><span class="tx"><b>Connect Sabz (your finance app)</b> — link it in so it shows how much card credit you have left to spend. <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
+    </div>
+  </div>
+
+  <!-- RESEARCH TAB — the card/vendor research hub (rolled in from the 2026-08-20 overnight
+       sweep; full docs in Manufactured Spend\MS Resources\Overnight Sweep 2026-08-20\).
+       Status system: ✅ VERIFIED · 🟡 VERIFY (needs a test) · ❌ DENIED (verified & out).
+       When a VERIFY item is tested it moves to VERIFIED or into that sub-tab's Denied group. -->
+  <div class="tabpanel" id="tab-research" role="tabpanel" aria-labelledby="tabBtnResearch" hidden>
+    <nav class="rsub-bar" id="resBar" role="tablist" aria-label="Research sections">
+      <button class="rsub-btn" role="tab" data-res="todo"    aria-selected="true">✅ To-Do</button>
+      <button class="rsub-btn" role="tab" data-res="vendors" aria-selected="false">🥇 Gold vendors</button>
+      <button class="rsub-btn" role="tab" data-res="biz"     aria-selected="false">♻️ Business credit</button>
+      <button class="rsub-btn" role="tab" data-res="pers"    aria-selected="false">👤 Personal credit</button>
+      <button class="rsub-btn" role="tab" data-res="debit"   aria-selected="false">💳 Debit</button>
+    </nav>
+
+    <!-- ── SUB 1: TO-DO / VERIFY DASHBOARD ─────────────────────────────── -->
+    <div class="rsub-panel" id="res-todo" role="tabpanel">
+      <div class="rx-mhead" style="margin-top:8px"><span class="em">✅</span><div class="tt">
+        <h4>To-do — what we still need to verify</h4>
+        <p class="md">Every open test from the 2026-08-20 overnight sweep. One test = one answer nobody on the internet has.</p></div></div>
+      <div class="res-sum">
+        <div class="c"><b>6</b><span>TESTS PENDING</span></div>
+        <div class="c"><b>3</b><span>WATCH DATES</span></div>
+        <div class="c"><b>5.13%</b><span>HERO (UNBEATEN)</span></div>
+      </div>
+      <div class="rx-grp">
+        <h6>Field tests (do in this order)</h6>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>1 · Wells Fargo teller test</b> — pay $10 on any WF card WITH the Taekus card at a branch. If 2.13% posts → Active Cash (personal) AND Signify Biz become new 4.13% stacks. PIN routing is the risk. <span style="color:var(--ink-mute)">· added 08-20</span></span></div>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>2 · Samsung Galaxy Card</b> — apply (any Samsung Wallet device, even a watch), ONE tap buy at Costco → does 3% post? Zero datapoints exist worldwide. <span style="color:var(--ink-mute)">· added 08-20</span></span></div>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>3 · Citi rail post-ban check</b> — one small Taekus phone payment (800-950-5114) on a Citi card. Citi banned COMMERCIAL debit 1/30/26; Taekus is consumer prepaid, should pass — prove it. <span style="color:var(--ink-mute)">· added 08-20</span></span></div>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>4 · PayPal Debit gold test</b> — set category = Groceries, sub-$1,000 gold buy at the register → 5% posts? (Costco-as-grocery proven by a stamps DP; gold itself untested.) <span style="color:var(--ink-mute)">· added 08-20</span></span></div>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>5 · Fold+ bill-pay test</b> — $10/mo Fold+, pay one small credit-card bill via its ACH Bill Pay → do sats post? Only living Taekus-style bill-pay earner found. <span style="color:var(--ink-mute)">· added 08-21</span></span></div>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>6 · Spark $500k kicker</b> — at application, read whether the $2,000-per-$500k bonus is year-1-only or repeats yearly. Changes the year-2 verdict. <span style="color:var(--ink-mute)">· added 08-20</span></span></div>
+      </div>
+      <div class="rx-grp">
+        <h6>Watch dates</h6>
+        <div class="rx-srow"><span class="st chk">WATCH</span><span class="tx"><b>Oct 1</b> — Nusenda FCU 5% wholesale quarter opens (small: ~$94/qtr, $15 co-op join).</span></div>
+        <div class="rx-srow"><span class="st chk">WATCH</span><span class="tx"><b>Gnosis Pay US waitlist</b> — best-designed debit program abroad (to 5%, zero fees); join the waitlist.</span></div>
+        <div class="rx-srow"><span class="st chk">WATCH</span><span class="tx"><b>Krak Card</b> — brand-new (8/18/26): 2% uncapped needs $50k parked at Kraken; free 2% first 30 days if we want a cheap trial.</span></div>
+      </div>
+      <div class="rx-grp">
+        <h6>Standing rules from the sweep</h6>
+        <div class="rx-srow"><span class="st ok">RULE</span><span class="tx"><b>Protect Taekus</b> — closed to new signups; Medi's card is irreplaceable. Don't burn it on risky rails.</span></div>
+        <div class="rx-srow"><span class="st ok">RULE</span><span class="tx"><b>Never credit-cycle Chase or Citi</b> — one full-limit turn per statement cycle max. Citi shutdown kills the AA + Costco cards together.</span></div>
+      </div>
+    </div>
+
+    <!-- ── SUB 2: GOLD VENDORS ─────────────────────────────────────────── -->
+    <div class="rsub-panel" id="res-vendors" role="tabpanel" hidden>
+      <div class="rx-mhead" style="margin-top:8px"><span class="em">🥇</span><div class="tt">
+        <h4>Gold vendors — where the bars get sold</h4>
+        <p class="md">Full list lives in MS Resources › Gold Buyers Database.md. This is the sweep's ranked read.</p></div></div>
+      <div class="rx-grp">
+        <h6>✅ Verified</h6>
+        <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>Elemetal</b> — spot − $10/oz, instant, accepts a &lt;15-min price screenshot (the whole reason the Lock machine exists). The working default.</span></div>
+      </div>
+      <div class="rx-grp">
+        <h6>🟡 Needs verify</h6>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>CollectPure (collectpure.com)</b> — community exit of choice: bid market, 0.75% fee, some SKUs fetch <b>spot + $100</b>; payout 10–14 days. Test = one comparison listing vs Elemetal. Catch: 2-week money float vs instant.</span></div>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>JM Bullion</b> — buys Costco bars ~spot, lock → ship → e-check 1–3 days. Backup exit.</span></div>
+      </div>
+      <div class="rx-grp">
+        <h6>❌ Denied — verified and out</h6>
+        <div class="rx-srow"><span class="st deny">DENIED</span><span class="tx"><b>US Gold Bureau</b> — pays ~spot −4%. Loses to Elemetal every time.</span></div>
+        <div class="rx-srow"><span class="st deny">DENIED</span><span class="tx"><b>Pawn shops</b> — community datapoint at −60%. Never.</span></div>
+        <div class="rx-srow"><span class="st deny">DENIED</span><span class="tx"><b>Local coin shops (as a class)</b> — spot −2% to −5%, relationship-dependent; only beats Elemetal with a personal hookup.</span></div>
+      </div>
+    </div>
+
+    <!-- ── SUB 3: BUSINESS CREDIT ──────────────────────────────────────── -->
+    <div class="rsub-panel" id="res-biz" role="tabpanel" hidden>
+      <div class="rx-mhead" style="margin-top:8px"><span class="em">♻️</span><div class="tt">
+        <h4>Business credit — pay-down-and-rerun volume cards</h4>
+        <p class="md">The whole US market above 2%: four cards. No flat 3% business card exists in America.</p></div></div>
+      <div class="rx-grp"><h6>Rate ladder (effective % on a bar)</h6>
+        <div class="rbar"><span class="rl">Costco Biz Visa + Citi rail</span><div class="rt"><div class="rf" style="width:74%"></div></div><span class="rv">3.80%</span></div>
+        <div class="rbar"><span class="rl">Spark Cash Plus (yr 1)</span><div class="rt"><div class="rf" style="width:57%"></div></div><span class="rv">~2.9%</span></div>
+        <div class="rbar"><span class="rl">BofA Biz + Plat Honors</span><div class="rt"><div class="rf" style="width:51%"></div></div><span class="rv">2.625%</span></div>
+        <div class="rbar"><span class="rl">Ink Business Premier</span><div class="rt"><div class="rf" style="width:49%"></div></div><span class="rv">2.50%</span></div>
+        <div class="rbar"><span class="rl">WF Signify (IF rail proves)</span><div class="rt"><div class="rf chk" style="width:81%"></div></div><span class="rv">4.13%?</span></div>
+      </div>
+      <div class="rx-grp">
+        <h6>✅ Verified</h6>
+        <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>Chase Ink Premier 2.5%</b> — flat king, Visa in-warehouse; safe velocity = 1 full turn/cycle (Chase = most shutdown-documented issuer).</span></div>
+        <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>Costco Anywhere Biz Visa 2% + Citi rail 1.8% = 3.8%</b> — best biz rate; catch: card reward pays as a February certificate (locked ~a year).</span></div>
+        <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>BofA Biz Advantage Unlimited 2.625%</b> — real but gated: $100k at Merrill, Mastercard (online only), tiny $5–10k credit lines, MS-hostile bank.</span></div>
+      </div>
+      <div class="rx-grp">
+        <h6>🟡 Needs verify</h6>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>Spark Cash Plus ~2.9% yr-1</b> — rates verified; the open question is whether the $2k/$500k kicker repeats after year 1 (test #6).</span></div>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>WF Signify Business Cash → 4.13%</b> — hangs entirely on the WF teller test (#1). Small reported limits ($2.5–14k).</span></div>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>Citi AA Business (Medi's pick)</b> — 65k-mile SUB on $4k = one bar order; 1 mi/$ ≈1.4% + Citi rail 1.8%. Verify the rail on a biz card + apply via aa.com. Never cycle it.</span></div>
+      </div>
+      <div class="rx-grp">
+        <h6>❌ Denied — verified and out</h6>
+        <div class="rx-srow"><span class="st deny">DENIED</span><span class="tx"><b>Huntington Voice Biz 4%</b> — zero California footprint.</span></div>
+        <div class="rx-srow"><span class="st deny">DENIED</span><span class="tx"><b>PayPal Business Cashback MC</b> — closed to new applications.</span></div>
+        <div class="rx-srow"><span class="st deny">DENIED</span><span class="tx"><b>Every Amex business card</b> — Amex is dead at Costco entirely.</span></div>
+        <div class="rx-srow"><span class="st deny">DENIED</span><span class="tx"><b>The 2% commodity shelf</b> (TD, RBFCU, NavyFed, WF Signify-without-rail…) + fintechs (Divvy, Expensify, Ramp, Brex, Rho, Mercury) — below break-even or unsuitable.</span></div>
+      </div>
+    </div>
+
+    <!-- ── SUB 4: PERSONAL CREDIT ──────────────────────────────────────── -->
+    <div class="rsub-panel" id="res-pers" role="tabpanel" hidden>
+      <div class="rx-mhead" style="margin-top:8px"><span class="em">👤</span><div class="tt">
+        <h4>Personal credit — the hero stack lives here</h4>
+        <p class="md">Executive 2% stacks on ALL of these while each membership has cap room.</p></div></div>
+      <div class="rx-grp"><h6>Rate ladder (effective % on a bar)</h6>
+        <div class="rbar"><span class="rl">Venmo CC + Taekus</span><div class="rt"><div class="rf" style="width:100%"></div></div><span class="rv">5.13%</span></div>
+        <div class="rbar"><span class="rl">Synchrony Premier + Taekus</span><div class="rt"><div class="rf" style="width:81%"></div></div><span class="rv">4.13%</span></div>
+        <div class="rbar"><span class="rl">US Bank Smartly (4% tier)</span><div class="rt"><div class="rf" style="width:78%"></div></div><span class="rv">4.00%</span></div>
+        <div class="rbar"><span class="rl">Citi Double Cash + rail</span><div class="rt"><div class="rf" style="width:74%"></div></div><span class="rv">3.80%</span></div>
+        <div class="rbar"><span class="rl">WF Active Cash + rail (test)</span><div class="rt"><div class="rf chk" style="width:81%"></div></div><span class="rv">4.13%?</span></div>
+        <div class="rbar"><span class="rl">Samsung Galaxy (test)</span><div class="rt"><div class="rf chk" style="width:58%"></div></div><span class="rv">3.00%?</span></div>
+      </div>
+      <div class="rx-grp">
+        <h6>✅ Verified</h6>
+        <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>Venmo CC 3% + Taekus 2.13% = 5.13% 🏆</b> — THE HERO, proven by Medi, unbeaten by ~150 censused cards. Visa: register + online. No known earn cap.</span></div>
+        <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>Synchrony Premier 2% + Taekus = 4.13%</b> — same proven rail, second lane; Mastercard → Costco.com only. Uncapped.</span></div>
+        <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>Citi Double Cash 2% + phone rail 1.8% = 3.8%</b> — 1 debit payment/day; rail post-ban check pending (test #3).</span></div>
+        <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>US Bank Smartly 4%</b> — barely worth it and kept: $4,800/yr max ($10k/mo cap) if the $100k can sit at US Bancorp anyway.</span></div>
+      </div>
+      <div class="rx-grp">
+        <h6>🟡 Needs verify</h6>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>Samsung Galaxy Card 3% uncapped</b> — tap-to-pay Visa, no metals exclusion found, works in-warehouse in theory; zero Costco DPs on earth (test #2). Ramp slowly — Barclays shutdown risk at volume.</span></div>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>WF Active Cash 2% + branch rail = 4.13%</b> — the biggest potential unlock; one $10 teller test (test #1).</span></div>
+      </div>
+      <div class="rx-grp">
+        <h6>❌ Denied — verified and out</h6>
+        <div class="rx-srow"><span class="st deny">DENIED</span><span class="tx"><b>Robinhood Gold 3%</b> — official terms exclude precious metals + clawback power + fresh shutdown DP.</span></div>
+        <div class="rx-srow"><span class="st deny">DENIED</span><span class="tx"><b>Aven 3%</b> ($10k/yr ≈ $100/yr edge) &amp; <b>AAA Daily Advantage 3%</b> ($500/yr cap + nerf chatter) — caps too small for our volume (Medi ruling 08-21).</span></div>
+        <div class="rx-srow"><span class="st deny">DENIED</span><span class="tx"><b>OnePay 3%</b> (targeted-only) · <b>SAFE CU</b> (2.44%/bar) · <b>Affinity Hi5</b> (dead 2023) · <b>University CU</b> (MC + no membership path) · <b>Vera</b> (needs wallet Costco doesn't take) · <b>Logix</b> ($100k @ 0.6% APY) · <b>Alliant / Altitude Reserve / Custom Cash</b> (closed) · <b>AOD FCU</b> (nerfed).</span></div>
+      </div>
+    </div>
+
+    <!-- ── SUB 5: DEBIT ────────────────────────────────────────────────── -->
+    <div class="rsub-panel" id="res-debit" role="tabpanel" hidden>
+      <div class="rx-mhead" style="margin-top:8px"><span class="em">💳</span><div class="tt">
+        <h4>Debit — the rails and the register cards</h4>
+        <p class="md">~100 cards censused worldwide (DEBIT-CARD-CENSUS.md). Flat always-on rates only; promos ignored.</p></div></div>
+      <div class="rx-grp">
+        <h6>✅ Verified</h6>
+        <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>Taekus 2.13% 👑</b> — earns on credit-card bill payments (the whole stack's engine). CLOSED to new users — protect Medi's card.</span></div>
+        <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>PayPal Debit 5% Groceries-includes-Costco</b> — MCC-level, stamps DP + no metals exclusion in T&amp;C. $1,000/mo cap; since 8/1/26 rewards redeem at PayPal checkout (not cash). Gold-specific test pending (#4).</span></div>
+      </div>
+      <div class="rx-grp">
+        <h6>🟡 Needs verify</h6>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>Fold+ (Visa)</b> — 1.5% BTC flat; its Bill Pay reportedly earns on CREDIT-CARD payments = only living Taekus successor (test #5). $10/mo.</span></div>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>Krak Card (Kraken)</b> — 2% USD/BTC uncapped at $50k Kraken balance; days old, terms may shift.</span></div>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>X Money 3%</b> — exclusion list is MCC 5094 (coin stores); Costco = 5300 passes on paper. Invite-gated; patch risk.</span></div>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>ether.fi Cash 3%</b> (first $2k/mo, SCR token) — only foreign fintech open to US residents; confirm CA on the state list.</span></div>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>Bluevine biz 1.5% uncapped</b> — best flat US debit; needs a biz-debit use-case.</span></div>
+      </div>
+      <div class="rx-grp">
+        <h6>❌ Denied — verified and out</h6>
+        <div class="rx-srow"><span class="st deny">DENIED</span><span class="tx"><b>Big-bank debit</b> — rewards dead since 2011 (Durbin law). <b>Discover debit</b> closed to new users (Cap One merger). <b>Serve/Bluebird</b> dead 6/2026.</span></div>
+        <div class="rx-srow"><span class="st deny">DENIED</span><span class="tx"><b>Offer-gimmick crowd</b> — Cash App, Venmo Stash, Varo, Current, Robinhood Cash Card, GO2bank: no flat rate, rotating brand offers only.</span></div>
+        <div class="rx-srow"><span class="st deny">DENIED</span><span class="tx"><b>Tiny-cap crowd</b> — Kasasa network ($6–15/mo), Walmart MoneyCard ($75/yr), Axos ($20/mo), airline debit trio (~0.7%).</span></div>
+        <div class="rx-srow"><span class="st deny">DENIED</span><span class="tx"><b>Foreign wall</b> — Plutus 9%, Gnosis 5%, Mox, Rakuten, Neo, KOHO, Trust, Mashreq… ALL residency-blocked + FX fees would eat the edge anyway. (Gnosis US waitlist = watch item.)</span></div>
+        <div class="rx-srow"><span class="st deny">DENIED</span><span class="tx"><b>Crypto.com</b> (free tier now 0%) · <b>Coinbase Card</b> (rate now variable/rotating — undependable).</span></div>
+      </div>
     </div>
   </div>
 
@@ -1889,7 +2064,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 22d48c7 · built 2026-08-20 17:01 UTC</span>
+    <span id="verStamp" class="tnum">version: 1d88ae6 · built 2026-08-20 18:52 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3309,6 +3484,33 @@
     });
     let init = "trade"; try{ init = localStorage.getItem(RSUB_KEY) || "trade"; }catch(e){}
     showRuleSub(init);
+  })();
+
+  /* ---- Research SUB-TABS (scoped to #tab-research, same pattern as Rules) ---- */
+  const RES_KEY = "alchemy_research_subtab";
+  function showResSub(name){
+    const wrap = $("tab-research");
+    if(!wrap) return;
+    const btns = wrap.querySelectorAll(".rsub-btn");
+    let matched = false;
+    btns.forEach(function(b){
+      const on = b.dataset.res === name;
+      if(on) matched = true;
+      b.setAttribute("aria-selected", on ? "true" : "false");
+      const panel = $("res-" + b.dataset.res);
+      if(panel) panel.hidden = !on;
+    });
+    if(!matched){ showResSub("todo"); return; }      // stale/renamed key → fall back to To-Do
+    try{ localStorage.setItem(RES_KEY, name); }catch(e){}
+  }
+  (function(){
+    const bar = $("resBar");
+    if(bar) bar.addEventListener("click", function(ev){
+      const b = ev.target.closest(".rsub-btn");
+      if(b) showResSub(b.dataset.res);
+    });
+    let init = "todo"; try{ init = localStorage.getItem(RES_KEY) || "todo"; }catch(e){}
+    showResSub(init);
   })();
 
   function jbFullAddr(s){ return s.a+", "+s.c+", CA"+(s.z?" "+s.z:""); }
