@@ -4206,7 +4206,8 @@
         return;
       }
     }
-    const rec={store_id:id, store_name:meta.n, city:meta.c, miles:meta.mi,
+    // The shared list's miles column only takes whole numbers; 4.7 gets the row refused.
+    const rec={store_id:id, store_name:meta.n, city:meta.c, miles:Math.round(meta.mi),
       in_stock:stock,
       pamp: stock?cp.v:0,
       generic: stock?cg.v:0,
