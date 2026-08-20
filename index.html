@@ -1881,7 +1881,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 08c5bb8 · built 2026-08-20 04:06 UTC</span>
+    <span id="verStamp" class="tnum">version: 08c5bb8 · built 2026-08-20 06:57 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -5722,16 +5722,21 @@
         if(rec.length >= 2){
           // Append the live value so the curve reaches "now" instead of dying at the last save.
           rec.push({ t: new Date().toISOString(), price: bz.v });
-          // DESPIKE: a browser tab still running an OLD build writes the old trigger between
-          // everyone else's rows, and the line saw-tooths $10 hundreds of times — the "green
-          // static" of 2026-07-30. An isolated row that jumps away from BOTH agreeing
-          // neighbours is a stale writer, not a market move (a real trigger change persists
-          // across rows, so it survives this). Then collapse equal runs — a flat hour is two
-          // points, not sixty dash segments.
+          // DESPIKE: a browser tab still running an OLD build (or a different buy input)
+          // writes a rival trigger between everyone else's rows, and the line saw-tooths —
+          // the "green static" of 2026-07-30 ($10 apart) and the A,B,A,B jitter of
+          // 2026-08-20 (only $4.54 apart). The tell is the same for BOTH: a point whose two
+          // neighbours AGREE with each other but which itself sits off them. A real trigger
+          // move persists across >=2 rows, so its transition point has DISagreeing neighbours
+          // (old value vs new) and survives; a smooth spot-driven drift has neighbours that
+          // differ by more than the gate, so it survives too. Only a lone/alternating writer
+          // — neighbours nearly equal, middle clearly off — gets dropped. The old $5
+          // magnitude gate let the $4.54 alternation through; the neighbours-agree test is
+          // the real guard, so we gate on that (tight) plus a small "middle is off" epsilon.
           var sp = [rec[0]], dropped = 0;
           for(var ri = 1; ri < rec.length - 1; ri++){
             var a = rec[ri - 1].price, b = rec[ri].price, c = rec[ri + 1].price;
-            if(Math.abs(b - a) > 5 && Math.abs(b - c) > 5 && Math.abs(a - c) < 1){ dropped++; continue; }
+            if(Math.abs(a - c) < 0.5 && Math.abs(b - a) > 1 && Math.abs(b - c) > 1){ dropped++; continue; }
             sp.push(rec[ri]);
           }
           sp.push(rec[rec.length - 1]);
