@@ -987,16 +987,18 @@
     <div class="rx-grp">
       <h6>Warehouse automation</h6>
       <div class="rx-srow"><span class="st partial">PARTIAL</span><span class="tx"><b>Slack → email in-stock alerts</b> — the fast restock email path. Written, but <b>not installed</b>, and the Slack source is currently dead. <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
-      <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx"><b>Live inventory database feed</b> — migration 007 is staged but never run (all 5 endpoints 404). <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
-      <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx"><b>11:00 AM second pull</b> — a second daily inventory scrape. <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
-      <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx"><b>Pull when gold enters the buy zone</b> — refresh inventory the moment it's worth buying. <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
-      <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx"><b>Pull when the Costco bar price changes</b> — catch a price move right away. <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
-      <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx"><b>PC-watcher + 30-min debounce</b> — the local script that fires the two triggers above, capped so it can't double-pull. <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
+      <div class="rx-srow"><span class="st partial">PARTIAL</span><span class="tx"><b>Live inventory database feed</b> — migration 007 is applied and the endpoints answer, but the table is empty because the Slack source is dead. <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
+      <div class="rx-srow"><span class="st live">DONE</span><span class="tx"><b>11:00 AM second pull</b> — Task "Alchemy Warehouse 11am" registered. <span style="color:var(--ink-mute)">· added 08-19 · done 08-20</span></span></div>
+      <div class="rx-srow"><span class="st live">DONE</span><span class="tx"><b>Pull when gold climbs a $5 step</b> — the rung watcher fires the scrape on every climb. <span style="color:var(--ink-mute)">· added 08-19 · done 08-20</span></span></div>
+      <div class="rx-srow"><span class="st live">DONE</span><span class="tx"><b>Pull when the Costco bar price changes</b> — same watcher, same scrape. <span style="color:var(--ink-mute)">· added 08-19 · done 08-20</span></span></div>
+      <div class="rx-srow"><span class="st live">DONE</span><span class="tx"><b>PC-watcher + 30-min debounce</b> — runs every 15 min from Task Scheduler, capped so triggers can't double-pull. <span style="color:var(--ink-mute)">· added 08-19 · done 08-20</span></span></div>
+      <div class="rx-srow"><span class="st live">DONE</span><span class="tx"><b>Buy-zone warehouse email</b> — shipped as the "Where to buy" section inside the buy alert: in-stock stores only, Tier 1 first, miles + phone. <span style="color:var(--ink-mute)">· added 08-19 · done 08-20</span></span></div>
     </div>
 
     <div class="rx-grp">
       <h6>Alerts &amp; engine</h6>
-      <div class="rx-srow"><span class="st partial">PARTIAL</span><span class="tx"><b>Deploy the $5-ladder + Pacific-time engine</b> — new buy-zone ladder ($25→$30→$35…), fell-out alert, and all-Pacific timestamps. Needs one paste into Apps Script. <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
+      <div class="rx-srow"><span class="st live">DONE</span><span class="tx"><b>Deploy the $5-ladder + Pacific-time engine</b> — v6 live in Apps Script: ladder, fell-out, Pacific times, Where-to-buy, and the safety guards (6h re-nag + healthy-again + buy-input dead-man). <span style="color:var(--ink-mute)">· added 08-19 · done 08-20</span></span></div>
+      <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx"><b>Spot-relative sanity ceiling</b> — the "profit over $150 = broken" guard should scale with the gold price (e.g. spot × 3.5%) so it survives gold doubling. One line + one redeploy. <span style="color:var(--ink-mute)">· added 08-20</span></span></div>
     </div>
 
     <div class="rx-grp">
@@ -1490,8 +1492,8 @@
             <span class="em">📦</span>
             <div class="tt">
               <h4>The Warehouse</h4>
-              <p class="md">Refreshing how many bars each Costco has, and what counts as real stock. Most of this is planned, not running.</p>
-              <span class="rx-badge partial"><span class="d"></span>PARTIAL — 1 of many live</span>
+              <p class="md">Refreshing how many bars each Costco has, and what counts as real stock. All four refresh triggers run on their own now.</p>
+              <span class="rx-badge live"><span class="d"></span>LIVE — all 4 triggers running</span>
             </div>
           </div>
 
@@ -1506,23 +1508,30 @@
           </div>
 
           <div class="rx-grp">
-            <h6>The one rule that runs</h6>
+            <h6>The four triggers — each one fires a fresh scrape</h6>
             <div class="rx-flow">
-              <div class="rx-node go nl"><div class="rx-cond"><span class="ic">✓</span>Every day at 10:00 AM</div>
+              <div class="rx-node go"><div class="rx-cond"><span class="ic">✓</span>Every day at 10:00 AM — and again at 11:00 AM</div>
                 <div class="rx-act">Scrapes the PAMP Lady Fortuna bar <span class="rx-pill">SKU 1943308</span> across <b>11 zip codes</b> → updates the dashboard. It <b>never</b> touches the BUY price (June owns that).</div>
                 <div class="rx-why">Safety floor: if fewer than 38 stores answer, the read is treated as broken — not as a sell-out.</div></div>
+              <div class="rx-node go"><div class="rx-cond"><span class="ic">✓</span>Profit climbs a $5 step ($25, $30, $35…)</div>
+                <div class="rx-act">A small script on the PC (the <b>rung watcher</b>, checks every 15 min) sees the climb → runs the same scrape, so stock is fresh right when it matters.</div></div>
+              <div class="rx-node go"><div class="rx-cond"><span class="ic">✓</span>The Costco bar price changes</div>
+                <div class="rx-act">Same watcher, same scrape — a price move means something happened, so go look.</div></div>
+              <div class="rx-node check nl"><div class="rx-cond"><span class="ic">?</span>Two triggers fire close together</div>
+                <div class="rx-act"><b>30-minute debounce</b>: at most one scrape per 30 min, shared by all four triggers. A climb during the wait is <b>remembered</b> and pulls when the 30 min are up — never dropped.</div></div>
             </div>
           </div>
 
           <div class="rx-grp">
             <h6>Everything else — honest status</h6>
             <div class="rx-srow"><span class="st live">LIVE</span><span class="tx"><b>10:00 AM</b> daily inventory pull</span></div>
-            <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx"><b>11:00 AM</b> second pull</span></div>
-            <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx">Pull when gold <b>enters the buy zone</b></span></div>
-            <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx">Pull when the <b>bar price changes</b></span></div>
-            <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx"><b>PC-watcher</b> + <b>30-min debounce</b> (so triggers can't double-pull)</span></div>
+            <div class="rx-srow"><span class="st live">LIVE</span><span class="tx"><b>11:00 AM</b> second pull <span style="color:var(--ink-mute)">· since 08-20</span></span></div>
+            <div class="rx-srow"><span class="st live">LIVE</span><span class="tx">Pull when profit <b>climbs a $5 step</b> <span style="color:var(--ink-mute)">· since 08-20</span></span></div>
+            <div class="rx-srow"><span class="st live">LIVE</span><span class="tx">Pull when the <b>bar price changes</b> <span style="color:var(--ink-mute)">· since 08-20</span></span></div>
+            <div class="rx-srow"><span class="st live">LIVE</span><span class="tx"><b>PC-watcher</b> + <b>30-min debounce</b> (so triggers can't double-pull) <span style="color:var(--ink-mute)">· since 08-20</span></span></div>
+            <div class="rx-srow"><span class="st live">LIVE</span><span class="tx">In-stock stores land in the <b>buy alert email</b>, Tier 1 first — see the Alerts sub-tab <span style="color:var(--ink-mute)">· since 08-20</span></span></div>
             <div class="rx-srow"><span class="st partial">PARTIAL</span><span class="tx"><b>Slack → email</b> in-stock alerts — written, <b>not installed</b>, and the Slack source is currently dead</span></div>
-            <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx"><b>Live database feed</b> (migration 007 staged, never run — all 5 endpoints 404)</span></div>
+            <div class="rx-srow"><span class="st partial">PARTIAL</span><span class="tx"><b>Live database feed</b> — migration 007 is applied and the endpoints answer, but the table is <b>empty</b> because the Slack source feeding it is dead</span></div>
           </div>
         </div>
       </div>
@@ -1534,8 +1543,8 @@
             <span class="em">📧</span>
             <div class="tt">
               <h4>The Alerts</h4>
-              <p class="md">The emails the Gold Alert Engine sends you. All times now in Pacific.</p>
-              <span class="rx-badge partial"><span class="d"></span>PARTIAL — needs the new code pasted in</span>
+              <p class="md">The emails the Gold Alert Engine sends you. All times in Pacific.</p>
+              <span class="rx-badge live"><span class="d"></span>LIVE — v6 deployed 08-20</span>
             </div>
           </div>
 
@@ -1558,6 +1567,17 @@
           </div>
 
           <div class="rx-grp">
+            <h6>What's inside the email — "Where to buy" <span class="rx-pill">since 08-20</span></h6>
+            <div class="rx-flow">
+              <div class="rx-node go"><div class="rx-cond"><span class="ic">✓</span>Every ENTERED / CLIMB email</div>
+                <div class="rx-act">Also lists the <b>in-stock warehouses</b> — Tier 1 first, closest first inside a tier — with miles and phone number, plus when that stock scan was taken and the bar price that day.</div>
+                <div class="rx-why">CALL FIRST (rule 16): a scan is a claim, not Costco's word. A scan older than 26h is flagged "treat as unknown".</div></div>
+              <div class="rx-node check nl"><div class="rx-cond"><span class="ic">?</span>The stock list can't be read</div>
+                <div class="rx-act">The buy alert still sends — with a one-line "check the dashboard" note instead. A missing list never blocks a buy alert.</div></div>
+            </div>
+          </div>
+
+          <div class="rx-grp">
             <h6>The Costco bar watcher</h6>
             <div class="rx-flow">
               <div class="rx-node go"><div class="rx-cond"><span class="ic">✓</span>Bar price moves or stock flips</div>
@@ -1569,7 +1589,22 @@
             </div>
           </div>
 
-          <div class="rx-srow"><span class="st partial">TO DO</span><span class="tx">Paste the updated engine into <b>Apps Script</b> to switch the ladder + Pacific-time on. File: <span class="rx-pill">Gold Alert Engine — AppsScript.gs</span></span></div>
+          <div class="rx-grp">
+            <h6>The safety guards — ops emails, you only <span class="rx-pill">since 08-20</span></h6>
+            <div class="rx-flow">
+              <div class="rx-node stop"><div class="rx-cond"><span class="ic">✕</span>The numbers look broken (profit over $150/bar, or the buy price is over 48h old)</div>
+                <div class="rx-act">The buy alert is <b>BLOCKED</b> — nobody gets a wrong "go buy" email. You get one <b>"SUPPRESSED"</b> note instead.</div>
+                <div class="rx-why">This is what caught the fake "$439/bar" emails — a stale price snuck into the math.</div></div>
+              <div class="rx-node check"><div class="rx-cond"><span class="ic">?</span>The buy price goes quiet on its own (hourly check)</div>
+                <div class="rx-act">The dead-man's check now watches the <b>buy input</b> too, not just the spot feed — a silent break can't hide between alerts.</div></div>
+              <div class="rx-node check"><div class="rx-cond"><span class="ic">↻</span>A problem lasts more than 6 hours</div>
+                <div class="rx-act">You get <b>nagged again every ~6h</b> until it's fixed — the old "one email then silence forever" is gone.</div></div>
+              <div class="rx-node go nl"><div class="rx-cond"><span class="ic">✓</span>It heals</div>
+                <div class="rx-act">One <b>"✅ healthy again"</b> note, then quiet. So no news really means "all good", not "the alarm died".</div></div>
+            </div>
+          </div>
+
+          <div class="rx-srow"><span class="st live">DONE</span><span class="tx">Engine <b>v6</b> deployed to Apps Script 08-20 — ladder + Pacific time + Where-to-buy + all guards above are live. File: <span class="rx-pill">Gold Alert Engine — AppsScript.gs</span></span></div>
         </div>
       </div>
 
@@ -2074,7 +2109,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 3a963a7 · built 2026-08-20 20:31 UTC</span>
+    <span id="verStamp" class="tnum">version: 193de24 · built 2026-08-20 21:21 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
