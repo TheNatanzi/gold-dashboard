@@ -607,6 +607,98 @@
   @media (max-width:560px){
     .rb-verdict{flex-direction:column;align-items:flex-start;gap:6px}
   }
+  /* ---- rule FLOWCHART: 4 machines as if-this/do-that boxes (2026-08-19) ---- */
+  .rx-legend{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0 4px}
+  @media(max-width:560px){.rx-legend{grid-template-columns:1fr}}
+  .rx-lbox{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:11px 13px}
+  .rx-lbox h5{margin:0 0 8px;font-family:var(--mono);font-size:9px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--ink-mute);font-weight:700}
+  .rx-key{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:12px;color:var(--ink-soft)}
+  .rx-key b{color:var(--ink);font-weight:660}
+  .rx-sw{width:13px;height:13px;border-radius:4px;flex:none;border:1px solid var(--line2)}
+  .rx-sw.go{background:var(--good-bg);border-color:var(--good)}
+  .rx-sw.stop{background:var(--bad-bg);border-color:var(--bad)}
+  .rx-sw.check{background:var(--warn-bg);border-color:var(--warn)}
+  .rx-sw.why{background:var(--panel2)}
+  .rx-badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;
+    font-weight:700;letter-spacing:.04em;padding:2px 8px;border-radius:999px;border:1px solid currentColor}
+  .rx-badge .d{width:6px;height:6px;border-radius:50%;background:currentColor}
+  .rx-badge.live{color:var(--good)} .rx-badge.partial{color:var(--warn)} .rx-badge.planned{color:var(--bad)}
+  .rx-badge.brainstorm{color:var(--pamp)}
+  .rx-machine{margin-top:22px}
+  .rx-mhead{display:flex;align-items:flex-start;gap:11px}
+  .rx-mhead .em{font-size:24px;line-height:1}
+  .rx-mhead h4{margin:0;font-size:19px;color:var(--ink);font-weight:680;letter-spacing:-.01em}
+  .rx-mhead .md{font-size:12px;color:var(--ink-mute);margin:2px 0 0}
+  .rx-mhead .tt{flex:1;min-width:0}
+  .rx-grp{margin-top:13px}
+  .rx-grp > h6{margin:0 0 4px;font-family:var(--mono);font-size:9px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--gold-deep);font-weight:700;display:flex;align-items:center;gap:7px}
+  .rx-grp > h6::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--gold-deep);flex:none}
+  .rx-flow{position:relative;padding-left:2px}
+  .rx-node{position:relative;border:1px solid var(--line);border-radius:11px;padding:10px 12px;margin:9px 0;
+    background:var(--panel2);font-size:13px;line-height:1.4}
+  .rx-node .rx-cond{font-weight:660;color:var(--ink);display:flex;gap:7px;align-items:baseline}
+  .rx-node .rx-cond .ic{flex:none}
+  .rx-node .rx-act{margin-top:2px;color:var(--ink-soft)}
+  .rx-node .rx-act b{color:var(--ink);font-weight:660}
+  .rx-node .rx-why{display:block;margin-top:6px;padding-top:6px;border-top:1px dashed var(--line2);
+    font-size:11px;color:var(--ink-mute);line-height:1.45}
+  .rx-node .rx-why::before{content:"WHY ";font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;color:var(--gold-deep)}
+  .rx-node.go{background:var(--good-bg);border-color:var(--good)} .rx-node.go .ic{color:var(--good)}
+  .rx-node.stop{background:var(--bad-bg);border-color:var(--bad)} .rx-node.stop .ic{color:var(--bad)}
+  .rx-node.check{background:var(--warn-bg);border-color:var(--warn)} .rx-node.check .ic{color:var(--warn)}
+  .rx-node.why-only{background:var(--bg2);border-style:dashed}
+  .rx-node.why-only .rx-cond{font-weight:500;color:var(--ink-mute)}
+  .rx-node .tag{float:right;margin-left:8px;font-family:var(--mono);font-size:9px;color:var(--ink-mute);font-weight:700}
+  .rx-node + .rx-node::before{content:"↓";position:absolute;top:-16px;left:18px;color:var(--gold-deep);font-size:13px;opacity:.7}
+  .rx-node.nl + .rx-node::before,.rx-node + .rx-node.nl::before{content:""}
+  .rx-branch{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:9px 0}
+  @media(max-width:480px){.rx-branch{grid-template-columns:1fr}}
+  .rx-branch .rx-node{margin:0} .rx-branch .rx-node + .rx-node::before{content:""}
+  .rx-lab{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--ink-mute);margin:9px 0 -2px 3px;display:block}
+  .rx-srow{display:flex;align-items:center;gap:10px;padding:8px 11px;border-radius:10px;background:var(--bg2);
+    border:1px solid var(--line);font-size:12.5px;color:var(--ink-soft);margin:6px 0}
+  .rx-srow .st{font-family:var(--mono);font-size:9px;font-weight:800;letter-spacing:.04em;padding:2px 7px;
+    border-radius:6px;flex:none;min-width:66px;text-align:center;border:1px solid currentColor}
+  .rx-srow .st.live{color:var(--good)} .rx-srow .st.partial{color:var(--warn)} .rx-srow .st.planned{color:var(--bad)}
+  .rx-srow .st.brainstorm{color:var(--pamp)}
+  .rx-srow .tx{flex:1} .rx-srow .tx b{color:var(--ink);font-weight:660}
+  .rx-pill{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--gold);background:var(--gold-glow);
+    border:1px solid var(--gold-deep);border-radius:6px;padding:0 6px;white-space:nowrap}
+  /* extra status chips for the Memberships cap board + card rotation (reuse .rx-srow .st) */
+  .rx-srow .st.open{color:var(--good)} .rx-srow .st.cap{color:var(--bad)} .rx-srow .st.unk{color:var(--ink-mute)}
+  .rx-srow .st.biz{color:var(--good)} .rx-srow .st.pers{color:var(--warn)}
+  .rx-room{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--good);white-space:nowrap;margin-left:auto;flex:none}
+  .rx-room.cap{color:var(--bad)} .rx-room.unk{color:var(--ink-mute)}
+
+  /* ---- Rules SUB-TABS (a second tab bar living INSIDE #tab-rules, scoped so it never
+       fights the top .tabbtn bar). Mirrors the top-tab look one notch smaller. ---- */
+  .rsub-bar{display:flex;gap:5px;flex-wrap:wrap;margin:14px 0 16px;
+    border-bottom:1px solid var(--line);padding-bottom:0}
+  .rsub-btn{cursor:pointer;font-family:var(--sans);font-size:12px;font-weight:640;
+    color:var(--ink-mute);background:transparent;border:1px solid transparent;
+    border-bottom:2px solid transparent;border-radius:9px 9px 0 0;padding:7px 11px;
+    display:inline-flex;align-items:center;gap:6px;margin-bottom:-1px;white-space:nowrap}
+  .rsub-btn:hover{color:var(--ink);background:var(--gold-glow)}
+  .rsub-btn[aria-selected="true"]{color:var(--gold);border-color:var(--line);
+    border-bottom-color:var(--gold-deep);background:var(--panel)}
+  .rsub-panel[hidden]{display:none}
+  /* confidence chips for the Risk & taxes sub-tab */
+  .rx-conf{display:inline-flex;align-items:center;font-family:var(--mono);font-size:8.5px;font-weight:800;
+    letter-spacing:.06em;padding:1px 6px;border-radius:999px;border:1px solid currentColor;margin-left:6px;
+    vertical-align:middle}
+  .rx-conf.hi{color:var(--good)} .rx-conf.med{color:var(--warn)} .rx-conf.lo{color:var(--bad)}
+  .rx-conf.pro{color:var(--pamp)}
+  .rx-note{border:1px solid var(--line2);background:var(--bg2);border-radius:11px;padding:11px 13px;
+    margin:2px 0 4px;font-size:12px;color:var(--ink-soft);line-height:1.5}
+  .rx-note.warn{border-color:var(--warn);background:var(--warn-bg)}
+  .rx-note b{color:var(--ink);font-weight:660}
+  @media (max-width:560px){
+    .rsub-bar{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
+    .rsub-btn{flex:none;font-size:11.5px;padding:7px 9px}
+  }
 
   /* ---- sort bar (ported from June's call sheet so both pages sort identically) ---- */
   .jb-sortbar{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
@@ -833,12 +925,72 @@
     <button class="tabbtn" role="tab" data-tab="dash"  aria-selected="true"  id="tabBtnDash">◆ Dashboard</button>
     <button class="tabbtn" role="tab" data-tab="rules" aria-selected="false" id="tabBtnRules">📋 Rules
       <span class="tb-chip" id="tabRuleChip">—</span></button>
+    <button class="tabbtn" role="tab" data-tab="planned" aria-selected="false" id="tabBtnPlanned">🗓️ Planned</button>
     <!-- The chip rides on the TAB so the in-stock count is readable without opening
          it — same trick as the Rules tab's call-day verdict. -->
     <button class="tabbtn" role="tab" data-tab="inv" aria-selected="false" id="tabBtnInv">🏬 Warehouses
       <span class="tb-chip" id="tabInvChip">—</span></button>
     <button class="tabbtn" role="tab" data-tab="lock" aria-selected="false" id="tabBtnLock">🔒 Lock</button>
   </nav>
+
+  <!-- PLANNED TAB — the backlog. Everything designed or brainstormed but not built yet.
+       Deliberately its OWN tab, not under Rules (Medi 2026-08-19). Append items here as
+       they come in; each is a .rx-srow with a status chip + a captured date. -->
+  <div class="tabpanel" id="tab-planned" role="tabpanel" aria-labelledby="tabBtnPlanned" hidden>
+    <div class="rx-mhead" style="margin-top:4px">
+      <span class="em">🗓️</span>
+      <div class="tt">
+        <h4>Planned &amp; not built yet</h4>
+        <p class="md">Everything designed or brainstormed that isn't live. Tell Claude a new idea and it lands here — then gets sorted into the right group.</p>
+      </div>
+    </div>
+
+    <div class="rx-legend" style="margin-top:12px">
+      <div class="rx-lbox">
+        <h5>Status key</h5>
+        <div class="rx-key"><span class="rx-badge brainstorm"><span class="d"></span>BRAINSTORM</span> a raw idea, not scoped yet.</div>
+        <div class="rx-key"><span class="rx-badge planned"><span class="d"></span>PLANNED</span> designed, not built yet.</div>
+        <div class="rx-key"><span class="rx-badge partial"><span class="d"></span>PARTIAL</span> half-built / one step left.</div>
+        <div class="rx-key"><span class="rx-badge live"><span class="d"></span>DONE</span> shipped — moves off this list.</div>
+      </div>
+      <div class="rx-lbox">
+        <h5>How this tab works</h5>
+        <div class="rx-key">Brain-dump an idea to Claude anytime.</div>
+        <div class="rx-key">It's captured here with a date.</div>
+        <div class="rx-key">When it ships, it turns DONE, then leaves.</div>
+      </div>
+    </div>
+
+    <div class="rx-grp">
+      <h6>Warehouse automation</h6>
+      <div class="rx-srow"><span class="st partial">PARTIAL</span><span class="tx"><b>Slack → email in-stock alerts</b> — the fast restock email path. Written, but <b>not installed</b>, and the Slack source is currently dead. <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
+      <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx"><b>Live inventory database feed</b> — migration 007 is staged but never run (all 5 endpoints 404). <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
+      <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx"><b>11:00 AM second pull</b> — a second daily inventory scrape. <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
+      <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx"><b>Pull when gold enters the buy zone</b> — refresh inventory the moment it's worth buying. <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
+      <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx"><b>Pull when the Costco bar price changes</b> — catch a price move right away. <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
+      <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx"><b>PC-watcher + 30-min debounce</b> — the local script that fires the two triggers above, capped so it can't double-pull. <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
+    </div>
+
+    <div class="rx-grp">
+      <h6>Alerts &amp; engine</h6>
+      <div class="rx-srow"><span class="st partial">PARTIAL</span><span class="tx"><b>Deploy the $5-ladder + Pacific-time engine</b> — new buy-zone ladder ($25→$30→$35…), fell-out alert, and all-Pacific timestamps. Needs one paste into Apps Script. <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
+    </div>
+
+    <div class="rx-grp">
+      <h6>Chart &amp; dashboard</h6>
+      <div class="rx-srow"><span class="st partial">PARTIAL</span><span class="tx"><b>Un-squish the price chart</b> — give the price line the full height (Option A/B/C being chosen now). <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
+    </div>
+
+    <div class="rx-grp">
+      <h6>Brainstorm inbox</h6>
+      <div class="rx-srow"><span class="st brainstorm">IDEA</span><span class="tx"><b>Futures market for sell-timing</b> — use gold futures (bets on where gold's price is headed) as an early signal for the best moment to sell. <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
+      <div class="rx-srow"><span class="st brainstorm">IDEA</span><span class="tx"><b>Auto-caller agent for the warehouses</b> — an AI agent that phones the Costco warehouses itself for stock &amp; prices, instead of June calling. <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
+      <div class="rx-srow"><span class="st brainstorm">IDEA</span><span class="tx"><b>Lock rule for the 2–3pm pause</b> — decide what the 15-Minute Machine should do during the afternoon market pause (define the rule for that dead hour). <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
+      <div class="rx-srow"><span class="st brainstorm">IDEA</span><span class="tx"><b>Elemetal email template</b> — a ready-made email to send Elemetal when forwarding a locked price. <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
+      <div class="rx-srow"><span class="st brainstorm">IDEA</span><span class="tx"><b>On-page accounting</b> — track each gold buy and its profit right on the dashboard (a simple built-in ledger). <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
+      <div class="rx-srow"><span class="st brainstorm">IDEA</span><span class="tx"><b>Connect Sabz (your finance app)</b> — link it in so it shows how much card credit you have left to spend. <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
+    </div>
+  </div>
 
   <!-- LOCK TAB — the 15-Minute Machine phone control, embedded from the standalone lock.html
        (its own Supabase client + anon key), so it stays byte-independent from this dashboard. -->
@@ -1034,163 +1186,496 @@
     </div>
 
 
-      <!-- today's verdict, the one thing worth seeing at a glance -->
-      <div class="rb-verdict" id="rbVerdict">
-        <div class="rb-v-day" id="rbVDay">—</div>
-        <div class="rb-v-txt" id="rbVTxt">—</div>
+      <!-- ===== color + status legend (shared — explains every sub-tab) ===== -->
+      <div class="rx-legend">
+        <div class="rx-lbox">
+          <h5>What the colors mean</h5>
+          <div class="rx-key"><span class="rx-sw go"></span><b>Green</b> — a GO. Do this.</div>
+          <div class="rx-key"><span class="rx-sw stop"></span><b>Red</b> — STOP / danger. Don't.</div>
+          <div class="rx-key"><span class="rx-sw check"></span><b>Yellow</b> — check something first.</div>
+          <div class="rx-key"><span class="rx-sw why"></span><b>Gray</b> — the reason (small print).</div>
+        </div>
+        <div class="rx-lbox">
+          <h5>Is the rule actually running?</h5>
+          <div class="rx-key"><span class="rx-badge live"><span class="d"></span>LIVE</span> running by itself now.</div>
+          <div class="rx-key"><span class="rx-badge partial"><span class="d"></span>PARTIAL</span> half-built / needs a step.</div>
+          <div class="rx-key"><span class="rx-badge planned"><span class="d"></span>PLANNED</span> designed, not built yet.</div>
+        </div>
       </div>
 
-      <div class="rb-group">
-        <div class="rb-h">Call days</div>
-        <div class="rb-rule rb-key">
-          <span class="rb-n">1</span>
-          <div>
-            <b>June only calls on restock days.</b>
-            <span class="rb-why">Calling on a non-restock day burns her time on numbers that
-              haven't moved since the last round.</span>
+      <!-- ===== SUB-TAB BAR — one machine per tab. Scoped switcher (showRuleSub) keeps it
+           from fighting the top .tabbtn bar; last choice remembered in localStorage. ===== -->
+      <nav class="rsub-bar" id="rsubBar" role="tablist" aria-label="Rule machines">
+        <button class="rsub-btn" role="tab" data-rsub="trade"       aria-selected="true">🟢 Trade</button>
+        <button class="rsub-btn" role="tab" data-rsub="june"        aria-selected="false">📞 June call sheet</button>
+        <button class="rsub-btn" role="tab" data-rsub="warehouse"   aria-selected="false">📦 Warehouse</button>
+        <button class="rsub-btn" role="tab" data-rsub="alerts"      aria-selected="false">📧 Alerts</button>
+        <button class="rsub-btn" role="tab" data-rsub="lock"        aria-selected="false">🔒 Lock</button>
+        <button class="rsub-btn" role="tab" data-rsub="cards"       aria-selected="false">💳 Cards &amp; rewards</button>
+        <button class="rsub-btn" role="tab" data-rsub="buyers"      aria-selected="false">💰 Buyers</button>
+        <button class="rsub-btn" role="tab" data-rsub="feed"        aria-selected="false">📊 Feed &amp; data</button>
+        <button class="rsub-btn" role="tab" data-rsub="risk"        aria-selected="false">⚠️ Risk &amp; taxes</button>
+        <button class="rsub-btn" role="tab" data-rsub="memberships" aria-selected="false">💳 Memberships</button>
+      </nav>
+
+      <!-- ================= 1 · TRADE ================= -->
+      <div class="rsub-panel" id="rsub-trade" role="tabpanel">
+        <!-- today's verdict lives here; renderRuleDay() still targets #rbVerdict by id -->
+        <div class="rb-verdict" id="rbVerdict">
+          <div class="rb-v-day" id="rbVDay">TODAY</div>
+          <div class="rb-v-txt" id="rbVTxt">Today's call-day verdict — whether it's a day to call June — appears here once the page loads live data.</div>
+        </div>
+
+        <div class="rx-machine">
+          <div class="rx-mhead">
+            <span class="em">🟢</span>
+            <div class="tt">
+              <h4>The Trade</h4>
+              <p class="md">Buy PAMP gold bars at Costco on a rewards card, sell them same-day to Elemetal, keep the spread plus every reward.</p>
+              <span class="rx-badge live"><span class="d"></span>LIVE</span>
+            </div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>The whole trade in one line</h6>
+            <div class="rx-flow">
+              <div class="rx-node why-only nl"><div class="rx-cond"><b>Buy</b> at Costco (bar price) → <b>sell</b> same day to Elemetal (spot − a small discount) → keep the <b>spread + card reward + Costco 2%.</b> The rewards are the real engine, not the metal spread.</div></div>
+            </div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>What price to use (the BUY price)</h6>
+            <div class="rx-flow">
+              <div class="rx-node go nl"><div class="rx-cond"><span class="ic">✓</span>Setting BUY<span class="tag">R7</span></div>
+                <div class="rx-act">BUY = <b>June's price</b> OR <b>(online price − $10)</b> — whichever was updated <b>more recently.</b></div>
+                <div class="rx-why">Recency wins: a day-old register quote must not outrank a Costco price refreshed this hour. Out-of-stock does NOT erase it — the last price stands until June or a newer lookup replaces it (or the 2-day expiry retires it).</div></div>
+            </div>
+          </div>
+
+          <div class="rx-note">Where the numbers come from: call days &amp; June's quote → <b>📞 June call sheet</b> · the Costco feed, staleness &amp; the "premium" trap → <b>📊 Feed &amp; data</b> · what Elemetal pays → <b>💰 Buyers</b> · which card to run → <b>💳 Cards &amp; rewards</b>.</div>
+        </div>
+      </div>
+
+      <!-- ================= 2 · JUNE CALL SHEET ================= -->
+      <div class="rsub-panel" id="rsub-june" role="tabpanel" hidden>
+        <div class="rx-machine" style="margin-top:4px">
+          <div class="rx-mhead">
+            <span class="em">📞</span>
+            <div class="tt">
+              <h4>June call sheet</h4>
+              <p class="md">When to call June, in what order, and how far to trust her quote.</p>
+              <span class="rx-badge live"><span class="d"></span>LIVE</span>
+            </div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>When to call June for prices</h6>
+            <div class="rx-flow">
+              <div class="rx-node check"><div class="rx-cond"><span class="ic">?</span>Is today a restock day?<span class="tag">R1</span></div>
+                <div class="rx-act">Only call June on restock days.</div>
+                <div class="rx-why">A non-restock day means her numbers haven't moved since last time — you'd waste her time.</div></div>
+              <div class="rx-node go"><div class="rx-cond"><span class="ic">✓</span>It's Wednesday<span class="tag">R2</span></div>
+                <div class="rx-act">Always a restock day → <b>call.</b></div></div>
+              <div class="rx-node check"><div class="rx-cond"><span class="ic">?</span>It's Thursday<span class="tag">R3</span></div>
+                <div class="rx-act">Sometimes a restock. Call <b>only if</b> Wednesday came up short.</div></div>
+              <div class="rx-node go nl"><div class="rx-cond"><span class="ic">✓</span>Working the list<span class="tag">R4</span></div>
+                <div class="rx-act">Call in <b>tier order — tier 1 first.</b> (Tier 4 hidden by default.)</div></div>
+            </div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>Trusting her quote</h6>
+            <div class="rx-flow">
+              <div class="rx-node check nl"><div class="rx-cond"><span class="ic">?</span>June vs Costco disagree<span class="tag">R10</span></div>
+                <div class="rx-act">Only flag it <b>if June posted a price TODAY.</b></div>
+                <div class="rx-why">Her price freezes when she calls; spot keeps moving. Comparing yesterday's shelf price to a live price just measures the overnight market — and sends her re-checking a store that was never wrong.</div></div>
+            </div>
           </div>
         </div>
-        <div class="rb-rule">
-          <span class="rb-n">2</span>
-          <div><b>Restock is always Wednesday.</b>
-            <span class="rb-why">Treat Wednesday as a guaranteed call day.</span></div>
-        </div>
-        <div class="rb-rule">
-          <span class="rb-n">3</span>
-          <div><b>Restock is sometimes Thursday.</b>
-            <span class="rb-why">Not guaranteed. Worth a round if Wednesday came up short.</span></div>
-        </div>
-        <div class="rb-rule">
-          <span class="rb-n">4</span>
-          <div><b>Work the tiers in order — tier 1 first.</b>
-            <span class="rb-why">The list is stored in tier order, so "next to call" already
-              follows it. Tier 4 is hidden by default.</span></div>
+      </div>
+
+      <!-- ================= 3 · WAREHOUSE ================= -->
+      <div class="rsub-panel" id="rsub-warehouse" role="tabpanel" hidden>
+        <div class="rx-machine" style="margin-top:4px">
+          <div class="rx-mhead">
+            <span class="em">📦</span>
+            <div class="tt">
+              <h4>The Warehouse</h4>
+              <p class="md">Refreshing how many bars each Costco has, and what counts as real stock. Most of this is planned, not running.</p>
+              <span class="rx-badge partial"><span class="d"></span>PARTIAL — 1 of many live</span>
+            </div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>What counts as "in stock"</h6>
+            <div class="rx-flow">
+              <div class="rx-node stop"><div class="rx-cond"><span class="ic">✕</span>Count older than 2 days<span class="tag">R5</span></div>
+                <div class="rx-act">Does <b>not</b> count. Ignore it in the bar totals.</div></div>
+              <div class="rx-node stop nl"><div class="rx-cond"><span class="ic">✕</span>"In stock" with no number<span class="tag">R6</span></div>
+                <div class="rx-act">Not real stock. Never let it inflate the total.</div></div>
+            </div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>The one rule that runs</h6>
+            <div class="rx-flow">
+              <div class="rx-node go nl"><div class="rx-cond"><span class="ic">✓</span>Every day at 10:00 AM</div>
+                <div class="rx-act">Scrapes the PAMP Lady Fortuna bar <span class="rx-pill">SKU 1943308</span> across <b>11 zip codes</b> → updates the dashboard. It <b>never</b> touches the BUY price (June owns that).</div>
+                <div class="rx-why">Safety floor: if fewer than 38 stores answer, the read is treated as broken — not as a sell-out.</div></div>
+            </div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>Everything else — honest status</h6>
+            <div class="rx-srow"><span class="st live">LIVE</span><span class="tx"><b>10:00 AM</b> daily inventory pull</span></div>
+            <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx"><b>11:00 AM</b> second pull</span></div>
+            <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx">Pull when gold <b>enters the buy zone</b></span></div>
+            <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx">Pull when the <b>bar price changes</b></span></div>
+            <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx"><b>PC-watcher</b> + <b>30-min debounce</b> (so triggers can't double-pull)</span></div>
+            <div class="rx-srow"><span class="st partial">PARTIAL</span><span class="tx"><b>Slack → email</b> in-stock alerts — written, <b>not installed</b>, and the Slack source is currently dead</span></div>
+            <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx"><b>Live database feed</b> (migration 007 staged, never run — all 5 endpoints 404)</span></div>
+          </div>
         </div>
       </div>
 
-      <div class="rb-group">
-        <div class="rb-h">What counts as stock</div>
-        <div class="rb-rule">
-          <span class="rb-n">5</span>
-          <div><b>A count older than 2 days does not count.</b>
-            <span class="rb-why">Stale rows are shown, but excluded from the bar totals and
-              from "most bars first".</span></div>
-        </div>
-        <div class="rb-rule">
-          <span class="rb-n">6</span>
-          <div><b>"In stock" with no number is not stock.</b>
-            <span class="rb-why">It is counted separately as "yes, no count" so it can never
-              inflate the bar total.</span></div>
+      <!-- ================= 4 · ALERTS ================= -->
+      <div class="rsub-panel" id="rsub-alerts" role="tabpanel" hidden>
+        <div class="rx-machine" style="margin-top:4px">
+          <div class="rx-mhead">
+            <span class="em">📧</span>
+            <div class="tt">
+              <h4>The Alerts</h4>
+              <p class="md">The emails the Gold Alert Engine sends you. All times now in Pacific.</p>
+              <span class="rx-badge partial"><span class="d"></span>PARTIAL — needs the new code pasted in</span>
+            </div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>The buy-zone profit ladder</h6>
+            <div class="rx-flow">
+              <div class="rx-node go"><div class="rx-cond"><span class="ic">✓</span>Profit hits $25 / bar</div>
+                <div class="rx-act"><b>"ENTERED THE ZONE"</b> email → you + Hamed. <span class="rx-why" style="border:0;padding:0;margin-top:4px">"Profit per bar" = the $ you clear on one bar with the 2.5% card.</span></div></div>
+              <div class="rx-node go"><div class="rx-cond"><span class="ic">✓</span>Each new +$5 step ($30, $35, $40…)</div>
+                <div class="rx-act"><b>"CLIMB"</b> email → you + Hamed. Fires <b>once per step.</b></div>
+                <div class="rx-why">Wiggling around a step (e.g. $30 ↔ $33) never re-fires — no spam.</div></div>
+              <div class="rx-node check"><div class="rx-cond"><span class="ic">?</span>Profit dips to $22 (small dip)</div>
+                <div class="rx-act">Stay quiet. A tiny dip is not a "fell out."</div></div>
+              <div class="rx-node stop"><div class="rx-cond"><span class="ic">✕</span>Profit drops under $20 ($5 below entry)</div>
+                <div class="rx-act"><b>"FELL OUT"</b> email → you + Hamed. Then it re-arms.</div>
+                <div class="rx-why">$5 of grace below the $25 entry means one bad tick can't false-alarm you.</div></div>
+              <div class="rx-node go nl"><div class="rx-cond"><span class="ic">↻</span>Climbs back to $25</div>
+                <div class="rx-act">Fresh <b>"ENTERED"</b> email — the ladder starts over.</div></div>
+            </div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>The Costco bar watcher</h6>
+            <div class="rx-flow">
+              <div class="rx-node go"><div class="rx-cond"><span class="ic">✓</span>Bar price moves or stock flips</div>
+                <div class="rx-act">Email → you + Hamed (price up/down, or back-in-stock / out-of-stock).</div></div>
+              <div class="rx-node stop"><div class="rx-cond"><span class="ic">!</span>Feed says in-stock but someone tapped ✗</div>
+                <div class="rx-act"><b>"FALSE ALARM"</b> email → you + Hamed, and it mutes the "back in stock" cheer.</div></div>
+              <div class="rx-node check nl"><div class="rx-cond"><span class="ic">?</span>Spot price hasn't updated in 1 hour</div>
+                <div class="rx-act"><b>"FEED STALE"</b> email → <b>you only</b> (it's plumbing, nothing Hamed can fix).</div></div>
+            </div>
+          </div>
+
+          <div class="rx-srow"><span class="st partial">TO DO</span><span class="tx">Paste the updated engine into <b>Apps Script</b> to switch the ladder + Pacific-time on. File: <span class="rx-pill">Gold Alert Engine — AppsScript.gs</span></span></div>
         </div>
       </div>
 
-      <div class="rb-group">
-        <div class="rb-h">Pricing</div>
-        <div class="rb-rule">
-          <span class="rb-n">7</span>
-          <div><b>BUY is only ever June's price, or the online price minus $10 — whichever
-              was updated more recently.</b>
-            <span class="rb-why">Recency picks the basis; a day-old register quote must not
-              outrank a Costco price refreshed this hour. Enforced in code by checkBuyPrice.
-              Anything else is a bug and paints a red banner. Out of stock does NOT silence
-              the listing (2026-08-01): the last listed price stands until June or a newer
-              lookup replaces it — only the 2-day expiry retires it.</span></div>
-        </div>
-        <div class="rb-rule">
-          <span class="rb-n">8</span>
-          <div><b>"Premium" means two different things — check the units.</b>
-            <span class="rb-why">gold_prices.premium is a PERCENT over spot. The dashboard's
-              onlinePrem is DOLLARS. Mixing them once invented a $7.10 gap with no error.</span></div>
-        </div>
-        <div class="rb-rule rb-key">
-          <span class="rb-n">9</span>
-          <div><b>Always price off the most current gold spot.</b>
-            <span class="rb-why">Spot is re-pulled on a timer and stamped with the time it was
-              read. If the stamp is not recent, hit PULL before trusting a single figure on
-              this page — every profit number is spot minus a discount.</span></div>
-        </div>
-        <div class="rb-rule rb-key">
-          <span class="rb-n">10</span>
-          <div><b>Only flag a June-vs-Costco conflict if June posted a price TODAY.</b>
-            <span class="rb-why">Her price is frozen at the moment she called; spot keeps
-              moving. Comparing yesterday's shelf price against a live implied price mostly
-              measures the overnight market, not a real disagreement — and sends her
-              re-checking a store that was never wrong.</span></div>
-        </div>
-        <div class="rb-rule rb-warn">
-          <span class="rb-n">11</span>
-          <div><b>Elemetal's SHEET pays spot − $20 Pamp / − $30 any-brand — but calling in
-              gets +$10 over the sheet, so the engine sells at spot − $10 / − $20.</b>
-            <span class="rb-why">The +$10 comes from phoning the desk and the working
-              relationship — the emailed sheet is the walk-in rate. Condition: the Pamp rate
-              needs Veriscan + green foot, or the bar counts as any-brand. Re-verify the sheet
-              each morning — the rate is typed in, not fetched, and the +$10 is a habit, not
-              a contract.</span></div>
+      <!-- ================= 5 · LOCK ================= -->
+      <div class="rsub-panel" id="rsub-lock" role="tabpanel" hidden>
+        <div class="rx-machine" style="margin-top:4px">
+          <div class="rx-mhead">
+            <span class="em">🔒</span>
+            <div class="tt">
+              <h4>The Lock</h4>
+              <p class="md">The "15-Minute Machine." Rides the price up, catches the best screenshot to forward to Elemetal.</p>
+              <span class="rx-badge live"><span class="d"></span>LIVE</span>
+            </div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>How it plays out</h6>
+            <div class="rx-flow">
+              <div class="rx-node go"><div class="rx-cond"><span class="ic">▶</span>You tap START on your phone</div>
+                <div class="rx-act">It snaps the current price as <b>the HIGH</b> and starts a <b>15-minute clock.</b></div></div>
+              <span class="rx-lab">Phase 1 · Grace (first 15 min)</span>
+              <div class="rx-branch">
+                <div class="rx-node go"><div class="rx-cond"><span class="ic">✓</span>A new higher price</div>
+                  <div class="rx-act">Restarts the 15-min clock. Still grace.</div></div>
+                <div class="rx-node stop"><div class="rx-cond"><span class="ic">✕</span>Any dip — even big</div>
+                  <div class="rx-act">Ignored. <b>Nothing sends</b> during grace.</div></div>
+              </div>
+              <div class="rx-node check"><div class="rx-cond"><span class="ic">?</span>15 min pass with no new high</div>
+                <div class="rx-act">→ Enters <b>Phase 2 · Sudden Death.</b></div></div>
+              <span class="rx-lab">Phase 2 · Sudden Death (no timer)</span>
+              <div class="rx-branch">
+                <div class="rx-node go"><div class="rx-cond"><span class="ic">✓</span>Still within $10 of the high</div>
+                  <div class="rx-act">Keep watching. Extends forever.</div></div>
+                <div class="rx-node stop"><div class="rx-cond"><span class="ic">🔒</span>Drops more than $10 below the high</div>
+                  <div class="rx-act"><b>LOCK &amp; SEND</b> — but only after <b>2 reads in a row</b> confirm it.</div></div>
+              </div>
+              <div class="rx-node go nl"><div class="rx-cond"><span class="ic">↑</span>A new high at any time</div>
+                <div class="rx-act">Throws it back to Phase 1 grace.</div></div>
+            </div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>What the email does</h6>
+            <div class="rx-flow">
+              <div class="rx-node go"><div class="rx-cond"><span class="ic">✉</span>When it locks</div>
+                <div class="rx-act">You get <b>"🔒 Alchemy LOCK $X — forward before [time]"</b> with 1–4 screenshots.</div></div>
+              <div class="rx-node check"><div class="rx-cond"><span class="ic">?</span>Which screenshot to send</div>
+                <div class="rx-act">Forward the <b>highest-priced one whose "forward before" time hasn't passed.</b> You send it to Elemetal yourself.</div>
+                <div class="rx-why">Elemetal only accepts a shot under 15 min old; the machine only sends ones under 14 min (a 1-minute cushion). The machine never emails Elemetal.</div></div>
+              <div class="rx-node why-only nl"><div class="rx-cond"><b>Recipients:</b> you only. Hamed is added only if you switch him on.</div></div>
+            </div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>Safety rails</h6>
+            <div class="rx-flow">
+              <div class="rx-node stop"><div class="rx-cond"><span class="ic">!</span>The page shows a frozen / old timestamp</div>
+                <div class="rx-act">Throw the reading away. <b>Never</b> start the clock or lock on a stale feed.</div>
+                <div class="rx-why">Aug 18 bug: a 100-min-stale first read anchored the clock in the past → instant false lock + email to Hamed. This guard exists to stop exactly that.</div></div>
+              <div class="rx-node why-only nl"><div class="rx-cond">Reads the Elemetal page every <b>15 seconds</b>, only during market hours (Sun 5pm ET → Fri). Two watchers can never run at once.</div></div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="rb-group">
-        <div class="rb-h">Cards</div>
-        <div class="rb-rule">
-          <span class="rb-n">12</span>
-          <div><b>When Costco.com shows sold out, online-only cards leave the math.</b>
-            <span class="rb-why">Mastercard (Citi Double Cash) works only on Costco.com, never
-              at the register — with the listing sold out there is nothing it can buy. Its
-              checkbox unticks itself and buying power drops it; the tick comes back on its
-              own the moment stock returns. Your saved on/off choice is never overwritten.
-              A flagged Costco mismatch counts as sold out here (rule 16).</span></div>
+      <!-- ================= 6 · CARDS & REWARDS ================= -->
+      <div class="rsub-panel" id="rsub-cards" role="tabpanel" hidden>
+        <div class="rx-machine" style="margin-top:4px">
+          <div class="rx-mhead">
+            <span class="em">💳</span>
+            <div class="tt">
+              <h4>Cards &amp; rewards</h4>
+              <p class="md">Which card to run, how often, and the reward caps that decide it.</p>
+              <span class="rx-badge live"><span class="d"></span>LIVE</span>
+            </div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>Which card to run</h6>
+            <div class="rx-flow">
+              <div class="rx-node stop"><div class="rx-cond"><span class="ic">✕</span>Costco.com shows sold out<span class="tag">R12</span></div>
+                <div class="rx-act">Online-only cards (Citi Double Cash / Mastercard) <b>leave the math</b> automatically — they can only buy on Costco.com.</div>
+                <div class="rx-why">The checkbox unticks itself and re-ticks when stock returns. Your saved on/off choice is never overwritten.</div></div>
+              <div class="rx-node check nl"><div class="rx-cond"><span class="ic">?</span>Personal vs business<span class="tag">CC7</span></div>
+                <div class="rx-act"><b>Personal</b> card = one full run per statement period. <b>Business</b> card = multiple runs OK.</div>
+                <div class="rx-why">The run-frequency rule comes from the card TYPE, not a per-card list — any new card inherits it.</div></div>
+            </div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>The gold card rotation</h6>
+            <div class="rx-srow"><span class="st biz">BUSINESS</span><span class="tx"><b>Citi Costco 6848</b> — Visa, in person or online. Multiple runs OK. Limit <b>$15,000.</b></span></div>
+            <div class="rx-srow"><span class="st pers">PERSONAL</span><span class="tx"><b>U.S. Bank Smartly 4037</b> — one run per statement. Limit <b>$10,000.</b> <b>4% only on the first $10k</b> of posted spend each cycle, then drops to 2% (CC5).</span></div>
+            <div class="rx-srow"><span class="st pers">PERSONAL</span><span class="tx"><b>Venmo 4334</b> — one run per statement. Limit <b>$20,000.</b></span></div>
+            <div class="rx-srow"><span class="st pers">PERSONAL</span><span class="tx"><b>Citi Double Cash 2486</b> — Mastercard = <b>ONLINE only.</b> One run per statement. Limit <b>$8,300.</b></span></div>
+            <div class="rx-srow"><span class="st unk">NOT IN</span><span class="tx"><b>Chime 5316</b> — secured, $0 credit line. <b>Not</b> part of the gold rotation.</span></div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>When a card is "ready" (CC1–CC3)</h6>
+            <div class="rx-flow">
+              <div class="rx-node check"><div class="rx-cond"><span class="ic">?</span>A card has 3 states</div>
+                <div class="rx-act"><b>In transit</b> → <b>posted</b> → <b>credit restored.</b> Don't reuse until the payment is posted <b>and</b> credit is fully back.</div>
+                <div class="rx-why">A pending payment or a temporarily higher available-credit figure is not enough — the payment can still be returned or held.</div></div>
+              <div class="rx-node go nl"><div class="rx-cond"><span class="ic">✓</span>Green "ready" needs 4 proofs</div>
+                <div class="rx-act">(1) statement period known · (2) no run already logged this period · (3) prior payment posted · (4) credit fully restored. <b>Unknown on any = NOT ready.</b></div></div>
+            </div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>Costco Executive reward math</h6>
+            <div class="rx-flow">
+              <div class="rx-node why-only nl"><div class="rx-cond">Executive earns <b>2% back</b>, capped at <b>$1,250 / year</b> per membership (≈ <b>$62,500</b> of qualifying spend). The cap resets at the <b>membership renewal date</b>, not Jan 1, and counts purchases only <b>up to 60 days before</b> renewal. A capped membership is skipped until it resets — see <b>💳 Memberships</b>.</div></div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="rb-group">
-        <div class="rb-h">Data quality (chart)</div>
-        <div class="rb-rule">
-          <span class="rb-n">13</span>
-          <div><b>The Costco line records around the clock — faint means SOLD OUT, bright
-              means buyable.</b>
-            <span class="rb-why">The listed price is real information even when nobody can
-              buy, so it stays on the chart (changed 2026-07-30; before that, sold-out hours
-              left a gap). Faint keeps "visible" and "buyable" distinct, and the engine still
-              ignores sold-out prices for BUY and the buy-zone. No data exists for sold-out
-              hours before Jul 30 — that gap is honest, not fixable.</span></div>
-        </div>
-        <div class="rb-rule">
-          <span class="rb-n">14</span>
-          <div><b>The buy-zone line ignores lone $10 spikes, and says when it's doing so.</b>
-            <span class="rb-why">A dashboard tab left open on an old build keeps writing the
-              old trigger — the line saw-toothed hundreds of times on 2026-07-30. A lone point
-              both neighbours disagree with is a stale writer, never a market move (real
-              trigger changes persist across many rows, so they survive the filter). When ≥3
-              points get filtered, the chart footer names the cause: refresh every open
-              dashboard tab.</span></div>
-        </div>
-        <div class="rb-rule">
-          <span class="rb-n">15</span>
-          <div><b>One buy-zone row per minute, shared by every open dashboard.</b>
-            <span class="rb-why">Writes use the minute as the key, so ten open tabs collapse
-              into one record instead of ten duplicates fighting. A change is written the
-              minute it happens; a flat market costs one heartbeat row per 5 minutes.</span></div>
+      <!-- ================= 7 · BUYERS ================= -->
+      <div class="rsub-panel" id="rsub-buyers" role="tabpanel" hidden>
+        <div class="rx-machine" style="margin-top:4px">
+          <div class="rx-mhead">
+            <span class="em">💰</span>
+            <div class="tt">
+              <h4>Buyers</h4>
+              <p class="md">Who buys the gold and exactly what they pay.</p>
+              <span class="rx-badge live"><span class="d"></span>LIVE</span>
+            </div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>What Elemetal pays</h6>
+            <div class="rx-flow">
+              <div class="rx-node go"><div class="rx-cond"><span class="ic">✓</span>The sell price<span class="tag">R11</span></div>
+                <div class="rx-act"><b>Pamp = spot − $10.</b> Any other brand = <b>spot − $20.</b></div>
+                <div class="rx-why">The emailed sheet is spot −$20 / −$30 (walk-in). Calling the desk adds +$10. Re-verify the sheet each morning — the +$10 is a habit, not a contract.</div></div>
+              <div class="rx-node check nl"><div class="rx-cond"><span class="ic">?</span>Getting the Pamp rate</div>
+                <div class="rx-act">The bar must pass <b>Veriscan</b> and have the <b>green foot.</b> Otherwise it's paid as any-brand (spot − $20).</div></div>
+            </div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>Other buyers</h6>
+            <div class="rx-flow">
+              <div class="rx-node why-only nl"><div class="rx-cond"><b>Elemetal is the only active buyer.</b> The Elemetal account belongs to <b>Hamed</b> — it's the sell channel, not Medi's asset. No other buyer is logged yet; add one here when it happens.</div></div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="rb-group">
-        <div class="rb-h">Stock truth</div>
-        <div class="rb-rule rb-key">
-          <span class="rb-n">16</span>
-          <div><b>"IN STOCK" is the scraper's claim, not Costco's — one click checks the
-              referee, and a mismatch is remembered.</b>
-            <span class="rb-why">Proven 2026-08-01: the feed said the Rand bar (item 1943085)
-              was in stock at $4,109.99 while Costco.com itself said "product not available" —
-              the green badge, the Mastercard unlock (rule 12) and the restock email were all
-              wrong for hours. No robot can check for us: Costco's bot-wall blocks every
-              server and headless client tested (curl, PowerShell, headless Chrome), and gold
-              is excluded from its sitemaps — only a real browser sees the truth. So the badge
-              on the shared page carries a one-click "Costco ↗" link, and a ✗ click records
-              the mismatch for everyone: the badge turns amber "feed: in · costco: no", the
-              Mastercard stays locked, and restock emails become a false-alarm notice instead.
-              The flag clears on its own when the feed concedes (goes out of stock), when a
-              newer ✓ overrides it, or after 6 hours. Unchecked stock stays green — the flag
-              exists to remember a disproven claim, not to distrust every restock.</span></div>
+      <!-- ================= 8 · FEED & DATA ================= -->
+      <div class="rsub-panel" id="rsub-feed" role="tabpanel" hidden>
+        <div class="rx-machine" style="margin-top:4px">
+          <div class="rx-mhead">
+            <span class="em">📊</span>
+            <div class="tt">
+              <h4>Feed &amp; data</h4>
+              <p class="md">Trusting the numbers: spot freshness, the "premium" trap, the stock referee, and the chart's small print.</p>
+              <span class="rx-badge live"><span class="d"></span>LIVE</span>
+            </div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>Spot freshness &amp; the "premium" trap</h6>
+            <div class="rx-flow">
+              <div class="rx-node check"><div class="rx-cond"><span class="ic">?</span>Spot timestamp looks old<span class="tag">R9</span></div>
+                <div class="rx-act">Hit <b>PULL</b> before trusting any number — every profit figure is spot minus a discount.</div></div>
+              <div class="rx-node stop nl"><div class="rx-cond"><span class="ic">!</span>The word "premium"<span class="tag">R8</span></div>
+                <div class="rx-act">Two meanings — check the units. Feed premium = <b>percent.</b> Dashboard premium = <b>dollars.</b></div>
+                <div class="rx-why">Mixing them once invented a fake $7.10 gap with no error shown.</div></div>
+            </div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>The stock referee</h6>
+            <div class="rx-flow">
+              <div class="rx-node check nl"><div class="rx-cond"><span class="ic">?</span>Feed says "IN STOCK"<span class="tag">R16</span></div>
+                <div class="rx-act">That's the scraper's <b>claim</b>, not Costco's. Tap <b>"Costco ↗"</b> to check the referee.</div>
+                <div class="rx-why">The feed has lied (Aug 1): said a bar was in stock while Costco.com said "unavailable." If Costco disagrees, tap ✗ — remembered as a false alarm for 6 hours, keeps the Mastercard locked.</div></div>
+            </div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>Trusting the chart (small print)</h6>
+            <div class="rx-flow">
+              <div class="rx-node why-only"><div class="rx-cond">Costco line <b>faint = sold out</b>, <b>bright = buyable</b> — the price still records around the clock. <span class="tag">R13</span></div></div>
+              <div class="rx-node why-only nl"><div class="rx-cond">The buy-zone line <b>ignores lone $10 spikes</b> (a stale open tab writing old data) and says so when it filters ≥3 points. One row per minute, shared by all tabs. <span class="tag">R14–15</span></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= 9 · RISK & TAXES ================= -->
+      <div class="rsub-panel" id="rsub-risk" role="tabpanel" hidden>
+        <div class="rx-machine" style="margin-top:4px">
+          <div class="rx-mhead">
+            <span class="em">⚠️</span>
+            <div class="tt">
+              <h4>Risk &amp; taxes</h4>
+              <p class="md">The honest downside. Read this before scaling up.</p>
+              <span class="rx-badge partial"><span class="d"></span>INFO ONLY</span>
+            </div>
+          </div>
+
+          <div class="rx-note warn"><b>Not tax or legal advice.</b> General info compiled 2026 from public sources (IRS.gov, law firms, finance sites). Rules change and your situation is specific — <b>confirm anything that matters with a CPA or attorney.</b><br>Chips: <span class="rx-conf hi">HIGH</span> well-established · <span class="rx-conf med">MED</span> generally true, nuanced · <span class="rx-conf lo">LOW</span> varies / uncertain · <span class="rx-conf pro">ASK A PRO</span> get it confirmed for your case.</div>
+
+          <div class="rx-grp">
+            <h6>1 · Tax on selling the gold</h6>
+            <div class="rx-flow">
+              <div class="rx-node check"><div class="rx-cond"><span class="ic">?</span>A fast flip is still a taxable gain<span class="rx-conf hi">HIGH</span></div>
+                <div class="rx-act">Held <b>1 year or less → taxed as ordinary income</b> (10–37%). There is no "too short to count" exemption.</div></div>
+              <div class="rx-node why-only"><div class="rx-cond">Gold bullion is a <b>"collectible."</b> Held over a year, long-term gains cap at <b>28%</b> (a ceiling, not a flat rate). <span class="rx-conf hi">HIGH</span></div></div>
+              <div class="rx-node stop nl"><div class="rx-cond"><span class="ic">!</span>High-volume flipping may make you a "dealer"<span class="rx-conf pro">ASK A PRO</span></div>
+                <div class="rx-act">A profit-motive flipping operation can be treated as a <b>trade/business</b> (inventory + self-employment tax) — a materially different tax picture. High earners may also owe the <b>3.8% NIIT.</b></div></div>
+            </div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>2 · Dealer reporting (1099-B)</h6>
+            <div class="rx-flow">
+              <div class="rx-node go"><div class="rx-cond"><span class="ic">✓</span>A single 1-oz PAMP bar usually triggers NO 1099-B<span class="rx-conf med">MED</span></div>
+                <div class="rx-act">Dealer buy-back reporting generally starts at <b>1 kilo (32.15 oz) or more</b> of qualifying bars in one transaction.</div></div>
+              <div class="rx-node stop nl"><div class="rx-cond"><span class="ic">!</span>No 1099-B does NOT mean tax-free<span class="rx-conf hi">HIGH</span></div>
+                <div class="rx-act">You owe tax on the gain <b>whether or not</b> a form is issued. This is where people get caught.</div></div>
+            </div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>3 · $10,000 cash reporting (Form 8300)</h6>
+            <div class="rx-flow">
+              <div class="rx-node go nl"><div class="rx-cond"><span class="ic">✓</span>Card &amp; wire/ACH payments are NOT "cash"<span class="rx-conf hi">HIGH</span></div>
+                <div class="rx-act">The over-$10,000 rule covers physical currency + cashier's checks / money orders. <b>Credit cards, wires and ACH are excluded</b> (the bank already records them).</div></div>
+            </div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>4 · Credit-card shutdown risk</h6>
+            <div class="rx-flow">
+              <div class="rx-node stop"><div class="rx-cond"><span class="ic">!</span>Buying to resell for rewards breaches most card terms<span class="rx-conf med">MED</span></div>
+                <div class="rx-act">"Manufactured spend" generally violates the cardholder agreement — rewards are meant to come from ordinary consumer spending.</div></div>
+              <div class="rx-node stop nl"><div class="rx-cond"><span class="ic">!</span>The risk is the issuer's discretion, not the law<span class="rx-conf lo">LOW</span></div>
+                <div class="rx-act">They can <b>close every account</b>, <b>claw back points/bonuses</b> (even after transfer), and <b>blacklist</b> future applications. Chase is described as zero-tolerance. Not a crime — a breach of contract with private consequences.</div></div>
+            </div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>5 · Costco resale terms</h6>
+            <div class="rx-flow">
+              <div class="rx-node check"><div class="rx-cond"><span class="ic">?</span>Buying for resale is conditioned<span class="rx-conf med">MED</span></div>
+                <div class="rx-act">Members buying for resale are supposed to have a <b>resale license on file</b> and notify the cashier.</div></div>
+              <div class="rx-node stop nl"><div class="rx-cond"><span class="ic">!</span>Membership is "revocable without cause"<span class="rx-conf hi">HIGH</span></div>
+                <div class="rx-act">Costco can cancel any membership at any time. Practical risk: <b>losing the buying channel.</b> Keep purchase records.</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= 10 · MEMBERSHIPS ================= -->
+      <div class="rsub-panel" id="rsub-memberships" role="tabpanel" hidden>
+        <div class="rx-machine" style="margin-top:4px">
+          <div class="rx-mhead">
+            <span class="em">💳</span>
+            <div class="tt">
+              <h4>Memberships</h4>
+              <p class="md">The 5 Costco memberships and how much 2% reward room each has before the $1,250 cap.</p>
+              <span class="rx-badge partial"><span class="d"></span>SNAPSHOT · 2026-07-30</span>
+            </div>
+          </div>
+
+          <div class="rx-note">A capped membership can't earn another cent this reward year, so it's skipped until it resets. <b>Room</b> = reward $ left before the $1,250 cap. A <b>live</b> version (auto-reading each balance) is planned — see the <b>🗓️ Planned</b> tab.</div>
+
+          <div class="rx-grp">
+            <h6>Cap board — room before $1,250</h6>
+            <div class="rx-srow"><span class="st open">OPEN</span><span class="tx"><b>#3 Adibs Vintage Rugs</b> — $826 earned · exp 07/31/2027 · <b>the only one with capacity</b></span><span class="rx-room">$424 room</span></div>
+            <div class="rx-srow"><span class="st cap">CAPPED</span><span class="tx"><b>#1 Thenatanzi Photography</b> — exp 05/31/2027</span><span class="rx-room cap">$0 room</span></div>
+            <div class="rx-srow"><span class="st cap">CAPPED</span><span class="tx"><b>#2 Gold Star Executive</b> — exp 05/31/2027</span><span class="rx-room cap">$0 room</span></div>
+            <div class="rx-srow"><span class="st cap">CAPPED</span><span class="tx"><b>#4 Adibs Rug Cleaning</b> — exp 06/30/2027</span><span class="rx-room cap">$0 room</span></div>
+            <div class="rx-srow"><span class="st unk">NEVER READ</span><span class="tx"><b>#5 Alef Property Mgmt</b> — auto-renews 09/01/2026</span><span class="rx-room unk">unknown</span></div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>Certificates on hand</h6>
+            <div class="rx-flow">
+              <div class="rx-node go nl"><div class="rx-cond"><span class="ic">✓</span>$5,000 in Executive certificates</div>
+                <div class="rx-act">4 × $1,250 (Gold Star, Vintage Rugs, Rug Cleaning, Alef). Spendable at Costco only — <b>not redeemable for cash</b>, not replaceable if lost.</div></div>
+            </div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>Before spending the $424</h6>
+            <div class="rx-flow">
+              <div class="rx-node check nl"><div class="rx-cond"><span class="ic">?</span>Exact cap-reset date is unconfirmed</div>
+                <div class="rx-act">Vintage Rugs is renewed through <b>07/31/2027</b> and reads <b>$826 / $424 room.</b> But the reward-YEAR reset isn't the same date as the membership year, and Costco counts purchases only <b>up to 60 days before</b> renewal. The $424 is real — just <b>confirm it's this-year capacity with Costco before a big run.</b></div></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1392,7 +1877,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: afddb91 · built 2026-08-20 00:40 UTC</span>
+    <span id="verStamp" class="tnum">version: ab70083 · built 2026-08-20 02:50 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -2783,6 +3268,36 @@
     const b = ev.target.closest(".tabbtn");
     if(b) showTab(b.dataset.tab);
   });
+
+  /* ---- Rules SUB-TABS (scoped to #tab-rules, cannot touch the top tabs) ----
+     Mirrors showTab but only switches .rsub-panel / .rsub-btn inside the Rules panel,
+     and remembers its own choice under a DIFFERENT localStorage key so the two bars
+     never overwrite each other. */
+  const RSUB_KEY = "alchemy_rules_subtab";
+  function showRuleSub(name){
+    const wrap = $("tab-rules");
+    if(!wrap) return;
+    const btns = wrap.querySelectorAll(".rsub-btn");
+    let matched = false;
+    btns.forEach(function(b){
+      const on = b.dataset.rsub === name;
+      if(on) matched = true;
+      b.setAttribute("aria-selected", on ? "true" : "false");
+      const panel = $("rsub-" + b.dataset.rsub);
+      if(panel) panel.hidden = !on;
+    });
+    if(!matched){ showRuleSub("trade"); return; }   // stale/renamed key → fall back to Trade
+    try{ localStorage.setItem(RSUB_KEY, name); }catch(e){}
+  }
+  (function(){
+    const bar = $("rsubBar");
+    if(bar) bar.addEventListener("click", function(ev){
+      const b = ev.target.closest(".rsub-btn");
+      if(b) showRuleSub(b.dataset.rsub);
+    });
+    let init = "trade"; try{ init = localStorage.getItem(RSUB_KEY) || "trade"; }catch(e){}
+    showRuleSub(init);
+  })();
 
   function jbFullAddr(s){ return s.a+", "+s.c+", CA"+(s.z?" "+s.z:""); }
   function jbPhoneFmt(p){ return "("+p.slice(0,3)+") "+p.slice(3,6)+"-"+p.slice(6); }
@@ -5320,16 +5835,23 @@
     // that still doesn't fit is pinned to the edge with an arrow — you lose its exact position
     // but never its value, which is printed on the label anyway. Net effect: on a 1D/1W view
     // Costco usually does fit and you see the real spread; on a 5M view it correctly steps out.
-    var refs = gfhRefLines(), band0lo = lo, band0hi = hi, maxSpan = (hi - lo) / 0.35;
+    // Option D — "smart band" (Medi 2026-08-19). The PRICE line always owns the height. A
+    // reference is admitted into the frame only while it leaves the price enough room; past
+    // that it drops out and gets pinned to the edge as a labelled tag (arrow + $ + distance).
+    // The BUY ZONE gets a GENEROUS guard so its shaded band shows whenever it's reasonably
+    // near — admitted only while the price keeps >=57% of the height, so a far-off weekend
+    // trigger no longer squashes the line into a ribbon. Costco keeps its tighter 35% guard.
+    var refs = gfhRefLines(), band0lo = lo, band0hi = hi;
+    var priceSpan = hi - lo, maxSpanBuy = priceSpan / 0.57, maxSpanCostco = priceSpan / 0.35;
     function refDist(r){
       return refLo(r) > band0hi ? refLo(r) - band0hi : (refHi(r) < band0lo ? band0lo - refHi(r) : 0);
     }
     refs.slice().sort(function(a, b){ return refDist(a) - refDist(b); }).forEach(function(r){
       var nlo = Math.min(lo, refLo(r) - pd), nhi = Math.max(hi, refHi(r) + pd);
-      // The BUY ZONE is the business decision line — it is ALWAYS admitted into the frame
-      // (Medi 2026-08-01), even on a flat weekend when that squashes the price line. Costco
-      // keeps the 35% guard: informative, but not worth flattening the chart for.
-      if(r.key === "buy" || nhi - nlo <= maxSpan){ lo = nlo; hi = nhi; }
+      // Admit each line only while it keeps the price line tall enough: the buy zone gets the
+      // generous 57% guard, Costco the 35% one. A line that fails its guard is left out of the
+      // domain and pinned to the nearest edge below (off = +1/-1), band hidden, tag shown.
+      if(nhi - nlo <= (r.key === "buy" ? maxSpanBuy : maxSpanCostco)){ lo = nlo; hi = nhi; }
     });
 
     var t0 = Date.parse(pts[0].t), t1 = Date.parse(pts[pts.length - 1].t) || (t0 + 1);
@@ -5546,8 +6068,11 @@
              Math.round(o.r.v) + '</text>';
       }
       var arrow = o.off === 1 ? " ↑" : o.off === -1 ? " ↓" : "";
+      // Option D: when the buy zone is pinned off-frame its band is gone, so the tag carries
+      // the exact gap ("$NN away" = how far spot must move) — you lose position, never distance.
+      var offDist = (isBuy && o.off !== 0) ? "  $" + Math.abs(o.r.v - last).toFixed(0) + " away" : "";
       var txt = isBuy
-        ? "BUY ZONE ≥ $" + o.r.v.toFixed(2) + (o.r.live ? "  ✓ IN ZONE" : "") + arrow
+        ? "BUY ZONE ≥ $" + o.r.v.toFixed(2) + (o.r.live ? "  ✓ IN ZONE" : "") + arrow + offDist
         : "COSTCO $" + o.r.v.toFixed(2) +
           (o.r.stale ? " (" + o.r.days + "d old · engine ignoring)" : o.r.stock ? "" : " (out of stock)") + arrow;
       // Backing pill. The price line wanders straight through where these labels sit and was

@@ -494,16 +494,23 @@
     // that still doesn't fit is pinned to the edge with an arrow — you lose its exact position
     // but never its value, which is printed on the label anyway. Net effect: on a 1D/1W view
     // Costco usually does fit and you see the real spread; on a 5M view it correctly steps out.
-    var refs = gfhRefLines(), band0lo = lo, band0hi = hi, maxSpan = (hi - lo) / 0.35;
+    // Option D — "smart band" (Medi 2026-08-19). The PRICE line always owns the height. A
+    // reference is admitted into the frame only while it leaves the price enough room; past
+    // that it drops out and gets pinned to the edge as a labelled tag (arrow + $ + distance).
+    // The BUY ZONE gets a GENEROUS guard so its shaded band shows whenever it's reasonably
+    // near — admitted only while the price keeps >=57% of the height, so a far-off weekend
+    // trigger no longer squashes the line into a ribbon. Costco keeps its tighter 35% guard.
+    var refs = gfhRefLines(), band0lo = lo, band0hi = hi;
+    var priceSpan = hi - lo, maxSpanBuy = priceSpan / 0.57, maxSpanCostco = priceSpan / 0.35;
     function refDist(r){
       return refLo(r) > band0hi ? refLo(r) - band0hi : (refHi(r) < band0lo ? band0lo - refHi(r) : 0);
     }
     refs.slice().sort(function(a, b){ return refDist(a) - refDist(b); }).forEach(function(r){
       var nlo = Math.min(lo, refLo(r) - pd), nhi = Math.max(hi, refHi(r) + pd);
-      // The BUY ZONE is the business decision line — it is ALWAYS admitted into the frame
-      // (Medi 2026-08-01), even on a flat weekend when that squashes the price line. Costco
-      // keeps the 35% guard: informative, but not worth flattening the chart for.
-      if(r.key === "buy" || nhi - nlo <= maxSpan){ lo = nlo; hi = nhi; }
+      // Admit each line only while it keeps the price line tall enough: the buy zone gets the
+      // generous 57% guard, Costco the 35% one. A line that fails its guard is left out of the
+      // domain and pinned to the nearest edge below (off = +1/-1), band hidden, tag shown.
+      if(nhi - nlo <= (r.key === "buy" ? maxSpanBuy : maxSpanCostco)){ lo = nlo; hi = nhi; }
     });
 
     var t0 = Date.parse(pts[0].t), t1 = Date.parse(pts[pts.length - 1].t) || (t0 + 1);
@@ -720,8 +727,11 @@
              Math.round(o.r.v) + '</text>';
       }
       var arrow = o.off === 1 ? " ↑" : o.off === -1 ? " ↓" : "";
+      // Option D: when the buy zone is pinned off-frame its band is gone, so the tag carries
+      // the exact gap ("$NN away" = how far spot must move) — you lose position, never distance.
+      var offDist = (isBuy && o.off !== 0) ? "  $" + Math.abs(o.r.v - last).toFixed(0) + " away" : "";
       var txt = isBuy
-        ? "BUY ZONE ≥ $" + o.r.v.toFixed(2) + (o.r.live ? "  ✓ IN ZONE" : "") + arrow
+        ? "BUY ZONE ≥ $" + o.r.v.toFixed(2) + (o.r.live ? "  ✓ IN ZONE" : "") + arrow + offDist
         : "COSTCO $" + o.r.v.toFixed(2) +
           (o.r.stale ? " (" + o.r.days + "d old · engine ignoring)" : o.r.stock ? "" : " (out of stock)") + arrow;
       // Backing pill. The price line wanders straight through where these labels sit and was
