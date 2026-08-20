@@ -1287,9 +1287,12 @@
           <div class="rx-grp">
             <h6>Trusting her quote</h6>
             <div class="rx-flow">
-              <div class="rx-node check nl"><div class="rx-cond"><span class="ic">?</span>June vs Costco disagree<span class="tag">R10</span></div>
+              <div class="rx-node check"><div class="rx-cond"><span class="ic">?</span>June vs Costco disagree<span class="tag">R10</span></div>
                 <div class="rx-act">Only flag it <b>if June posted a price TODAY.</b></div>
                 <div class="rx-why">Her price freezes when she calls; spot keeps moving. Comparing yesterday's shelf price to a live price just measures the overnight market — and sends her re-checking a store that was never wrong.</div></div>
+              <div class="rx-node go nl"><div class="rx-cond"><span class="ic">✓</span>June is just a price input<span class="tag">R7 · G16</span></div>
+                <div class="rx-act">Newest price wins — <b>June OR online (−$10), whichever updated more recently.</b> No privileged status, <b>no "expire after N days" rule.</b></div>
+                <div class="rx-why">Her price went 23 days stale on Aug 19 and faked a $440/bar alert. Fix: treat her as one input among others — the alert engine now also picks the newer of June vs online.</div></div>
             </div>
           </div>
         </div>
@@ -1878,7 +1881,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 5d6d9d0 · built 2026-08-20 02:52 UTC</span>
+    <span id="verStamp" class="tnum">version: 08c5bb8 · built 2026-08-20 04:06 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
