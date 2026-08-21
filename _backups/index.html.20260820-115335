@@ -678,16 +678,6 @@
   .rbar .rf{height:100%;border-radius:6px;background:var(--gold)}
   .rbar .rf.chk{opacity:.45}
   .rbar .rv{font-family:var(--mono);font-size:11px;font-weight:800;width:52px;flex:none;text-align:right}
-  .res-tw{overflow-x:auto;margin:8px 0 4px;border:1px solid var(--line);border-radius:10px}
-  .res-tbl{width:100%;border-collapse:collapse;font-size:12px;min-width:640px}
-  .res-tbl th{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-align:left;color:var(--ink-mute);
-    text-transform:uppercase;padding:7px 9px;border-bottom:1px solid var(--line);background:var(--panel);white-space:nowrap}
-  .res-tbl td{padding:7px 9px;border-bottom:1px solid var(--line);vertical-align:top}
-  .res-tbl tr:last-child td{border-bottom:none}
-  .res-tbl .n{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:700}
-  .res-tbl .tot{color:var(--gold)}
-  .res-tbl .stc{font-family:var(--mono);font-size:9px;font-weight:800;white-space:nowrap}
-  .res-tbl .stc.ok{color:var(--good)} .res-tbl .stc.chk{color:var(--warn)} .res-tbl .stc.deny{color:var(--bad)}
   .res-sum{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 2px}
   .res-sum .c{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 14px;text-align:center}
   .res-sum .c b{display:block;font-size:20px;font-family:var(--mono)}
@@ -987,18 +977,16 @@
     <div class="rx-grp">
       <h6>Warehouse automation</h6>
       <div class="rx-srow"><span class="st partial">PARTIAL</span><span class="tx"><b>Slack → email in-stock alerts</b> — the fast restock email path. Written, but <b>not installed</b>, and the Slack source is currently dead. <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
-      <div class="rx-srow"><span class="st partial">PARTIAL</span><span class="tx"><b>Live inventory database feed</b> — migration 007 is applied and the endpoints answer, but the table is empty because the Slack source is dead. <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
-      <div class="rx-srow"><span class="st live">DONE</span><span class="tx"><b>11:00 AM second pull</b> — Task "Alchemy Warehouse 11am" registered. <span style="color:var(--ink-mute)">· added 08-19 · done 08-20</span></span></div>
-      <div class="rx-srow"><span class="st live">DONE</span><span class="tx"><b>Pull when gold climbs a $5 step</b> — the rung watcher fires the scrape on every climb. <span style="color:var(--ink-mute)">· added 08-19 · done 08-20</span></span></div>
-      <div class="rx-srow"><span class="st live">DONE</span><span class="tx"><b>Pull when the Costco bar price changes</b> — same watcher, same scrape. <span style="color:var(--ink-mute)">· added 08-19 · done 08-20</span></span></div>
-      <div class="rx-srow"><span class="st live">DONE</span><span class="tx"><b>PC-watcher + 30-min debounce</b> — runs every 15 min from Task Scheduler, capped so triggers can't double-pull. <span style="color:var(--ink-mute)">· added 08-19 · done 08-20</span></span></div>
-      <div class="rx-srow"><span class="st live">DONE</span><span class="tx"><b>Buy-zone warehouse email</b> — shipped as the "Where to buy" section inside the buy alert: in-stock stores only, Tier 1 first, miles + phone. <span style="color:var(--ink-mute)">· added 08-19 · done 08-20</span></span></div>
+      <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx"><b>Live inventory database feed</b> — migration 007 is staged but never run (all 5 endpoints 404). <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
+      <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx"><b>11:00 AM second pull</b> — a second daily inventory scrape. <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
+      <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx"><b>Pull when gold enters the buy zone</b> — refresh inventory the moment it's worth buying. <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
+      <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx"><b>Pull when the Costco bar price changes</b> — catch a price move right away. <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
+      <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx"><b>PC-watcher + 30-min debounce</b> — the local script that fires the two triggers above, capped so it can't double-pull. <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
     </div>
 
     <div class="rx-grp">
       <h6>Alerts &amp; engine</h6>
-      <div class="rx-srow"><span class="st live">DONE</span><span class="tx"><b>Deploy the $5-ladder + Pacific-time engine</b> — v6 live in Apps Script: ladder, fell-out, Pacific times, Where-to-buy, and the safety guards (6h re-nag + healthy-again + buy-input dead-man). <span style="color:var(--ink-mute)">· added 08-19 · done 08-20</span></span></div>
-      <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx"><b>Spot-relative sanity ceiling</b> — the "profit over $150 = broken" guard should scale with the gold price (e.g. spot × 3.5%) so it survives gold doubling. One line + one redeploy. <span style="color:var(--ink-mute)">· added 08-20</span></span></div>
+      <div class="rx-srow"><span class="st partial">PARTIAL</span><span class="tx"><b>Deploy the $5-ladder + Pacific-time engine</b> — new buy-zone ladder ($25→$30→$35…), fell-out alert, and all-Pacific timestamps. Needs one paste into Apps Script. <span style="color:var(--ink-mute)">· added 08-19</span></span></div>
     </div>
 
     <div class="rx-grp">
@@ -1065,54 +1053,25 @@
 
     <!-- ── SUB 2: GOLD VENDORS ─────────────────────────────────────────── -->
     <div class="rsub-panel" id="res-vendors" role="tabpanel" hidden>
-  <div class="rx-mhead" style="margin-top:8px"><span class="em">🥇</span><div class="tt">
-    <h4>Gold vendors — where the bars get sold</h4>
-    <p class="md">Full evidence: MS Resources › Vendor Sweep 2026-08-21 › VENDOR-BOOK.md (149 buyers censused, every price Codex-gate-checked). This is the ranked read as of 2026-08-21.</p></div></div>
-
-  <div class="rx-grp">
-    <h6>The one-picture answer — a bar in hand, where does it go?</h6>
-    <svg viewBox="0 0 760 300" style="width:100%;max-width:760px;display:block;margin:6px auto" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Decision flow: bars in hand to best vendor">
-      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--ink-mute)"/></marker></defs>
-      <rect x="280" y="12" rx="12" width="200" height="44" fill="var(--gold-glow)" stroke="var(--gold)" stroke-width="1.5"/>
-      <text x="380" y="33" text-anchor="middle" fill="var(--ink)" font-size="15" font-weight="700">Bars in hand 🧱</text>
-      <text x="380" y="49" text-anchor="middle" fill="var(--ink-soft)" font-size="11">sealed gold bar + receipt</text>
-      <line x1="380" y1="56" x2="380" y2="86" stroke="var(--ink-mute)" stroke-width="1.5" marker-end="url(#ar)"/>
-      <rect x="255" y="88" rx="12" width="250" height="46" fill="var(--panel2)" stroke="var(--line2)"/>
-      <text x="380" y="108" text-anchor="middle" fill="var(--ink)" font-size="13.5" font-weight="700">Can you drive today?</text>
-      <text x="380" y="124" text-anchor="middle" fill="var(--ink-soft)" font-size="11">every mailed day costs ~$23 per bar</text>
-      <line x1="300" y1="134" x2="185" y2="170" stroke="var(--good)" stroke-width="1.5" marker-end="url(#ar)"/>
-      <text x="222" y="148" fill="var(--good)" font-size="12" font-weight="700">YES</text>
-      <rect x="60" y="172" rx="12" width="250" height="58" fill="var(--good-bg)" stroke="var(--good)" stroke-width="1.5"/>
-      <text x="185" y="196" text-anchor="middle" fill="var(--ink)" font-size="14" font-weight="800">🏆 Elemetal — Hayward</text>
-      <text x="185" y="216" text-anchor="middle" fill="var(--ink-soft)" font-size="11.5">Call to lock price first, drive 35–45 min, paid in 1–2 hrs</text>
-      <line x1="460" y1="134" x2="575" y2="170" stroke="var(--warn)" stroke-width="1.5" marker-end="url(#ar)"/>
-      <text x="530" y="148" fill="var(--warn)" font-size="12" font-weight="700">NO</text>
-      <rect x="450" y="172" rx="12" width="250" height="58" fill="var(--warn-bg)" stroke="var(--warn)" stroke-width="1.5"/>
-      <text x="575" y="196" text-anchor="middle" fill="var(--ink)" font-size="14" font-weight="800">🥈 CollectPure</text>
-      <text x="575" y="216" text-anchor="middle" fill="var(--ink-soft)" font-size="11.5">Free insured shipping, money in about a week</text>
-      <rect x="140" y="252" rx="12" width="480" height="34" fill="var(--bad-bg)" stroke="var(--bad)"/>
-      <text x="380" y="274" text-anchor="middle" fill="var(--ink)" font-size="12.5" font-weight="700">🚫 Never sell here: online gold sites, pawn shops, eBay, auctions</text>
-    </svg>
-  </div>
-
-  <div class="rx-grp">
-    <h6>✅ Verified this sweep (2026-08-21, all Codex-gate-checked)</h6>
-    <div class="rx-srow"><span class="st ok">CHAMPION</span><span class="tx"><b>Elemetal — Hayward branch</b> (20946 Corsair Blvd, 650-589-1121, M–F 8–4) — 35–45 min away, phone-lock the price BEFORE driving, paid in 1–2h. Offset scenarios −$10/−$20/−$30 all beat every mail-in channel under capital-binding float math. ⚠ 2018 AML guilty plea → always settle before leaving. Confirm the real offset by phone (script in M4-DEEPDIVES).</span></div>
-    <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>CollectPure</b> — LIVE funded bid captured at <b>spot +$5</b> on the exact PAMP Fortuna SKU; 0.75% fee (→0.625% at Medi's volume tier); $0 insured FedEx to $125k/box; ACH lands 1–2 days after check-in. Real cash cycle ~4–7 days. The hedge lane. Old "10–14d payout" datapoint was stale — corrected.</span></div>
-    <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>The float law</b> — money turning weekly is worth ~$23/oz/day; that's why a +$5 bid with 5 mail days loses to a −$20 drive-over. Full math: RANKING-3.md.</span></div>
-  </div>
-  <div class="rx-grp">
-    <h6>🟡 Needs a phone call (scripts written, M4-DEEPDIVES.md)</h6>
-    <div class="rx-srow"><span class="st chk">QUOTE</span><span class="tx"><b>Bay Area Metals</b> (S SF, ask for Isaac) — refinery claiming "near-spot" on PAMP; 45 min away; walk-in, 20–45 min settle.</span></div>
-    <div class="rx-srow"><span class="st chk">QUOTE</span><span class="tx"><b>PPM Walnut Creek</b> — 5 min away; web bid −$128 but in-person bulk tier unasked. · <b>A&amp;D Sac</b> — cash on the spot. · <b>BlueVault SD/OC</b> — posted asks, meet-or-beat pledge (county-scoped).</span></div>
-    <div class="rx-srow"><span class="st chk">ONBOARD</span><span class="tx"><b>Aligned Incentives</b> (portal+KYC; card receipts required, cash-bought banned) · <b>BGS/DCB</b> via costcogoldalerts Slack — 4 live bidders compete for exactly these bars.</span></div>
-  </div>
-  <div class="rx-grp">
-    <h6>❌ Denied — verified and out (evidence in the sweep folder)</h6>
-    <div class="rx-srow"><span class="st deny">DENIED</span><span class="tx"><b>All traditional online desks</b> — Kitco −$125, JM/Provident −$135, Golden Eagle −$153, CNI −$150 + mail float on top. Kitco surge payouts hit 4–6 weeks (community).</span></div>
-    <div class="rx-srow"><span class="st deny">DENIED</span><span class="tx"><b>Monex</b> (locks at receipt = you carry transit risk) · <b>US Gold Bureau</b> −4% · <b>eBay/Whatnot/auctions</b> (fees/holds) · <b>pawn &amp; cash-for-gold</b> (scrap-tier) · <b>Money Metals</b> (−7% boards, conflicting — skip).</span></div>
-  </div>
-</div>
+      <div class="rx-mhead" style="margin-top:8px"><span class="em">🥇</span><div class="tt">
+        <h4>Gold vendors — where the bars get sold</h4>
+        <p class="md">Full list lives in MS Resources › Gold Buyers Database.md. This is the sweep's ranked read.</p></div></div>
+      <div class="rx-grp">
+        <h6>✅ Verified</h6>
+        <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>Elemetal</b> — spot − $10/oz, instant, accepts a &lt;15-min price screenshot (the whole reason the Lock machine exists). The working default.</span></div>
+      </div>
+      <div class="rx-grp">
+        <h6>🟡 Needs verify</h6>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>CollectPure (collectpure.com)</b> — community exit of choice: bid market, 0.75% fee, some SKUs fetch <b>spot + $100</b>; payout 10–14 days. Test = one comparison listing vs Elemetal. Catch: 2-week money float vs instant.</span></div>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>JM Bullion</b> — buys Costco bars ~spot, lock → ship → e-check 1–3 days. Backup exit.</span></div>
+      </div>
+      <div class="rx-grp">
+        <h6>❌ Denied — verified and out</h6>
+        <div class="rx-srow"><span class="st deny">DENIED</span><span class="tx"><b>US Gold Bureau</b> — pays ~spot −4%. Loses to Elemetal every time.</span></div>
+        <div class="rx-srow"><span class="st deny">DENIED</span><span class="tx"><b>Pawn shops</b> — community datapoint at −60%. Never.</span></div>
+        <div class="rx-srow"><span class="st deny">DENIED</span><span class="tx"><b>Local coin shops (as a class)</b> — spot −2% to −5%, relationship-dependent; only beats Elemetal with a personal hookup.</span></div>
+      </div>
+    </div>
 
     <!-- ── SUB 3: BUSINESS CREDIT ──────────────────────────────────────── -->
     <div class="rsub-panel" id="res-biz" role="tabpanel" hidden>
@@ -1127,16 +1086,16 @@
         <div class="rbar"><span class="rl">WF Signify (IF rail proves)</span><div class="rt"><div class="rf chk" style="width:81%"></div></div><span class="rv">4.13%?</span></div>
       </div>
       <div class="rx-grp">
-        <h6>The card table</h6>
-        <div class="res-tw"><table class="res-tbl">
-          <tr><th>Name</th><th>Visa/MC</th><th>%Card</th><th>%Taekus</th><th>%Total</th><th>Limits</th><th>Requirements</th><th>Status</th></tr>
-          <tr><td><b>Costco Anywhere Biz Visa</b> (Citi)</td><td>Visa</td><td class="n">2.00%</td><td class="n">+1.80%</td><td class="n tot">3.80%</td><td>no earn cap · reward = Feb certificate (locked ~1 yr)</td><td>Costco membership · rail = phone, 1 debit/day</td><td><span class="stc ok">✅ VERIFIED</span></td></tr>
-          <tr><td><b>Chase Ink Premier</b></td><td>Visa</td><td class="n">2.50%</td><td class="n">—</td><td class="n tot">2.50%</td><td>no earn cap · lines $10k–50k+ · 1 full turn/cycle MAX</td><td>biz entity · $195 AF</td><td><span class="stc ok">✅ VERIFIED</span></td></tr>
-          <tr><td><b>BofA Biz Advantage Unl.</b></td><td>MC</td><td class="n">2.625%</td><td class="n">—</td><td class="n tot">2.625%</td><td>no earn cap · lines TINY ($5–10k)</td><td>$100k at Merrill (Plat Honors) · MS-hostile bank</td><td><span class="stc ok">✅ VERIFIED</span></td></tr>
-          <tr><td><b>Spark Cash Plus</b> (yr 1)</td><td>Visa</td><td class="n">2% (+kickers ~2.9%)</td><td class="n">—</td><td class="n tot">~2.9%</td><td>NO preset limit (dynamic) · repay-&amp;-rerun OK</td><td>biz · $150 AF (refunded ≥$150k/yr) · verify $500k kicker repeats</td><td><span class="stc chk">🟡 VERIFY</span></td></tr>
-          <tr><td><b>WF Signify Biz Cash</b></td><td>Visa</td><td class="n">2.00%</td><td class="n">+2.13%?</td><td class="n tot">4.13%?</td><td>lines small ($2.5–14k DPs)</td><td>hangs on WF teller test (#1)</td><td><span class="stc chk">🟡 VERIFY</span></td></tr>
-          <tr><td><b>Citi AA Business</b> (Medi's pick)</td><td>MC</td><td class="n">1 mi/$ ≈1.4%</td><td class="n">+1.80%</td><td class="n tot">~3.2%</td><td>no miles cap · NEVER cycle (famous shutdown card)</td><td>sole prop OK · $99 AF wv yr1 · SUB 65k/$4k via aa.com</td><td><span class="stc chk">🟡 VERIFY</span></td></tr>
-        </table></div>
+        <h6>✅ Verified</h6>
+        <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>Chase Ink Premier 2.5%</b> — flat king, Visa in-warehouse; safe velocity = 1 full turn/cycle (Chase = most shutdown-documented issuer).</span></div>
+        <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>Costco Anywhere Biz Visa 2% + Citi rail 1.8% = 3.8%</b> — best biz rate; catch: card reward pays as a February certificate (locked ~a year).</span></div>
+        <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>BofA Biz Advantage Unlimited 2.625%</b> — real but gated: $100k at Merrill, Mastercard (online only), tiny $5–10k credit lines, MS-hostile bank.</span></div>
+      </div>
+      <div class="rx-grp">
+        <h6>🟡 Needs verify</h6>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>Spark Cash Plus ~2.9% yr-1</b> — rates verified; the open question is whether the $2k/$500k kicker repeats after year 1 (test #6).</span></div>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>WF Signify Business Cash → 4.13%</b> — hangs entirely on the WF teller test (#1). Small reported limits ($2.5–14k).</span></div>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>Citi AA Business (Medi's pick)</b> — 65k-mile SUB on $4k = one bar order; 1 mi/$ ≈1.4% + Citi rail 1.8%. Verify the rail on a biz card + apply via aa.com. Never cycle it.</span></div>
       </div>
       <div class="rx-grp">
         <h6>❌ Denied — verified and out</h6>
@@ -1161,16 +1120,16 @@
         <div class="rbar"><span class="rl">Samsung Galaxy (test)</span><div class="rt"><div class="rf chk" style="width:58%"></div></div><span class="rv">3.00%?</span></div>
       </div>
       <div class="rx-grp">
-        <h6>The card table</h6>
-        <div class="res-tw"><table class="res-tbl">
-          <tr><th>Name</th><th>Visa/MC</th><th>%Card</th><th>%Taekus</th><th>%Total</th><th>Limits</th><th>Requirements</th><th>Status</th></tr>
-          <tr><td><b>Venmo CC 🏆</b> (Synchrony)</td><td>Visa</td><td class="n">3.00%</td><td class="n">+2.13%</td><td class="n tot">5.13%</td><td>no earn cap known · credit line + payoff cycle</td><td>Venmo account · proven by Medi</td><td><span class="stc ok">✅ VERIFIED</span></td></tr>
-          <tr><td><b>Synchrony Premier</b></td><td>MC</td><td class="n">2.00%</td><td class="n">+2.13%</td><td class="n tot">4.13%</td><td>NO earn cap</td><td>none — same proven rail</td><td><span class="stc ok">✅ VERIFIED</span></td></tr>
-          <tr><td><b>US Bank Smartly</b></td><td>Visa</td><td class="n">4.00%</td><td class="n">—</td><td class="n tot">4.00%</td><td><b>4% only on $10k spend/mo</b> (~2 bars)</td><td>$100k parked at US Bancorp (can hold stocks)</td><td><span class="stc ok">✅ VERIFIED</span></td></tr>
-          <tr><td><b>Citi Double Cash</b></td><td>MC</td><td class="n">2.00%</td><td class="n">+1.80%</td><td class="n tot">3.80%</td><td>no earn cap · rail = 1 debit payment/day</td><td>none · rail post-ban check = test #3</td><td><span class="stc ok">✅ VERIFIED</span></td></tr>
-          <tr><td><b>WF Active Cash</b></td><td>Visa</td><td class="n">2.00%</td><td class="n">+2.13%?</td><td class="n tot">4.13%?</td><td>no earn cap · branch-pay limits unknown</td><td>WF teller test (#1) — biggest unlock</td><td><span class="stc chk">🟡 VERIFY</span></td></tr>
-          <tr><td><b>Samsung Galaxy Card</b> (Barclays)</td><td>Visa</td><td class="n">3.00%</td><td class="n">—</td><td class="n tot">3.00%</td><td>UNCAPPED · ramp slowly (shutdown risk)</td><td>Samsung Wallet device (watch OK) · tap test #2</td><td><span class="stc chk">🟡 VERIFY</span></td></tr>
-        </table></div>
+        <h6>✅ Verified</h6>
+        <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>Venmo CC 3% + Taekus 2.13% = 5.13% 🏆</b> — THE HERO, proven by Medi, unbeaten by ~150 censused cards. Visa: register + online. No known earn cap.</span></div>
+        <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>Synchrony Premier 2% + Taekus = 4.13%</b> — same proven rail, second lane; Mastercard → Costco.com only. Uncapped.</span></div>
+        <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>Citi Double Cash 2% + phone rail 1.8% = 3.8%</b> — 1 debit payment/day; rail post-ban check pending (test #3).</span></div>
+        <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>US Bank Smartly 4%</b> — barely worth it and kept: $4,800/yr max ($10k/mo cap) if the $100k can sit at US Bancorp anyway.</span></div>
+      </div>
+      <div class="rx-grp">
+        <h6>🟡 Needs verify</h6>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>Samsung Galaxy Card 3% uncapped</b> — tap-to-pay Visa, no metals exclusion found, works in-warehouse in theory; zero Costco DPs on earth (test #2). Ramp slowly — Barclays shutdown risk at volume.</span></div>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>WF Active Cash 2% + branch rail = 4.13%</b> — the biggest potential unlock; one $10 teller test (test #1).</span></div>
       </div>
       <div class="rx-grp">
         <h6>❌ Denied — verified and out</h6>
@@ -1186,17 +1145,17 @@
         <h4>Debit — the rails and the register cards</h4>
         <p class="md">~100 cards censused worldwide (DEBIT-CARD-CENSUS.md). Flat always-on rates only; promos ignored.</p></div></div>
       <div class="rx-grp">
-        <h6>The debit table</h6>
-        <div class="res-tw"><table class="res-tbl">
-          <tr><th>Name</th><th>Visa/MC</th><th>%Card</th><th>Limits</th><th>Requirements</th><th>Status</th></tr>
-          <tr><td><b>Taekus 👑</b></td><td>MC</td><td class="n tot">2.13% <span style="font-weight:400">(incl. CC bill pay)</span></td><td>none known</td><td>CLOSED to new users — protect Medi's card</td><td><span class="stc ok">✅ VERIFIED</span></td></tr>
-          <tr><td><b>PayPal Debit</b></td><td>MC</td><td class="n tot">5% <span style="font-weight:400">(Groceries = Costco)</span></td><td>$1,000 spend/mo (=$50) · rewards redeem at PayPal checkout since 8/1</td><td>re-pick category EVERY month · gold test #4</td><td><span class="stc ok">✅ VERIFIED</span></td></tr>
-          <tr><td><b>Fold+</b></td><td>Visa</td><td class="n tot">1.5% BTC <span style="font-weight:400">(+ bill-pay earn?)</span></td><td>$10k rewards wallet · 30-day lock</td><td>$10/mo Fold+ · bill-pay test #5 (Taekus successor?)</td><td><span class="stc chk">🟡 VERIFY</span></td></tr>
-          <tr><td><b>Krak Card</b> (Kraken)</td><td>Visa</td><td class="n tot">0.5–2% USD/BTC</td><td>NO caps</td><td>2% needs $50k avg Kraken balance · brand-new 8/18</td><td><span class="stc chk">🟡 VERIFY</span></td></tr>
-          <tr><td><b>X Money</b></td><td>Visa</td><td class="n tot">3.00%</td><td>none · limited by debit balance</td><td>invite + X sub · MCC 5094-only exclusion (5300 passes) · patch risk</td><td><span class="stc chk">🟡 VERIFY</span></td></tr>
-          <tr><td><b>ether.fi Cash</b></td><td>Visa</td><td class="n tot">3% <span style="font-weight:400">(SCR token)</span></td><td>full rate on first $2k/mo, then 1%</td><td>USDC-funded · confirm CA on state list</td><td><span class="stc chk">🟡 VERIFY</span></td></tr>
-          <tr><td><b>Bluevine Business</b></td><td>MC</td><td class="n tot">1.5%</td><td>UNCAPPED</td><td>free biz checking · needs a biz-debit use-case</td><td><span class="stc chk">🟡 VERIFY</span></td></tr>
-        </table></div>
+        <h6>✅ Verified</h6>
+        <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>Taekus 2.13% 👑</b> — earns on credit-card bill payments (the whole stack's engine). CLOSED to new users — protect Medi's card.</span></div>
+        <div class="rx-srow"><span class="st ok">VERIFIED</span><span class="tx"><b>PayPal Debit 5% Groceries-includes-Costco</b> — MCC-level, stamps DP + no metals exclusion in T&amp;C. $1,000/mo cap; since 8/1/26 rewards redeem at PayPal checkout (not cash). Gold-specific test pending (#4).</span></div>
+      </div>
+      <div class="rx-grp">
+        <h6>🟡 Needs verify</h6>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>Fold+ (Visa)</b> — 1.5% BTC flat; its Bill Pay reportedly earns on CREDIT-CARD payments = only living Taekus successor (test #5). $10/mo.</span></div>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>Krak Card (Kraken)</b> — 2% USD/BTC uncapped at $50k Kraken balance; days old, terms may shift.</span></div>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>X Money 3%</b> — exclusion list is MCC 5094 (coin stores); Costco = 5300 passes on paper. Invite-gated; patch risk.</span></div>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>ether.fi Cash 3%</b> (first $2k/mo, SCR token) — only foreign fintech open to US residents; confirm CA on the state list.</span></div>
+        <div class="rx-srow"><span class="st chk">VERIFY</span><span class="tx"><b>Bluevine biz 1.5% uncapped</b> — best flat US debit; needs a biz-debit use-case.</span></div>
       </div>
       <div class="rx-grp">
         <h6>❌ Denied — verified and out</h6>
@@ -1521,8 +1480,8 @@
             <span class="em">📦</span>
             <div class="tt">
               <h4>The Warehouse</h4>
-              <p class="md">Refreshing how many bars each Costco has, and what counts as real stock. All four refresh triggers run on their own now.</p>
-              <span class="rx-badge live"><span class="d"></span>LIVE — all 4 triggers running</span>
+              <p class="md">Refreshing how many bars each Costco has, and what counts as real stock. Most of this is planned, not running.</p>
+              <span class="rx-badge partial"><span class="d"></span>PARTIAL — 1 of many live</span>
             </div>
           </div>
 
@@ -1537,30 +1496,23 @@
           </div>
 
           <div class="rx-grp">
-            <h6>The four triggers — each one fires a fresh scrape</h6>
+            <h6>The one rule that runs</h6>
             <div class="rx-flow">
-              <div class="rx-node go"><div class="rx-cond"><span class="ic">✓</span>Every day at 10:00 AM — and again at 11:00 AM</div>
+              <div class="rx-node go nl"><div class="rx-cond"><span class="ic">✓</span>Every day at 10:00 AM</div>
                 <div class="rx-act">Scrapes the PAMP Lady Fortuna bar <span class="rx-pill">SKU 1943308</span> across <b>11 zip codes</b> → updates the dashboard. It <b>never</b> touches the BUY price (June owns that).</div>
                 <div class="rx-why">Safety floor: if fewer than 38 stores answer, the read is treated as broken — not as a sell-out.</div></div>
-              <div class="rx-node go"><div class="rx-cond"><span class="ic">✓</span>Profit climbs a $5 step ($25, $30, $35…)</div>
-                <div class="rx-act">A small script on the PC (the <b>rung watcher</b>, checks every 15 min) sees the climb → runs the same scrape, so stock is fresh right when it matters.</div></div>
-              <div class="rx-node go"><div class="rx-cond"><span class="ic">✓</span>The Costco bar price changes</div>
-                <div class="rx-act">Same watcher, same scrape — a price move means something happened, so go look.</div></div>
-              <div class="rx-node check nl"><div class="rx-cond"><span class="ic">?</span>Two triggers fire close together</div>
-                <div class="rx-act"><b>30-minute debounce</b>: at most one scrape per 30 min, shared by all four triggers. A climb during the wait is <b>remembered</b> and pulls when the 30 min are up — never dropped.</div></div>
             </div>
           </div>
 
           <div class="rx-grp">
             <h6>Everything else — honest status</h6>
             <div class="rx-srow"><span class="st live">LIVE</span><span class="tx"><b>10:00 AM</b> daily inventory pull</span></div>
-            <div class="rx-srow"><span class="st live">LIVE</span><span class="tx"><b>11:00 AM</b> second pull <span style="color:var(--ink-mute)">· since 08-20</span></span></div>
-            <div class="rx-srow"><span class="st live">LIVE</span><span class="tx">Pull when profit <b>climbs a $5 step</b> <span style="color:var(--ink-mute)">· since 08-20</span></span></div>
-            <div class="rx-srow"><span class="st live">LIVE</span><span class="tx">Pull when the <b>bar price changes</b> <span style="color:var(--ink-mute)">· since 08-20</span></span></div>
-            <div class="rx-srow"><span class="st live">LIVE</span><span class="tx"><b>PC-watcher</b> + <b>30-min debounce</b> (so triggers can't double-pull) <span style="color:var(--ink-mute)">· since 08-20</span></span></div>
-            <div class="rx-srow"><span class="st live">LIVE</span><span class="tx">In-stock stores land in the <b>buy alert email</b>, Tier 1 first — see the Alerts sub-tab <span style="color:var(--ink-mute)">· since 08-20</span></span></div>
+            <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx"><b>11:00 AM</b> second pull</span></div>
+            <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx">Pull when gold <b>enters the buy zone</b></span></div>
+            <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx">Pull when the <b>bar price changes</b></span></div>
+            <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx"><b>PC-watcher</b> + <b>30-min debounce</b> (so triggers can't double-pull)</span></div>
             <div class="rx-srow"><span class="st partial">PARTIAL</span><span class="tx"><b>Slack → email</b> in-stock alerts — written, <b>not installed</b>, and the Slack source is currently dead</span></div>
-            <div class="rx-srow"><span class="st partial">PARTIAL</span><span class="tx"><b>Live database feed</b> — migration 007 is applied and the endpoints answer, but the table is <b>empty</b> because the Slack source feeding it is dead</span></div>
+            <div class="rx-srow"><span class="st planned">PLANNED</span><span class="tx"><b>Live database feed</b> (migration 007 staged, never run — all 5 endpoints 404)</span></div>
           </div>
         </div>
       </div>
@@ -1572,8 +1524,8 @@
             <span class="em">📧</span>
             <div class="tt">
               <h4>The Alerts</h4>
-              <p class="md">The emails the Gold Alert Engine sends you. All times in Pacific.</p>
-              <span class="rx-badge live"><span class="d"></span>LIVE — v6 deployed 08-20</span>
+              <p class="md">The emails the Gold Alert Engine sends you. All times now in Pacific.</p>
+              <span class="rx-badge partial"><span class="d"></span>PARTIAL — needs the new code pasted in</span>
             </div>
           </div>
 
@@ -1596,17 +1548,6 @@
           </div>
 
           <div class="rx-grp">
-            <h6>What's inside the email — "Where to buy" <span class="rx-pill">since 08-20</span></h6>
-            <div class="rx-flow">
-              <div class="rx-node go"><div class="rx-cond"><span class="ic">✓</span>Every ENTERED / CLIMB email</div>
-                <div class="rx-act">Also lists the <b>in-stock warehouses</b> — Tier 1 first, closest first inside a tier — with miles and phone number, plus when that stock scan was taken and the bar price that day.</div>
-                <div class="rx-why">CALL FIRST (rule 16): a scan is a claim, not Costco's word. A scan older than 26h is flagged "treat as unknown".</div></div>
-              <div class="rx-node check nl"><div class="rx-cond"><span class="ic">?</span>The stock list can't be read</div>
-                <div class="rx-act">The buy alert still sends — with a one-line "check the dashboard" note instead. A missing list never blocks a buy alert.</div></div>
-            </div>
-          </div>
-
-          <div class="rx-grp">
             <h6>The Costco bar watcher</h6>
             <div class="rx-flow">
               <div class="rx-node go"><div class="rx-cond"><span class="ic">✓</span>Bar price moves or stock flips</div>
@@ -1618,22 +1559,7 @@
             </div>
           </div>
 
-          <div class="rx-grp">
-            <h6>The safety guards — ops emails, you only <span class="rx-pill">since 08-20</span></h6>
-            <div class="rx-flow">
-              <div class="rx-node stop"><div class="rx-cond"><span class="ic">✕</span>The numbers look broken (profit over $150/bar, or the buy price is over 48h old)</div>
-                <div class="rx-act">The buy alert is <b>BLOCKED</b> — nobody gets a wrong "go buy" email. You get one <b>"SUPPRESSED"</b> note instead.</div>
-                <div class="rx-why">This is what caught the fake "$439/bar" emails — a stale price snuck into the math.</div></div>
-              <div class="rx-node check"><div class="rx-cond"><span class="ic">?</span>The buy price goes quiet on its own (hourly check)</div>
-                <div class="rx-act">The dead-man's check now watches the <b>buy input</b> too, not just the spot feed — a silent break can't hide between alerts.</div></div>
-              <div class="rx-node check"><div class="rx-cond"><span class="ic">↻</span>A problem lasts more than 6 hours</div>
-                <div class="rx-act">You get <b>nagged again every ~6h</b> until it's fixed — the old "one email then silence forever" is gone.</div></div>
-              <div class="rx-node go nl"><div class="rx-cond"><span class="ic">✓</span>It heals</div>
-                <div class="rx-act">One <b>"✅ healthy again"</b> note, then quiet. So no news really means "all good", not "the alarm died".</div></div>
-            </div>
-          </div>
-
-          <div class="rx-srow"><span class="st live">DONE</span><span class="tx">Engine <b>v6</b> deployed to Apps Script 08-20 — ladder + Pacific time + Where-to-buy + all guards above are live. File: <span class="rx-pill">Gold Alert Engine — AppsScript.gs</span></span></div>
+          <div class="rx-srow"><span class="st partial">TO DO</span><span class="tx">Paste the updated engine into <b>Apps Script</b> to switch the ladder + Pacific-time on. File: <span class="rx-pill">Gold Alert Engine — AppsScript.gs</span></span></div>
         </div>
       </div>
 
@@ -2138,7 +2064,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: b8a4d19 · built 2026-08-21 20:42 UTC</span>
+    <span id="verStamp" class="tnum">version: 1d88ae6 · built 2026-08-20 18:52 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -4280,8 +4206,7 @@
         return;
       }
     }
-    // The shared list's miles column only takes whole numbers; 4.7 gets the row refused.
-    const rec={store_id:id, store_name:meta.n, city:meta.c, miles:Math.round(meta.mi),
+    const rec={store_id:id, store_name:meta.n, city:meta.c, miles:meta.mi,
       in_stock:stock,
       pamp: stock?cp.v:0,
       generic: stock?cg.v:0,
@@ -4615,24 +4540,24 @@
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-08-21T11:01:45-07:00",
+    at: "2026-08-20T10:01:46-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
     price: 4539.99,
     // Written by warehouse-inventory/daily_pull.py — see DAILY-PULL.md.
-    // 11 of the 45, keyed on the row carrying the SKU, never the store badge.
-    inStock: ["brentwood", "fairfield", "livermore", "redwoodcity", "riverbank",
-              "santacruz", "santarosa", "sf", "sjalmaden", "sjgreatoaks", "vallejo"],
-    // 32 of the 45. Stores whose rail rows were truncated were opened and
+    // 25 of the 45, keyed on the row carrying the SKU, never the store badge.
+    inStock: ["brentwood", "concord", "fairfield", "fostercity", "fremont",
+              "livermore", "manteca", "novato", "pleasanton", "ranchocordova",
+              "redwoodcity", "richmond", "riverbank", "sanleandro", "santaclara",
+              "santacruz", "santarosa", "sf", "sjalmaden", "sjgreatoaks", "sjne",
+              "ssf", "sunnyvale", "tracy", "vallejo"],
+    // 18 of the 45. Stores whose rail rows were truncated were opened and
     // read from their own page this run, not carried forward.
-    soldOut: {antioch:"1d", concord:"today", danville:"2d", elkgrove:"2m",
-              fostercity:"today", fremont:"today", gilroy:"26d", hayward:"1d",
-              lodi:"1d", manteca:"today", modesto:"3d", mountainview:"1d", newark:"1d",
-              novato:"1d", pleasanton:"today", ranchocordova:"today", richmond:"today",
-              rohnertpark:"1m", saccalexpo:"1m", sacnatomas:"1m", sacstockton:"1d",
-              sanleandro:"today", santaclara:"today", sjne:"today", sjsenter:"8d",
-              ssf:"today", ssfairport:"1d", stockton:"24d", sunnyvale:"today",
-              tracy:"today", vacaville:"1m", woodland:"27d"}
+    soldOut: {antioch:"today", danville:"1d", elkgrove:"2m", gilroy:"25d",
+              hayward:"today", lodi:"today", modesto:"2d", mountainview:"today",
+              newark:"today", rohnertpark:"1m", saccalexpo:"1m", sacnatomas:"1m",
+              sacstockton:"today", sjsenter:"7d", ssfairport:"today", stockton:"23d",
+              vacaville:"1m", woodland:"26d"}
   };
 
   // Turn the snapshot into the same row shape wiRenderNow/wiRenderTable already
@@ -5333,31 +5258,24 @@
     return "$" + Number(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
   }
 
-  function renderBarHist(rows, err, manual){
+  function renderBarHist(rows, err){
     var host = $("barHistRows"), cnt = $("barHistCount"), foot = $("barHistFoot");
     if(!host) return;
-    // MANUAL ENTRIES (Medi, 2026-08-20): phone calls and typed shelf prices from the
-    // shared list's append-only logs, interleaved by time below. null = that log's
-    // fetch failed, which is reported in the footer rather than silently shown as "none".
-    var manCalls  = (manual && manual.calls)  || [];
-    var manPrices = (manual && manual.prices) || [];
-    var manFail   = !!manual && (manual.calls === null || manual.prices === null);
     if(err){
       host.innerHTML = '<div style="opacity:.7">could not load bar history — ' + err + '</div>';
       if(cnt) cnt.textContent = "—";
       if(foot) foot.textContent = "the recorder writes one row per bar per Costco fetch (~8 min)";
       return;
     }
-    if(!rows.length && !manCalls.length && !manPrices.length){
+    if(!rows.length){
       host.innerHTML = '<div style="opacity:.6">No 1&nbsp;oz events recorded yet in the last ' +
         BARHIST_DAYS + ' days. Recording began 2026-08-04; the list fills as prices move.</div>';
       if(cnt) cnt.textContent = "0 events";
       if(foot) foot.textContent = "";
       return;
     }
-    // Server returns newest-first. Feed rows keep that order for the delta math; the
-    // final display list is re-sorted by time only to slot the manual entries in.
-    var nPrice = 0, nOut = 0, nBack = 0, pieces = [];
+    // Server returns newest-first, which is the order we display. Do not re-sort.
+    var nPrice = 0, nOut = 0, nBack = 0, html = "";
     var shownRows = rows.slice(0, BARHIST_SHOW);
     shownRows.forEach(function(r, ri){
       var price = Number(r.price);
@@ -5423,7 +5341,7 @@
       // A price rise is red and a fall is green on purpose: this dashboard buys bars,
       // so a cheaper bar is the good news. Same convention as the rest of the page.
 
-      pieces.push({t: r.t, html: '<div style="display:flex;gap:14px;flex-wrap:wrap;padding:4px 0;border-bottom:1px solid var(--line)">' +
+      html += '<div style="display:flex;gap:14px;flex-wrap:wrap;padding:4px 0;border-bottom:1px solid var(--line)">' +
         '<span style="opacity:.6;min-width:112px">' + when + '</span>' +
         '<span style="min-width:86px;font-weight:700' + (stock ? '' : ';opacity:.5') + '">' +
           barHistFmt(price) + '</span>' +
@@ -5440,87 +5358,16 @@
           '<a href="https://www.costco.com/.product.' + r.item + '.html" target="_blank" rel="noopener" ' +
              'style="color:inherit;text-decoration:underline dotted">' +
              (r.bar_name || "(bar not recorded)") + ' ↗</a></span>' +
-      '</div>'});
+      '</div>';
     });
-
-    // MANUAL ENTRIES — amber-tinted rows so a human claim never masquerades as a feed
-    // reading. Calls carry no price (the shelf price is its own log), so that cell is a dash.
-    var nManual = 0;
-    function escTxt(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, function(c){
-      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
-    function manWhen(t){ var d = new Date(t);
-      return d.toLocaleDateString("en-US",{month:"short",day:"numeric"}) + " " +
-             d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}); }
-    var MAN_ROW = 'display:flex;gap:14px;flex-wrap:wrap;padding:4px 0;' +
-                  'border-bottom:1px solid var(--line);background:rgba(217,169,63,.06)';
-    // TYPO BLOCKLIST — rows fat-fingered into the log. The anon key cannot DELETE
-    // (RLS), so they are hidden here until removed in the Supabase dashboard.
-    // log_id 9 = $3,539.99 typed 2026-08-20 (should have been $4,539.99-ish).
-    var PRICE_TYPO_IDS = {9:1};
-    // COMBINE call + typed price (Medi, 2026-08-21): one warehouse visit produces two
-    // rows minutes apart. Pair each price with the nearest call by the SAME person
-    // within 30 minutes and render ONE line carrying both the price and the stock.
-    var usedPrice = {};
-    function nearestPrice(c){
-      var ct = new Date(c.called_at).getTime(), best = null, bestGap = 30*60*1000 + 1;
-      manPrices.forEach(function(p, i){
-        if(usedPrice[i] || !p || !p.updated_at || !isFinite(Number(p.price))) return;
-        if(PRICE_TYPO_IDS[p.log_id]) return;
-        if((p.updated_by || "") !== (c.called_by || "")) return;
-        var gap = Math.abs(new Date(p.updated_at).getTime() - ct);
-        if(gap < bestGap){ bestGap = gap; best = i; }
-      });
-      if(best != null) usedPrice[best] = 1;
-      return best == null ? null : manPrices[best];
-    }
-    manCalls.forEach(function(c){
-      if(!c || !c.called_at || isNaN(new Date(c.called_at))) return;
-      nManual++;
-      var okC = c.in_stock ? "var(--good,#0f9d6b)" : "var(--bad,#d23b45)";
-      var who = c.called_by === "june" ? "June" : c.called_by === "medi" ? "Medi" : (c.called_by || "?");
-      var bars = (Number(c.pamp)||0) + "P / " + (Number(c.generic)||0) + "G";
-      var p = nearestPrice(c);
-      pieces.push({t: c.called_at, html: '<div style="' + MAN_ROW + '">' +
-        '<span style="opacity:.6;min-width:112px">' + manWhen(c.called_at) + '</span>' +
-        (p ? '<span style="min-width:86px;font-weight:700">' + barHistFmt(p.price) + '</span>'
-           : '<span style="min-width:86px;opacity:.4">—</span>') +
-        '<span style="min-width:96px;display:inline-block;font-weight:700;color:' + okC + '">' +
-          (c.in_stock ? "IN STOCK" : "SOLD OUT") + '</span>' +
-        '<span style="min-width:92px;font-weight:700;color:var(--warn,#d9a93f)">' +
-          (p ? '📞✍ call+price' : '📞 call') + '</span>' +
-        '<span style="color:var(--warn,#d9a93f)">' + escTxt(c.store_name || "?") + " warehouse — " +
-          (c.in_stock ? bars + " in stock" : "sold out") +
-          (p ? " · shelf " + barHistFmt(p.price) : "") + " · by " + escTxt(who) +
-          (c.note ? " · “" + escTxt(c.note) + "”" : "") + '</span></div>'});
-    });
-    manPrices.forEach(function(p, i){
-      if(usedPrice[i]) return;   // already shown on its call's line
-      if(!p || !p.updated_at || isNaN(new Date(p.updated_at)) || !isFinite(Number(p.price))) return;
-      if(PRICE_TYPO_IDS[p.log_id]) return;
-      nManual++;
-      var who = p.updated_by === "june" ? "June" : p.updated_by === "medi" ? "Medi" : (p.updated_by || "?");
-      pieces.push({t: p.updated_at, html: '<div style="' + MAN_ROW + '">' +
-        '<span style="opacity:.6;min-width:112px">' + manWhen(p.updated_at) + '</span>' +
-        '<span style="min-width:86px;font-weight:700">' + barHistFmt(p.price) + '</span>' +
-        '<span style="min-width:96px;opacity:.4">—</span>' +
-        '<span style="min-width:92px;font-weight:700;color:var(--warn,#d9a93f)">✍ price</span>' +
-        '<span style="color:var(--warn,#d9a93f)">warehouse shelf price typed in by ' + escTxt(who) + '</span></div>'});
-    });
-
-    // Stable sort, newest first. Feed rows from the same scrape share a timestamp and
-    // keep their server order; manual rows slot in wherever their clock puts them.
-    pieces.sort(function(a,b){ return new Date(b.t) - new Date(a.t); });
-    host.innerHTML = pieces.map(function(p){ return p.html; }).join("");
+    host.innerHTML = html;
     if(cnt) cnt.textContent = (nPrice + nOut + nBack) + " events";
     // NO SILENT TRUNCATION — if rows were dropped, say how many and why.
     var noteTrunc = rows.length > BARHIST_SHOW
       ? " · showing newest " + BARHIST_SHOW + " of " + rows.length
       : "";
     if(foot) foot.textContent = nPrice + " price moves · " + nOut + " sell-outs · " +
-                                nBack + " restocks" +
-                                " · " + nManual + " manual entries" +
-                                (manFail ? " · ⚠ some manual entries could not be loaded" : "") +
-                                noteTrunc;
+                                nBack + " restocks" + noteTrunc;
   }
 
   // GET, not POST, and that is not a style choice. sbFetch deliberately throws away the
@@ -5529,24 +5376,6 @@
   // one call that is a read wearing a POST's clothes. bars_changes is declared STABLE,
   // so PostgREST accepts it as GET with the arguments as query parameters — which keeps
   // this call inside sbFetch, where the timeout and the error kinds live.
-  // The manual logs are separate tables, fetched alongside the feed events. A failed
-  // log fetch returns null for that log — renderBarHist reports it instead of hiding it.
-  function pullManualLog(){
-    var since = new Date(Date.now() - BARHIST_DAYS*864e5).toISOString();
-    var qc = SB_URL + "/rest/v1/alchemy_calls_log" +
-             "?select=store_name,in_stock,pamp,generic,note,called_at,called_by" +
-             "&called_at=gte." + encodeURIComponent(since) +
-             "&order=called_at.desc&limit=200";
-    var qp = SB_URL + "/rest/v1/alchemy_price_log" +
-             "?select=log_id,price,updated_at,updated_by" +
-             "&updated_at=gte." + encodeURIComponent(since) +
-             "&order=updated_at.desc&limit=200";
-    return Promise.all([sbFetch(qc,{headers:sbH()}), sbFetch(qp,{headers:sbH()})])
-      .then(function(rs){
-        return { calls:  rs[0].kind === "ok" && Array.isArray(rs[0].data) ? rs[0].data : null,
-                 prices: rs[1].kind === "ok" && Array.isArray(rs[1].data) ? rs[1].data : null };
-      });
-  }
   function pullBarHist(){
     var since = new Date(Date.now() - BARHIST_DAYS*864e5).toISOString();
     var url = SB_URL + "/rest/v1/rpc/bars_changes" +
@@ -5554,14 +5383,13 @@
               "&lim="   + BARHIST_LIM +
               // 0.999–1.001 rather than = 1: weight_oz is parsed off the page as a float.
               "&min_oz=0.999&max_oz=1.001";
-    return Promise.all([sbFetch(url, { headers: sbH() }), pullManualLog()]).then(function(rs){
-      var res = rs[0], manual = rs[1];
-      if(res.kind === "ok" && Array.isArray(res.data)) return renderBarHist(res.data, null, manual);
+    return sbFetch(url, { headers: sbH() }).then(function(res){
+      if(res.kind === "ok" && Array.isArray(res.data)) return renderBarHist(res.data, null);
       renderBarHist([], res.kind === "timeout" ? "timed out"
                       : res.kind === "network" ? "offline"
                       : res.kind === "http"    ? ("server said " + res.status)
                       : res.kind === "parse"   ? "unreadable reply"
-                      : "unexpected reply", manual);
+                      : "unexpected reply");
     });
   }
 

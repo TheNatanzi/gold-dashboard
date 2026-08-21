@@ -1,0 +1,1192 @@
+<!-- ============================================================================
+     SUPABASE LIVE LAYER — brother's public page ONLY (never in Medi's artifact).
+     The artifact reads the Google Sheet via the Drive connector. This page has no
+     connector, so it reads the SAME prices from the gold-flip-hub Supabase project
+     with the PUBLISHABLE (read-only) key. Writes are impossible with this key (RLS).
+
+     It feeds Supabase rows through the dashboard's OWN applySheet(map) — exposed as
+     window.__gfhIngest by the build — so every figure + the council-tested 3-min
+     stale-guard recompute exactly as on Medi's side. This layer owns only:
+       • the confidence badge (auto · HH:MM  vs  ✅ confirmed by Medi)
+       • the "request a pull" button (logs to Supabase + refetches)
+     ============================================================================ -->
+<style>
+  /* pulse-on-change: numbers a live update moves glow gold then fade — text only, no block highlight */
+  @keyframes gfhPulse{ 0%{ color:#e6b325; text-shadow:0 0 12px rgba(230,179,37,.85); } 100%{ text-shadow:0 0 0 rgba(230,179,37,0); } }
+  .gfh-pulse{ animation:gfhPulse 1.2s ease-out; }
+</style>
+<script>
+(function(){
+  var SB_URL = "https://cuubqcxzvyiryxcygadh.supabase.co";
+  var SB_KEY = "sb_publishable_vuJ1bfkLjpPNbrouZb_3eQ_9dSJXlep";   // publishable/read key — safe to expose (gold-only project, RLS read-only)
+  var H = { apikey: SB_KEY, Authorization: "Bearer " + SB_KEY };
+
+  function p2(n){ return (n < 10 ? "0" : "") + n; }
+  function fmtT(iso){                       // ISO -> "yyyy-MM-dd HH:mm" (the format the dashboard's fmtDT expects)
+    try { var d = new Date(iso);
+      return d.getFullYear() + "-" + p2(d.getMonth()+1) + "-" + p2(d.getDate()) + " " + p2(d.getHours()) + ":" + p2(d.getMinutes());
+    } catch(e){ return ""; }
+  }
+  function el(id){ return document.getElementById(id); }
+
+  function newest(){                        // most recent timestamp across the given ISO strings
+    var t = 0;
+    for(var i=0;i<arguments.length;i++){ var v=arguments[i]; if(v){ var n=Date.parse(v); if(!isNaN(n) && n>t) t=n; } }
+    return t ? new Date(t).toISOString() : "";
+  }
+  function badge(spot, online){
+    // confidence: confirmed if Medi's own-eyes wrote online.source='confirmed'; else auto.
+    var src = (online && online.source) || "auto";
+    var when = (src === "confirmed" && online && online.confirmed_at)
+      ? online.confirmed_at
+      : newest(spot && spot.fetched_at, online && online.fetched_at);
+    var hhmm = when ? fmtT(when).slice(11) : "";
+    var s = el("spotStatus"); if(!s) return;
+    if(src === "confirmed"){ s.textContent = "✅ confirmed by Medi · " + hhmm; s.className = "spot-status live"; }
+    else { s.textContent = "● LIVE · auto · " + hhmm; s.className = "spot-status live"; }
+    var ds = el("dataSrc"); if(ds) ds.textContent = "data: LIVE from shared cloud feed (Supabase)";
+  }
+
+  // ---- pulse-on-change: flash every displayed number the update actually moved ----
+  var WATCH = ["spotStamp","junePriceV","juneTimeV","onlinePriceV","onlineTimeV","inStockV",
+               "deltaV","deltaStamp","gaugeVal","verdict","heroStamp","mBuy","mSell","mLoss",
+               "bpCredit","bpBars","bpDeployed","bpProfit","bpUnused","matrixStamp","chartLast"];
+  var firstPaint = true;                       // first fill after PIN: no flash-fest
+  function snapNums(){
+    var s = {};
+    WATCH.forEach(function(id){ var e = el(id); if(e) s[id] = e.textContent; });
+    var sp = el("spot"); if(sp) s.__spot = sp.value;      // #spot is an <input>
+    return s;
+  }
+  function flash(e){ e.classList.remove("gfh-pulse"); void e.offsetWidth; e.classList.add("gfh-pulse"); }
+  function pulseDiff(before){
+    if(firstPaint){ firstPaint = false; return; }
+    WATCH.forEach(function(id){
+      var e = el(id); if(e && before[id] !== undefined && e.textContent !== before[id]) flash(e);
+    });
+    var sp = el("spot"); if(sp && before.__spot !== undefined && sp.value !== before.__spot) flash(sp);
+  }
+
+  // ==========================================================================================
+  // UNITS CONTRACT — the guard against the 2026-07-28 class of bug.
+  //
+  // A bare number does not describe itself. 2.9 is a perfectly plausible DOLLAR amount and a
+  // perfectly plausible PERCENT, which is exactly how gold_prices.premium (a percent over
+  // spot) got piped into CFG.onlinePrem (dollars off the register) and quietly moved BUY by
+  // $7.10 with no error anywhere. A range check could never have caught it — $2.90 sits
+  // comfortably inside any sane dollar band.
+  //
+  // So the rule is not "check the value", it is "declare the unit". Every key handed to the
+  // dashboard must appear below with its unit and its exact source column. Anything NOT
+  // declared here is refused rather than guessed at, and refusals are shown on the page —
+  // silence is what made both of this project's expensive bugs expensive.
+  // ==========================================================================================
+  var INGEST_CONTRACT = {
+    june_price:     { unit: "usd",  from: "gold_prices.june.price",      min: 500, max: 20000 },
+    gold_spot:      { unit: "usd",  from: "gold_prices.spot.price",      min: 500, max: 20000 },
+    online_price:   { unit: "usd",  from: "gold_prices.online.price",    min: 500, max: 20000 },
+    online_instock: { unit: "bool", from: "gold_prices.online.in_stock" },
+    online_costco:  { unit: "tri",  from: "stock_checks.verdict — latest human browser check of costco.com for the listed item (rule 16); yes/no/unknown" }
+  };
+  // Named explicitly so the next person gets the reason, not just "unknown key".
+  var INGEST_FORBIDDEN = {
+    online_premium: "wants DOLLARS off the register; the only premium Supabase has is " +
+                    "gold_prices.premium, a PERCENT over spot. No dollar source exists — " +
+                    "leave CFG.onlinePrem at its $10 default."
+  };
+
+  function guardIngest(map){
+    var bad = [];
+    Object.keys(map).forEach(function(k){
+      if(INGEST_FORBIDDEN[k]){ bad.push(k + " is forbidden: " + INGEST_FORBIDDEN[k]); delete map[k]; return; }
+      var c = INGEST_CONTRACT[k];
+      if(!c){ bad.push(k + " has no declared unit — add it to INGEST_CONTRACT before sending it"); delete map[k]; return; }
+      if(c.unit === "usd"){
+        var n = Number(map[k].v);
+        if(!isFinite(n) || n < c.min || n > c.max){
+          bad.push(k + " = " + map[k].v + " is outside $" + c.min + "–$" + c.max + " (from " + c.from + ")");
+          delete map[k];
+        }
+      }
+    });
+    return bad;
+  }
+
+  // End-to-end assertion on the one number that actually moves money. BUY can only ever be
+  // June's register price or the online listing minus the $10 in-store premium — there is no
+  // third possibility. In the bug BUY silently became online − $2.90 and nothing objected.
+  function checkBuyPrice(online, june){
+    var e = el("mBuy"); if(!e || !online || online.price == null) return null;
+    var shown = Number(String(e.textContent).replace(/[^\d.]/g, ""));
+    if(!isFinite(shown) || shown === 0) return null;
+    var legal = [];
+    if(june && june.price != null) legal.push(Number(june.price));
+    legal.push(Number(online.price) - 10);
+    // The dashboard's OWN basis pair. BUY is driven by alchemy_price (June's phone), not by
+    // gold_prices.june — two tables that can legitimately disagree by a few dollars. On
+    // 2026-07-28 the guard flagged $4,149.99 as illegal while it was exactly June's phoned
+    // price; that is a data-drift warning, not a broken engine. Trust the engine's basis.
+    var basis = (typeof window !== "undefined") && window.__gfhLegalBuys;
+    if(basis && basis.length)
+      basis.forEach(function(v){ if(isFinite(v)) legal.push(Number(v)); });
+    if(legal.some(function(v){ return isFinite(v) && Math.abs(v - shown) < 0.02; })) return null;
+    return "BUY shows $" + shown.toFixed(2) + " but the only legal values are " +
+           legal.map(function(v){ return "$" + v.toFixed(2); }).join(" or ");
+  }
+
+  // Violations must be impossible to miss. Both bugs this project has paid for were invisible.
+  function showGuardFailures(msgs){
+    var b = el("gfhGuard");
+    if(!msgs.length){ if(b) b.style.display = "none"; return; }
+    if(!b){
+      b = document.createElement("div");
+      b.id = "gfhGuard";
+      b.style.cssText = "margin:10px 0;padding:10px 12px;border:1px solid var(--bad,#f2686f);" +
+        "border-radius:8px;background:var(--bad-bg,rgba(242,104,111,.12));color:var(--bad,#f2686f);" +
+        "font:600 13px/1.5 var(--mono,monospace);white-space:pre-wrap;";
+      document.body.insertBefore(b, document.body.firstChild);
+    }
+    b.style.display = "block";
+    b.textContent = "⚠ DATA GUARD BLOCKED A BAD VALUE — the figures below may be incomplete:\n• " +
+                    msgs.join("\n• ");
+    try { console.error("[gfh units guard]", msgs); } catch(e){}
+  }
+
+  function apply(rows){
+    var spot = null, online = null, june = null;
+    rows.forEach(function(r){ if(r.id === "spot") spot = r; else if(r.id === "online") online = r; else if(r.id === "june") june = r; });
+    var map = {};
+    if(june && june.price != null)
+      map.june_price = { v: String(june.price), t: june.fetched_at ? fmtT(june.fetched_at) : "" };
+    if(spot && spot.price != null)
+      map.gold_spot = { v: String(spot.price), t: spot.fetched_at ? fmtT(spot.fetched_at) : "" };
+    if(online){
+      if(online.price   != null) map.online_price   = { v: String(online.price),   t: online.fetched_at ? fmtT(online.fetched_at) : "" };
+      // DELIBERATELY NOT MAPPED: gold_prices.premium is the scraper's premium over SPOT as a
+      // PERCENT (it parses `([\d.]+)%` off the listing — 2.9 means 2.9%). CFG.onlinePrem is a
+      // DOLLAR figure: how much cheaper the register is than the web listing, $10 by Medi's
+      // own measurement. Feeding the percent into the dollar field made the page compute
+      // implied-in-store as $4159.99 − 2.90 = $4157.09 instead of − $10 = $4149.99, which
+      // invented a $7.10 disagreement with June's quote, raised a ⚠ "they disagree" warning,
+      // and pushed BUY $7.10 too high — making every $/bar figure ~$6.86 too pessimistic.
+      // Leave CFG.onlinePrem at its $10 default. The premium-over-spot idea is already on the
+      // page in dollars as the "Costco → spot delta" card, so nothing is lost by dropping it.
+      if(online.in_stock != null) map.online_instock = { v: online.in_stock ? "yes" : "no", t: "" };
+      // RULE 16 — the feed's "in stock" is a claim; costco.com is the referee, and only a
+      // real browser can ask it (its bot-wall 403s every server client — tested 2026-08-01).
+      // The latest human verdict rides in as yes/no; no check, a stale check (>6h), a
+      // different item, or feed-says-OOS all read "unknown" (→ CFG.costcoOk = null).
+      // ALWAYS sent when the online row exists, so an expired flag self-heals off the badge.
+      if(online.in_stock != null){
+        var cvd = checkVerdict(online);
+        map.online_costco = { v: cvd || "unknown",
+                              t: (cvd && _gfhCheck && _gfhCheck.checked_at) ? fmtT(_gfhCheck.checked_at) : "" };
+      }
+    }
+    var failures = guardIngest(map);                  // refuse anything whose unit is not declared
+    var before = snapNums();                          // snapshot every displayed number
+    if(window.__gfhIngest) window.__gfhIngest(map);   // recompute via the dashboard's own tested path
+    var buyErr = checkBuyPrice(online, june);         // and re-check BUY after the engine has run
+    if(buyErr) failures.push(buyErr);
+    showGuardFailures(failures);
+    pulseDiff(before);                                // flash whatever the update moved
+    badge(spot, online);                              // then stamp the confidence badge (applySheet already ran)
+    mountVerify(online);                              // rule 16: "Costco ↗" link + ✗/✓ flag next to the stock badge
+    _gfhOnline = online;                              // the chart's Costco reference line reads this
+    // Prices refresh every 60s but the chart only refetches every 5 min. Redraw the last
+    // points now so the buy-zone and Costco lines never sit up to 5 minutes behind the
+    // numbers printed right above them. Cheap: same data, one SVG rebuild.
+    if(_gfhLast) drawSpotChart(_gfhLast.pts, _gfhLast.capped);
+  }
+
+  // ---- refresh countdown: tiny "↻ 42s" chip next to the LIVE badge ----
+  var nextAt = 0;
+  function mountTimer(){
+    var s = el("spotStatus"); if(!s || el("gfhTimer")) return;
+    var t = document.createElement("span");
+    t.id = "gfhTimer";
+    t.title = "seconds until the next auto-refresh";
+    t.style.cssText = "margin-left:8px;font-size:.72em;opacity:.65;white-space:nowrap;";
+    s.parentNode.insertBefore(t, s.nextSibling);
+  }
+  function tickTimer(){
+    var t = el("gfhTimer"); if(!t) return;
+    var sLeft = Math.max(0, Math.round((nextAt - Date.now()) / 1000));
+    t.textContent = sLeft > 0 ? "↻ " + sLeft + "s" : "↻ now…";
+  }
+
+  // ---- live spot chart: real line from spot_history (the hub's own 1-min ticks) ----
+  var GFH_TFS = { "5M":5, "10M":10, "30M":30, "1H":60, "6H":360, "1D":1440, "1W":10080, "1M":43200 };  // window in minutes; 1M = 1 month
+  var gfhTf = "1D";
+  function mountSpotChart(){
+    if(el("gfhChart")) return;
+    var anchor = el("chartBox"); if(!anchor || !anchor.parentNode) return;
+    var d = document.createElement("details");        // same accordion pattern as the futures chart
+    d.className = "chartbox";
+    d.id = "gfhChart";
+    d.open = true;                                    // the live chart starts expanded
+    var btns = Object.keys(GFH_TFS).map(function(tf){
+      return '<button class="tfbtn' + (tf === gfhTf ? " active" : "") + '" data-gfhtf="' + tf + '"' +
+             (tf === "1M" ? ' title="1 month"' : '') + '>' + tf + '</button>';
+    }).join("");
+    d.innerHTML =
+      '<summary class="chart-sum">' +
+        '<span class="cs-l"><span class="cs-ic">📈</span> Gold Spot Price Chart — LIVE ' +
+          '<span class="cs-sub">hub feed · true spot · 1-min ticks</span></span>' +
+        '<span class="cs-r"><span class="cs-last" id="gfhChartLast">—</span>' +
+          '<span class="cs-toggle"><span class="cs-toggle-txt"></span><span class="cs-chev">▾</span></span></span>' +
+      '</summary>' +
+      // Same shell as the futures chart below it: .chartwrap + .chart-tip + .chart-foot, and a
+      // meet-fitted viewBox. The old chart used preserveAspectRatio="none", which stretches the
+      // SVG horizontally — fine for a bare line, but it would smear any axis text, which is why
+      // the price labels had to live outside. Matching geometry lets them live inside.
+      '<div class="chart-body">' +
+        '<div class="tfbar" id="gfhTfbar">' + btns + '</div>' +
+        '<div class="chartwrap" id="gfhChartWrap">' +
+          '<svg id="gfhChartSvg" viewBox="0 0 1000 360" preserveAspectRatio="xMidYMid meet"' +
+               ' aria-label="Live gold spot price chart"></svg>' +
+          '<div class="chart-tip" id="gfhChartTip" style="display:none"></div>' +
+        '</div>' +
+        '<div class="chart-foot">' +
+          '<span id="gfhChartRange">—</span>' +
+          '<span id="gfhChartNote">loading history…</span>' +
+        '</div>' +
+      '</div>';
+    anchor.parentNode.insertBefore(d, anchor);
+    var bs = d.querySelectorAll("button[data-gfhtf]");
+    for(var i = 0; i < bs.length; i++){
+      bs[i].addEventListener("click", function(e){
+        e.preventDefault(); e.stopPropagation();
+        var tf = this.getAttribute("data-gfhtf"); if(!GFH_TFS[tf]) return;
+        gfhTf = tf;
+        var all = el("gfhTfbar").querySelectorAll(".tfbtn");
+        for(var j = 0; j < all.length; j++) all[j].classList.toggle("active", all[j] === this);
+        loadSpotChart();
+      });
+    }
+  }
+  // Public-page-only: HIDE the futures chart entirely (Medi, 2026-07-29). Its candle feed
+  // rides the Google Drive connector, which exists only inside the Claude artifact viewer —
+  // on this page it can never be anything but the SAMPLE walk, and a fake price chart is
+  // worse than no chart. The spot chart above is the real, live one. The shared dashboard
+  // source stays untouched; inside the artifact the futures chart still works.
+  function renameFuturesChart(){
+    var b = el("chartBox"); if(b) b.style.display = "none";
+  }
+  // PULL ONLINE → PRODUCT LINK (Medi 2026-08-01): on this page the button opens the current
+  // bar straight on Costco.com — same .product.<item>.html link the restock email carries.
+  // Cloning strips the dashboard's own "flag a refresh" click handler.
+  function rewireOnlineBtn(){
+    var b = el("onlinePullBtn"); if(!b || !b.parentNode) return;
+    var c = b.cloneNode(true);
+    b.parentNode.replaceChild(c, b);
+    c.innerHTML = '<span class="dot"></span> PRODUCT LINK';
+    c.title = "Open this bar on Costco.com";
+    c.addEventListener("click", function(){
+      var it = _gfhOnline && _gfhOnline.item;
+      window.open(it ? "https://www.costco.com/.product." + it + ".html"
+                     : "https://www.costco.com/gold-silver-platinum.html", "_blank", "noopener");
+    });
+  }
+  var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
+  var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
+  var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
+  var _gfhOnlineHist = [];                              // online_history rows in the current window
+  var _gfhBzHist = [];                                  // buyzone_history rows in the current window
+  var _gfhJuneHist = [];                                // june_history rows (manual register entries)
+  var _gfhBarsHist = [];                                // bars_changes() rows — ALL bars, all sizes
+  var _gfhBarsCapped = false;                           // true when the RPC hit its own row limit
+
+  // ONE combined bar-price story (Medi 2026-07-30): the scraped Costco listing AND June's
+  // manually phoned register prices, merged by time into the same line. Manual entries count
+  // as buyable (someone was quoted that price at a register), so they draw at full opacity.
+  function gfhBarRows(){
+    var m = (_gfhOnlineHist || []).slice();
+    (_gfhJuneHist || []).forEach(function(r){
+      var v = Number(r.price);
+      if(isFinite(v)) m.push({ t: r.t, price: v, in_stock: true, bar_name: "June · register (manual)" });
+    });
+    m.sort(function(a, b){ return Date.parse(a.t) - Date.parse(b.t); });
+    return m;
+  }
+
+  // Save the trigger so the chart can draw where the zone actually SAT, not a re-derivation.
+  // Minute-floored primary key = many open dashboards collapse to one row a minute, and
+  // `resolution=ignore-duplicates` makes the losers silent. Writes happen on a real move
+  // (>= a cent) or a 5-minute heartbeat, so a flat day costs ~288 tiny rows.
+  var _bzWrote = { v: null, ts: 0 };
+  function recordBuyZone(bz){
+    try{
+      if(!bz || !isFinite(bz.v)) return;
+      var now = Date.now();
+      var lastRec = _gfhBzHist.length ? Number(_gfhBzHist[_gfhBzHist.length - 1].price) : null;
+      var base = (_bzWrote.v != null) ? _bzWrote.v : lastRec;
+      var changed = (base == null) || Math.abs(bz.v - base) >= 0.01;
+      if(!changed && (now - _bzWrote.ts) < 300000) return;
+      _bzWrote = { v: bz.v, ts: now };
+      var z = (typeof window !== "undefined") && window.__gfhZone;
+      fetch(SB_URL + "/rest/v1/buyzone_history?on_conflict=t", {
+        method: "POST",
+        headers: Object.assign({ "Content-Type": "application/json",
+                                 Prefer: "resolution=ignore-duplicates" }, H),
+        body: JSON.stringify([{ t: new Date(Math.floor(now / 60000) * 60000).toISOString(),
+                                price: Math.round(bz.v * 100) / 100,
+                                basis: (z && z.onlineBased) ? "online" : "june",
+                                in_zone: !!bz.live }])
+      }).catch(function(){});                           // table missing / offline -> just skip
+    }catch(e){}
+  }
+
+  // "$4,159.99" / "−$12.34" -> Number.  money() prints a U+2212 minus, not a hyphen, and
+  // parseFloat would happily read "−$12.34" as NaN and "$12.34" as 12.34 either way — so
+  // pull the sign out first rather than trusting the number to carry it.
+  function pMoney(s){
+    if(!s) return NaN;
+    var neg = /[−-]\s*\$/.test(s);
+    var n = parseFloat(String(s).replace(/[^\d.]/g, ""));
+    return isFinite(n) ? (neg ? -n : n) : NaN;
+  }
+
+  // The two horizontal reference lines drawn across the spot chart.
+  //
+  // BUY ZONE — the spot price at which the hero card finally clears the $25/bar floor.
+  //   Profit per bar is  (eff% × buy) − buy + spot − buyerDiscount, and `buy` (Costco or
+  //   June) never depends on spot. So profit moves dollar-for-dollar with spot, and the
+  //   trigger is just today's spot plus whatever the gauge is still short by. That is read
+  //   off the gauge the dashboard already rendered rather than re-deriving the card table
+  //   here: one source of truth, and it automatically follows every override, buyer-offset
+  //   edit and stale-price fallback the engine applies.
+  // COSTCO — what a bar actually costs. Drawn faint, and drawn as a real curve as soon as
+  //   online_history holds two or more points in the window; until then it is the single
+  //   current value as a flat line. History is collected by the `online-history-tick` pg_cron
+  //   job (every 5 min, deduped on t = gold_prices.fetched_at, so one row per genuine
+  //   refresh), and only while the bar is in stock — a gap means nothing was buyable.
+  function gfhRefLines(){
+    var out = [], g = el("gaugeVal"), sp = el("spot");
+    if(g && sp && /\//.test(g.textContent)){
+      var parts = g.textContent.split("/");
+      var hero = pMoney(parts[0]), floor = pMoney(parts[1]), s = parseFloat(sp.value);
+      if(isFinite(hero) && isFinite(floor) && isFinite(s)){
+        var bz = { key: "buy", v: s + (floor - hero), live: hero >= floor };   // live = already in the zone
+        // RECORDED history first (buyzone_history, written by whichever dashboard is open —
+        // one row per minute at most, plus one per real trigger move). The recorded curve is
+        // the truth: it survives basis switches (June <-> online), discount edits and floor
+        // changes, none of which the derived fallback below can see.
+        var rec = (_gfhBzHist || []).filter(function(p){ return isFinite(Number(p.price)); })
+                                    .map(function(p){ return { t: p.t, price: Number(p.price) }; });
+        if(rec.length >= 2){
+          // Append the live value so the curve reaches "now" instead of dying at the last save.
+          rec.push({ t: new Date().toISOString(), price: bz.v });
+          // DESPIKE: a browser tab still running an OLD build writes the old trigger between
+          // everyone else's rows, and the line saw-tooths $10 hundreds of times — the "green
+          // static" of 2026-07-30. An isolated row that jumps away from BOTH agreeing
+          // neighbours is a stale writer, not a market move (a real trigger change persists
+          // across rows, so it survives this). Then collapse equal runs — a flat hour is two
+          // points, not sixty dash segments.
+          var sp = [rec[0]], dropped = 0;
+          for(var ri = 1; ri < rec.length - 1; ri++){
+            var a = rec[ri - 1].price, b = rec[ri].price, c = rec[ri + 1].price;
+            if(Math.abs(b - a) > 5 && Math.abs(b - c) > 5 && Math.abs(a - c) < 1){ dropped++; continue; }
+            sp.push(rec[ri]);
+          }
+          sp.push(rec[rec.length - 1]);
+          // AUDIT RULE (Medi 2026-07-30): filtering is a bandage, not health. Surface how much
+          // got filtered so a still-open outdated tab gets refreshed instead of quietly
+          // polluting the table forever. Read by the chart's footer note.
+          try{ window.__gfhBzNoise = dropped; }catch(e){}
+          // Keep run BOUNDARIES (first and last point of each equal stretch), so a flat hour
+          // stays flat and the change is a sharp step — dropping run-ends would redraw every
+          // step as a long slant back to wherever the run began.
+          var dd2 = sp.filter(function(p, pi){
+            return pi === 0 || pi === sp.length - 1 ||
+                   Math.abs(p.price - sp[pi - 1].price) > 0.001 ||
+                   Math.abs(p.price - sp[pi + 1].price) > 0.001;
+          });
+          var rvs = dd2.map(function(q){ return q.price; });
+          bz.series = dd2;
+          bz.lo = Math.min.apply(null, rvs); bz.hi = Math.max.apply(null, rvs);
+        } else {
+        // DERIVED fallback (pre-recording windows). When BUY is online-based, the trigger
+        // moved every time the bar price moved: profit changes by (1 - eff%) per dollar of
+        // buy, so trigger(t) shifts by (1 - eff%) x (bar(t) - 10 - buyNow). The engine
+        // publishes those constants (__gfhZone) precisely so this stays its arithmetic, not
+        // a re-derivation here. When BUY is June's phoned price, flat is honest.
+        var z = (typeof window !== "undefined") && window.__gfhZone;
+        if(z && z.onlineBased && isFinite(z.effFrac) && isFinite(z.buyNow) &&
+           _gfhOnlineHist && _gfhOnlineHist.length >= 2){
+          var f = 1 - z.effFrac, ser = [];
+          _gfhOnlineHist.forEach(function(pt){
+            var pv = Number(pt.price);
+            // in-stock rows only: an out-of-stock listing never drove BUY, so it must not
+            // reconstruct a trigger either (history records OOS prices since 2026-07-30)
+            if(isFinite(pv) && pt.in_stock !== false) ser.push({ t: pt.t, price: bz.v + f * ((pv - 10) - z.buyNow) });
+          });
+          if(ser.length >= 2){
+            ser.push({ t: new Date().toISOString(), price: bz.v });
+            var vs = ser.map(function(q){ return q.price; });
+            bz.series = ser;
+            bz.lo = Math.min.apply(null, vs); bz.hi = Math.max.apply(null, vs);
+          }
+        }
+        }
+        out.push(bz);
+        recordBuyZone(bz);
+      }
+    }
+    if(_gfhOnline && isFinite(Number(_gfhOnline.price))){
+      // Once online_history has two or more points in the window the Costco line becomes a
+      // real curve instead of a flat reference. Below two it stays flat — one point cannot
+      // describe a shape, and drawing a horizontal line through a single sample would imply
+      // a steadiness nobody measured. lo/hi are published so the domain fitter sizes the
+      // frame around the whole curve, not just its last value.
+      // The engine disqualifies the online price at 2 days old (onlineOld) and when the bar is
+      // out of stock — in either case it falls back to June's in-store number. Say so on the
+      // label. A chart quietly drawing a price the engine has already thrown away is worse
+      // than not drawing it: it looks like corroboration when it is actually contradiction.
+      var ms = _gfhOnline.fetched_at ? (Date.now() - Date.parse(_gfhOnline.fetched_at)) : 0;
+      var days = ms > 0 ? Math.floor(ms / 86400000) : 0;
+      var ref = { key: "costco", v: Number(_gfhOnline.price),
+                  stock: _gfhOnline.in_stock !== false, stale: days >= 2, days: days };
+      var barRows = gfhBarRows();                  // scraped listing + June's manual entries, one story
+      if(barRows.length >= 2){
+        var ps = barRows.map(function(p){ return Number(p.price); })
+                        .filter(function(n){ return isFinite(n); });
+        if(ps.length >= 2){
+          ref.series = barRows;
+          ref.lo = Math.min.apply(null, ps);
+          ref.hi = Math.max.apply(null, ps);
+          ref.v  = ps[ps.length - 1];             // label the newest recorded price, not the row cache
+        }
+      }
+      out.push(ref);
+    }
+    return out;
+  }
+  // A reference line's vertical extent: the whole curve when there is one, else the single value.
+  function refLo(r){ return r.lo != null ? r.lo : r.v; }
+  function refHi(r){ return r.hi != null ? r.hi : r.v; }
+
+  function drawSpotChart(pts, capped){
+    var svg = el("gfhChartSvg"), note = el("gfhChartNote"); if(!svg) return;
+    if(!pts || pts.length < 2){
+      if(note) note.textContent = "building history — the hub saves one point per minute, line appears shortly";
+      _gfhGeom = null; return;
+    }
+    // Geometry + palette copied from the futures chart so the two read as one system.
+    // Colours come from the live design tokens, not hardcoded hex: SVG attributes do not
+    // inherit CSS variables, and the old hardcoded gold kept a dark line on the cream theme.
+    var W = 1000, H = 360, padL = 8, padR = 60, padT = 12, padB = 24;
+    var cw = W - padL - padR, ch = H - padT - padB;
+    var tok = getComputedStyle(document.documentElement);
+    function T(n, fb){ var v = tok.getPropertyValue(n).trim(); return v || fb; }
+    var good = T("--good", "#4bd6a0"), bad = T("--bad", "#f2686f"),
+        grid = T("--line", "#262c3a"), mute = T("--ink-mute", "#767d90"), gold = T("--gold", "#e8c46a"),
+        panel = T("--panel", "#141824");                // backing plate for the reference-line labels
+
+    var rawLo = Infinity, rawHi = -Infinity;
+    pts.forEach(function(p){ var v = Number(p.price); if(v < rawLo) rawLo = v; if(v > rawHi) rawHi = v; });
+    var lo = rawLo, hi = rawHi, pd = (rawHi - rawLo) * 0.08 || 1; lo -= pd; hi += pd;
+
+    // Fit the reference lines into the frame — but not at any cost. Costco sits ~$110 above
+    // spot while a day of spot may only travel $40, so forcing it into view would squash the
+    // price line into a flat ribbon and destroy the thing the chart is for. Admit each line
+    // nearest-first, and only while the price line keeps at least 35% of the height. Anything
+    // that still doesn't fit is pinned to the edge with an arrow — you lose its exact position
+    // but never its value, which is printed on the label anyway. Net effect: on a 1D/1W view
+    // Costco usually does fit and you see the real spread; on a 5M view it correctly steps out.
+    // Option D — "smart band" (Medi 2026-08-19). The PRICE line always owns the height. A
+    // reference is admitted into the frame only while it leaves the price enough room; past
+    // that it drops out and gets pinned to the edge as a labelled tag (arrow + $ + distance).
+    // The BUY ZONE gets a GENEROUS guard so its shaded band shows whenever it's reasonably
+    // near — admitted only while the price keeps >=57% of the height, so a far-off weekend
+    // trigger no longer squashes the line into a ribbon. Costco keeps its tighter 35% guard.
+    var refs = gfhRefLines(), band0lo = lo, band0hi = hi;
+    var priceSpan = hi - lo, maxSpanBuy = priceSpan / 0.57, maxSpanCostco = priceSpan / 0.35;
+    function refDist(r){
+      return refLo(r) > band0hi ? refLo(r) - band0hi : (refHi(r) < band0lo ? band0lo - refHi(r) : 0);
+    }
+    refs.slice().sort(function(a, b){ return refDist(a) - refDist(b); }).forEach(function(r){
+      var nlo = Math.min(lo, refLo(r) - pd), nhi = Math.max(hi, refHi(r) + pd);
+      // Admit each line only while it keeps the price line tall enough: the buy zone gets the
+      // generous 57% guard, Costco the 35% one. A line that fails its guard is left out of the
+      // domain and pinned to the nearest edge below (off = +1/-1), band hidden, tag shown.
+      if(nhi - nlo <= (r.key === "buy" ? maxSpanBuy : maxSpanCostco)){ lo = nlo; hi = nhi; }
+    });
+
+    var t0 = Date.parse(pts[0].t), t1 = Date.parse(pts[pts.length - 1].t) || (t0 + 1);
+    // Breathing room (Medi 2026-07-30): the time axis runs ~12% past "now", so the newest
+    // price sits clear of the right edge with a stretch of blank future beside it.
+    var tEnd = t1 + Math.max((t1 - t0) * 0.08, 60000);
+    function X(iso){ return padL + (Date.parse(iso) - t0) / ((tEnd - t0) || 1) * cw; }
+    function Y(v){ return padT + (hi - v) / (hi - lo) * ch; }
+
+    var s = "";
+    for(var g = 0; g <= 4; g++){                        // 5 price gridlines + the right-hand $ axis
+      var pv = hi - (hi - lo) * g / 4, yy = Y(pv);
+      s += '<line x1="' + padL + '" y1="' + yy.toFixed(1) + '" x2="' + (padL + cw) + '" y2="' + yy.toFixed(1) +
+           '" stroke="' + grid + '" stroke-width="1"/>' +
+           '<text x="' + (padL + cw + 5) + '" y="' + (yy + 4).toFixed(1) + '" fill="' + mute +
+           '" font-family="monospace" font-size="11">$' + Math.round(pv) + '</text>';
+    }
+    // Reference-line geometry. A line outside the fitted domain is pinned to the nearest edge
+    // and flagged (off = +1 above / -1 below) so its label can say so instead of lying about
+    // where it sits.
+    var refDraw = refs.map(function(r){
+      var y = Y(r.v), off = 0;
+      if(r.v > hi){ y = padT + 0.5; off = 1; } else if(r.v < lo){ y = padT + ch - 0.5; off = -1; }
+      return { r: r, y: y, off: off };
+    });
+    // The buy zone is everything ABOVE the trigger: spot up there means the bar clears the
+    // $25/bar floor. Shade it under the price line so the line stays the brightest thing.
+    refDraw.forEach(function(o){
+      if(o.r.key !== "buy" || pts.length < 2) return;
+      // The zone's floor at any moment. Linear interpolation between saved points — the SAME
+      // shape the dashed line is drawn with — so the shade hugs the slanted line instead of
+      // stepping under it and leaving unfilled wedges above every rising stretch.
+      function zoneAt(tms){
+        var sr = o.r.series;
+        if(sr && sr.length){
+          if(tms <= Date.parse(sr[0].t)) return sr[0].price;
+          for(var zi = 1; zi < sr.length; zi++){
+            var tb = Date.parse(sr[zi].t);
+            if(tms <= tb){
+              var ta = Date.parse(sr[zi - 1].t);
+              var fr = tb > ta ? (tms - ta) / (tb - ta) : 1;
+              return sr[zi - 1].price + fr * (sr[zi].price - sr[zi - 1].price);
+            }
+          }
+          return sr[sr.length - 1].price;
+        }
+        return o.r.v;
+      }
+      function zoneY(tms){ return Math.max(padT, Math.min(padT + ch, Y(zoneAt(tms)))); }
+
+      // GREEN: everything ABOVE the zone line qualifies. Top edge of the frame across,
+      // then back along the (possibly stepped) zone line - so the shade follows every
+      // historical trigger move instead of only today's.
+      var x0 = X(pts[0].t), xN = X(pts[pts.length - 1].t);
+      var back = "";
+      for(var bi = pts.length - 1; bi >= 0; bi--)
+        back += "L" + X(pts[bi].t).toFixed(1) + "," + zoneY(Date.parse(pts[bi].t)).toFixed(1);
+      s += '<path d="M' + x0.toFixed(1) + ',' + padT + ' L' + xN.toFixed(1) + ',' + padT + ' ' +
+           back + ' Z" fill="' + good + '" opacity="0.07" stroke="none"/>';
+
+      // PURPLE: the stretches when spot actually SAT inside the zone - the times a buy
+      // cleared the $25 floor. Duration is the story here, so it is a full-height band
+      // per stretch, darker than the green so "was in" reads apart from "would qualify".
+      // The same walk collects the crossing moments for the trigger markers below.
+      var inz = false, bandX0 = 0, marks = [];
+      for(var ci = 0; ci < pts.length; ci++){
+        var tms2 = Date.parse(pts[ci].t);
+        var now2 = Number(pts[ci].price) >= zoneAt(tms2) - 1e-9;
+        if(now2 && !inz){ bandX0 = X(pts[ci].t); marks.push({ i: ci, dir: 1 }); }
+        if(!now2 && inz){
+          s += '<rect x="' + bandX0.toFixed(1) + '" y="' + padT + '" width="' +
+               (X(pts[ci].t) - bandX0).toFixed(1) + '" height="' + ch +
+               '" fill="#8a5cd6" opacity="0.14"/>';
+          marks.push({ i: ci, dir: -1 });
+        }
+        inz = now2;
+      }
+      if(inz) s += '<rect x="' + bandX0.toFixed(1) + '" y="' + padT + '" width="' +
+                   (xN - bandX0).toFixed(1) + '" height="' + ch + '" fill="#8a5cd6" opacity="0.14"/>';
+
+      // $25 TRIGGER POINTS: a dot and the clock time at every crossing. Skip the very
+      // first sample - starting inside the zone is a state, not a crossing. Cap at 12;
+      // more than that and the times shingle over each other.
+      marks.filter(function(m){ return m.i > 0; }).slice(-12).forEach(function(m){
+        var pt2 = pts[m.i];
+        var mx = X(pt2.t), my = Y(Number(pt2.price));
+        var tl = new Date(pt2.t).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+        var lab = (m.dir === 1 ? "\u25b2 $25 " : "\u25bd out ") + tl;
+        var tyy = my > padT + 26 ? my - 14 : my + 20;
+        s += '<circle cx="' + mx.toFixed(1) + '" cy="' + my.toFixed(1) + '" r="3.5" fill="#8a5cd6"/>' +
+             '<rect x="' + (mx - lab.length * 3 - 4).toFixed(1) + '" y="' + (tyy - 10).toFixed(1) +
+             '" width="' + (lab.length * 6 + 8) + '" height="13" rx="3" fill="' + panel + '" opacity="0.85"/>' +
+             '<text x="' + mx.toFixed(1) + '" y="' + tyy.toFixed(1) + '" text-anchor="middle" ' +
+             'fill="#a98ae0" font-family="monospace" font-size="9" font-weight="700">' + lab + '</text>';
+      });
+    });
+
+    var d = pts.map(function(p, i){ return (i ? "L" : "M") + X(p.t).toFixed(1) + "," + Y(Number(p.price)).toFixed(1); }).join("");
+    // Close the area fill under the LAST POINT, not the frame edge — the future gutter stays blank.
+    var xLast = X(pts[pts.length - 1].t);
+    s += '<path d="' + d + ' L' + xLast.toFixed(1) + ',' + (padT + ch) + ' L' + padL + ',' + (padT + ch) +
+         ' Z" fill="rgba(230,179,37,.10)" stroke="none"/>' +
+         '<path d="' + d + '" fill="none" stroke="' + gold + '" stroke-width="2"/>';
+
+    var last = Number(pts[pts.length - 1].price), ly = Y(last);
+    s += '<line x1="' + padL + '" y1="' + ly.toFixed(1) + '" x2="' + (padL + cw) + '" y2="' + ly.toFixed(1) +
+         '" stroke="' + gold + '" stroke-width="1" stroke-dasharray="3 3" opacity="0.85"/>' +
+         '<rect x="' + (padL + cw) + '" y="' + (ly - 9).toFixed(1) + '" width="' + padR + '" height="18" rx="3" fill="' + gold + '"/>' +
+         '<text x="' + (padL + cw + padR / 2) + '" y="' + (ly + 4).toFixed(1) + '" text-anchor="middle" fill="#1a1305" ' +
+         'font-family="monospace" font-size="11" font-weight="700">' + Math.round(last) + '</text>';
+
+    // Reference lines + their labels, drawn on top of the price line so neither is lost under
+    // it. Labels sit inside on the left because the right gutter already belongs to the $ axis
+    // and the last-price tag. Two labels closer than 13px would overlap, so nudge the lower one.
+    var labY = [], tagYs = [ly];   // right-edge tags already placed (spot first)
+    function placeTag(y0){
+      var yy = Math.max(padT + 9, Math.min(padT + ch - 9, y0));
+      tagYs.forEach(function(prev){ if(Math.abs(yy - prev) < 20) yy = prev + (yy >= prev ? 20 : -20); });
+      tagYs.push(yy);
+      return yy;
+    }
+    refDraw.slice().sort(function(a, b){ return a.y - b.y; }).forEach(function(o){
+      var isBuy = o.r.key === "buy";
+      var col = isBuy ? good : mute;
+      var op  = isBuy ? 0.95 : (o.r.stale ? 0.25 : 0.45);
+      if(o.r.series){
+        // Real recorded history. Clamp each point into the plot rather than dropping it, so a
+        // stretch that runs off the top still reads as "up there" instead of vanishing.
+        var dd = "", n = 0;
+        o.r.series.forEach(function(p){
+          var v = Number(p.price); if(!isFinite(v)) return;
+          var xx = Math.max(padL, Math.min(padL + cw, X(p.t)));
+          var yy = Math.max(padT, Math.min(padT + ch, Y(v)));
+          dd += (n++ ? "L" : "M") + xx.toFixed(1) + "," + yy.toFixed(1);
+        });
+        // Costco: since 2026-07-30 the collector records the LISTED price around the clock,
+        // stocked or not (Medi: the line must always show). Sold-out stretches draw extra
+        // faint — visible, but clearly "look, can't buy" against the buyable stretches.
+        if(o.r.key === "costco"){
+          // Base pass: the WHOLE series extra faint (sold-out stretches included).
+          if(n >= 2) s += '<path d="' + dd + '" fill="none" stroke="' + col +
+                          '" stroke-width="1.4" stroke-dasharray="2 5" opacity="0.16"/>';
+          // Overlay pass: only the in-stock runs at full reference opacity.
+          var sdd = "", run = 0;
+          o.r.series.forEach(function(p){
+            var v2 = Number(p.price);
+            if(!isFinite(v2) || p.in_stock === false){ run = 0; return; }
+            var xx2 = Math.max(padL, Math.min(padL + cw, X(p.t)));
+            var yy2 = Math.max(padT, Math.min(padT + ch, Y(v2)));
+            sdd += (run++ ? "L" : "M") + xx2.toFixed(1) + "," + yy2.toFixed(1);
+          });
+          if(/L/.test(sdd)) s += '<path d="' + sdd + '" fill="none" stroke="' + col +
+                          '" stroke-width="1.4" stroke-dasharray="2 5" opacity="' + op + '"/>';
+          dd = "";                                      // handled here; skip the generic draw below
+        }
+        // The buy-zone line is a forward-looking level ("spot here = buy"), so it carries on
+        // across the blank future gutter to the right edge at its current value.
+        if(isBuy && n >= 2){
+          var endV = Number(o.r.series[o.r.series.length - 1].price);
+          if(isFinite(endV)) dd += "L" + (padL + cw).toFixed(1) + "," +
+            Math.max(padT, Math.min(padT + ch, Y(endV))).toFixed(1);
+        }
+        if(n >= 2) s += '<path d="' + dd + '" fill="none" stroke="' + col +
+                        '" stroke-width="1.4" stroke-dasharray="2 5" opacity="' + op + '"/>';
+        // Mark each moment the recorded price actually CHANGED - a dot on the curve and the
+        // clock time under it. Costco only: the buy-zone curve is derived from these same
+        // moments, so marking both would print every timestamp twice. Cap at 14 labels;
+        // past that the clock times overlap into noise, and the accordion below has them all.
+        if(o.r.key === "costco"){
+          var chg = [], pv0 = null;
+          o.r.series.forEach(function(p2){
+            var v2 = Number(p2.price); if(!isFinite(v2)) return;
+            if(pv0 !== null && Math.abs(v2 - pv0) > 0.001) chg.push(p2);
+            pv0 = v2;
+          });
+          chg.slice(-14).forEach(function(p2){
+            var cx = Math.max(padL, Math.min(padL + cw, X(p2.t)));
+            var cy = Math.max(padT, Math.min(padT + ch, Y(Number(p2.price))));
+            var tl = new Date(p2.t).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+            var tyy = cy < padT + ch - 24 ? cy + 15 : cy - 8;   // below the dot unless near the floor
+            s += '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="3" fill="' + col +
+                 '" opacity="0.9"/>' +
+                 '<text x="' + cx.toFixed(1) + '" y="' + tyy.toFixed(1) + '" text-anchor="middle" fill="' + col +
+                 '" font-family="monospace" font-size="9" opacity="0.8">' + tl + '</text>';
+          });
+        }
+      } else {
+        s += '<line x1="' + padL + '" y1="' + o.y.toFixed(1) + '" x2="' + (padL + cw) + '" y2="' + o.y.toFixed(1) +
+             '" stroke="' + col + '" stroke-width="' + (isBuy ? 1.5 : 1) + '" stroke-dasharray="' +
+             (isBuy ? "7 4" : "2 5") + '" opacity="' + op + '"/>';
+      }
+      var ty = o.y - 5; if(ty < padT + 11) ty = o.y + 13;
+      for(var q = 0; q < labY.length; q++) if(Math.abs(ty - labY[q]) < 13) ty = labY[q] + 13;
+      labY.push(ty);
+      if(o.r.key === "buy"){
+        // The zone trigger's dollar amount on the right edge - green like its line, so the
+        // three tags (spot gold, costco muted, zone green) name themselves by colour.
+        var bty = placeTag(o.y);
+        s += '<rect x="' + (padL + cw) + '" y="' + (bty - 9).toFixed(1) + '" width="' + padR +
+             '" height="18" rx="3" fill="' + good + '"/>' +
+             '<text x="' + (padL + cw + padR / 2) + '" y="' + (bty + 4).toFixed(1) +
+             '" text-anchor="middle" fill="#0d2113" font-family="monospace" font-size="11" font-weight="700">' +
+             Math.round(o.r.v) + '</text>';
+      }
+      if(o.r.key === "costco"){
+        // The bar's dollar amount on the right edge, same treatment as the spot tag so the
+        // two prices read as peers. Clamped into the frame; nudged if it would sit on the
+        // spot tag. Muted fill = reference, gold fill = the live line - hierarchy by colour.
+        var cty = placeTag(o.y);
+        s += '<rect x="' + (padL + cw) + '" y="' + (cty - 9).toFixed(1) + '" width="' + padR +
+             '" height="18" rx="3" fill="' + mute + '"/>' +
+             '<text x="' + (padL + cw + padR / 2) + '" y="' + (cty + 4).toFixed(1) +
+             '" text-anchor="middle" fill="' + panel + '" font-family="monospace" font-size="11" font-weight="700">' +
+             Math.round(o.r.v) + '</text>';
+      }
+      var arrow = o.off === 1 ? " ↑" : o.off === -1 ? " ↓" : "";
+      // Option D: when the buy zone is pinned off-frame its band is gone, so the tag carries
+      // the exact gap ("$NN away" = how far spot must move) — you lose position, never distance.
+      var offDist = (isBuy && o.off !== 0) ? "  $" + Math.abs(o.r.v - last).toFixed(0) + " away" : "";
+      var txt = isBuy
+        ? "BUY ZONE ≥ $" + o.r.v.toFixed(2) + (o.r.live ? "  ✓ IN ZONE" : "") + arrow + offDist
+        : "COSTCO $" + o.r.v.toFixed(2) +
+          (o.r.stale ? " (" + o.r.days + "d old · engine ignoring)" : o.r.stock ? "" : " (out of stock)") + arrow;
+      // Backing pill. The price line wanders straight through where these labels sit and was
+      // slicing the digits in half; a panel-coloured plate behind the text keeps it readable
+      // without hiding the line. 6px/char is the advance width of this monospace face at 10px.
+      s += '<rect x="' + (padL + 3) + '" y="' + (ty - 10).toFixed(1) + '" width="' + (txt.length * 6 + 8) +
+           '" height="14" rx="3" fill="' + panel + '" opacity="0.82"/>';
+      s += '<text x="' + (padL + 6) + '" y="' + ty.toFixed(1) + '" fill="' + col + '" font-family="monospace" ' +
+           'font-size="10" font-weight="' + (isBuy ? 700 : 400) + '" opacity="' + (isBuy ? 1 : 0.7) + '">' +
+           txt + '</text>';
+    });
+
+    var wide = (GFH_TFS[gfhTf] || 0) >= 10080;          // week/month views label by date, not clock time
+    function tLab(iso){ var dd = new Date(iso);
+      return wide ? dd.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                  : dd.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }); }
+    [0, Math.floor(pts.length / 2), pts.length - 1].forEach(function(i, k){
+      var anch = k === 0 ? "start" : k === 2 ? "end" : "middle";
+      s += '<text x="' + X(pts[i].t).toFixed(1) + '" y="' + (H - 7) + '" text-anchor="' + anch + '" fill="' + mute +
+           '" font-family="monospace" font-size="10">' + tLab(pts[i].t) + '</text>';
+    });
+    s += '<line id="gfhCrossX" x1="0" y1="' + padT + '" x2="0" y2="' + (padT + ch) + '" stroke="' + mute +
+         '" stroke-width="1" stroke-dasharray="2 3" opacity="0"/>' +
+         '<circle id="gfhCrossDot" r="3.5" fill="' + gold + '" opacity="0"/>';
+    svg.innerHTML = s;
+    _gfhGeom = { pts: pts, W: W, X: X, Y: Y };
+    _gfhLast = { pts: pts, capped: capped };
+
+    var first = Number(pts[0].price), chg = last - first, pct = first ? chg / first * 100 : 0;
+    var lastEl = el("gfhChartLast");
+    if(lastEl){
+      lastEl.textContent = "$" + last.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      lastEl.className = "cs-last " + (chg >= 0 ? "up" : "down");
+    }
+    var rng = el("gfhChartRange");
+    if(rng) rng.innerHTML = '<span style="color:' + (chg >= 0 ? good : bad) + '">' + (chg >= 0 ? "▲" : "▼") +
+      " $" + Math.abs(chg).toFixed(2) + " (" + (pct >= 0 ? "+" : "") + pct.toFixed(2) + "%)</span> · " +
+      gfhTf + (gfhTf === "1M" ? " (month)" : "") + " window";
+    // State the span actually drawn, not the span the button asked for. The server row cap
+    // means a wide window can silently cover less than its label claims — say so.
+    var mins = Math.round((t1 - t0) / 60000);
+    var span = mins < 90 ? mins + " min" : mins < 2880 ? (mins / 60).toFixed(1) + " hrs" : (mins / 1440).toFixed(1) + " days";
+    if(note) note.textContent = pts.length + " pts · covering " + span + " · low $" + rawLo.toFixed(2) +
+      " · high $" + rawHi.toFixed(2) + (capped ? " · ⚠ window truncated by the server row cap" : "") +
+      " · this hub's own 1-min spot saves" +
+      (window.__gfhBzNoise >= 3 ? " · ⚠ " + window.__gfhBzNoise +
+        " stale buy-zone points filtered — an OUTDATED dashboard tab is still open somewhere, refresh it" : "");
+  }
+  // Crosshair + tooltip, wired once. Snaps to the nearest real sample rather than
+  // interpolating, so the number under the pointer is always a price we actually saved.
+  function wireSpotHover(){
+    var wrap = el("gfhChartWrap"); if(!wrap || wrap.__gfhWired) return;
+    wrap.__gfhWired = true;
+    wrap.addEventListener("mousemove", function(e){
+      if(!_gfhGeom) return;
+      var svg = el("gfhChartSvg"), r = svg.getBoundingClientRect(); if(!r.width) return;
+      var vx = (e.clientX - r.left) / r.width * _gfhGeom.W;
+      var pts = _gfhGeom.pts, best = 0, bd = Infinity;
+      for(var i = 0; i < pts.length; i++){
+        var dx = Math.abs(_gfhGeom.X(pts[i].t) - vx);
+        if(dx < bd){ bd = dx; best = i; }
+      }
+      var p = pts[best], px = _gfhGeom.X(p.t), py = _gfhGeom.Y(Number(p.price));
+      var cx = el("gfhCrossX"), dot = el("gfhCrossDot");
+      if(cx){ cx.setAttribute("x1", px.toFixed(1)); cx.setAttribute("x2", px.toFixed(1)); cx.setAttribute("opacity", "0.7"); }
+      if(dot){ dot.setAttribute("cx", px.toFixed(1)); dot.setAttribute("cy", py.toFixed(1)); dot.setAttribute("opacity", "1"); }
+      var tip = el("gfhChartTip"); if(!tip) return;
+      tip.innerHTML = "<b>$" + Number(p.price).toFixed(2) + "</b><br>" +
+        new Date(p.t).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+      tip.style.display = "block";
+      var wr = wrap.getBoundingClientRect();
+      var lx = e.clientX - wr.left + 12; if(lx > wr.width - 140) lx = e.clientX - wr.left - 128;
+      tip.style.left = lx + "px"; tip.style.top = (e.clientY - wr.top + 10) + "px";
+    });
+    wrap.addEventListener("mouseleave", function(){
+      var t = el("gfhChartTip"); if(t) t.style.display = "none";
+      var cx = el("gfhCrossX"), dot = el("gfhCrossDot");
+      if(cx) cx.setAttribute("opacity", "0");
+      if(dot) dot.setAttribute("opacity", "0");
+    });
+  }
+  // PostgREST caps EVERY response at 1000 rows no matter what `limit` says — a 24h window
+  // holds ~1262 ticks and the server answered `Content-Range: 0-999/1262`. The old query
+  // ordered ASCENDING, so it silently received the OLDEST 1000 and threw away everything
+  // newer: the chart sat ~4h in the past and would have drifted further every day as
+  // history grew. Fetch newest-first and page backwards instead.
+  // 12 pages = 12,000 one-minute ticks ≈ 8.3 days. Was 6 (≈4.2 days), which on 2026-08-01
+  // silently cut the 1M/1W views short of history that actually existed (spot recording
+  // began Jul 27). The footer's "window truncated" warning stays honest for a real month
+  // once the table outgrows this; server-side downsampling is the eventual fix, not more pages.
+  var GFH_PAGE = 1000, GFH_MAXPAGES = 12;
+  function loadSpotChart(){
+    var win = GFH_TFS[gfhTf] || 1440;
+    var since = new Date(Date.now() - win * 60000).toISOString();
+    var url = SB_URL + "/rest/v1/spot_history?select=t,price&t=gte." + since + "&order=t.desc";
+    var all = [], page = 0, capped = false;
+    function grab(){
+      var from = page * GFH_PAGE;
+      return fetch(url, { headers: Object.assign({ Range: from + "-" + (from + GFH_PAGE - 1) }, H) })
+        .then(function(r){ return r.json(); })
+        .then(function(rows){
+          if(!Array.isArray(rows) || !rows.length) return;
+          all = all.concat(rows);
+          page++;
+          if(rows.length < GFH_PAGE) return;         // reached the start of the window
+          if(page < GFH_MAXPAGES) return grab();
+          capped = true;                              // hit our own page budget, not the window
+        });
+    }
+    // Both history tables below share spot's 1000-row-cap problem: PostgREST truncates
+    // every response at 1000 rows, so a single newest-first page silently cuts the line
+    // to the newest ~day once a table grows past 1000 rows in the window. buyzone_history
+    // crossed that line on 2026-08-01 (2,431 rows — several tabs write ~1 row/min), and
+    // online_history (~288 rows/day since migration 003) is days from it. Page backwards
+    // to the same GFH_MAXPAGES budget as spot — the x-axis can't outgrow spot anyway.
+    function pageBack(table, select, done){
+      var all = [], page = 0;
+      function grab(){
+        var from = page * GFH_PAGE;
+        return fetch(SB_URL + "/rest/v1/" + table + "?select=" + select + "&t=gte." + since + "&order=t.desc",
+                     { headers: Object.assign({ Range: from + "-" + (from + GFH_PAGE - 1) }, H) })
+          .then(function(r){ return r.json(); })
+          .then(function(rows){
+            if(!Array.isArray(rows) || !rows.length) return;
+            all = all.concat(rows);
+            page++;
+            if(rows.length < GFH_PAGE) return;         // reached the start of the window
+            if(page < GFH_MAXPAGES) return grab();
+          });
+      }
+      // Missing table or a PostgREST error body (not an array) both land on [] -> fallbacks.
+      return grab().then(function(){ done(all.reverse()); }).catch(function(){ done([]); });
+    }
+    var histDone = pageBack("online_history", "t,price,bar_name,in_stock,item",
+                            function(rows){ _gfhOnlineHist = rows; });
+    var bzDone = pageBack("buyzone_history", "t,price",
+                          function(rows){ _gfhBzHist = rows; });
+
+    // June's manual register entries (table lands with migration 004; [] until then).
+    var juneDone = fetch(SB_URL + "/rest/v1/june_history?select=t,price&t=gte." + since + "&order=t.desc",
+                       { headers: Object.assign({ Range: "0-999" }, H) })
+      .then(function(r){ return r.json(); })
+      .then(function(rows){ _gfhJuneHist = Array.isArray(rows) ? rows.slice().reverse() : []; })
+      .catch(function(){ _gfhJuneHist = []; });
+
+    // ---- ALL BARS, every size — the history box's own source (migration 005) ----
+    // NOT the chart's. The chart line stays on online_history (cheapest in-stock 1oz), because
+    // ~45 bars drawn together is not a chart. The box wants the opposite: everything.
+    //
+    // This is an RPC, not a table read, and that is the whole point. bars_history collects
+    // ~45 rows per fetch x ~180 fetches/day ~= 8,100 rows/day, and the box only ever displays
+    // rows whose price MOVED — a couple hundred a day. Reading the raw table would page ~8
+    // times for a 1-day window and blow straight past pageBack's 12,000-row budget on 1W/1M,
+    // truncating silently: the same failure the pageBack comment above exists to prevent.
+    // bars_changes(since, lim) does the lag() comparison server-side, after the time filter,
+    // and hands back only the changes.
+    var BARS_LIM = 800;
+    var barsDone = fetch(SB_URL + "/rest/v1/rpc/bars_changes", {
+        method: "POST",
+        headers: Object.assign({ "Content-Type": "application/json" }, H),
+        body: JSON.stringify({ since: since, lim: BARS_LIM })
+      })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(rows){
+        _gfhBarsHist = Array.isArray(rows) ? rows : [];
+        _gfhBarsCapped = _gfhBarsHist.length >= BARS_LIM;
+      })
+      // Missing function (migration 005 not run yet) or any error -> [] and the box falls
+      // back to the old online_history story, so it degrades to yesterday rather than blank.
+      .catch(function(){ _gfhBarsHist = []; _gfhBarsCapped = false; });
+
+    Promise.all([grab(), histDone, bzDone, juneDone, barsDone])
+      .then(function(){
+        if(!all.length) return;
+        all.reverse();                                // back to oldest -> newest for drawing
+        if(all.length > 600){                         // thin for drawing speed; always keep the newest point
+          var step = Math.ceil(all.length / 600), thin = [];
+          for(var i = 0; i < all.length; i += step) thin.push(all[i]);
+          if(thin[thin.length - 1] !== all[all.length - 1]) thin.push(all[all.length - 1]);
+          all = thin;
+        }
+        drawSpotChart(all, capped);
+        renderHistBox();
+      })
+      .catch(function(){ /* keep whatever is drawn */ });
+  }
+
+  // ---- accordion: every recorded bar-price change in the chart's window ----
+  //
+  // SOURCE CHANGED 2026-08-04. This box used to read the same online_history rows the
+  // chart draws — which meant it could only ever show changes to ONE bar, the cheapest
+  // in-stock 1oz. Every 10oz move and every fractional-size move was invisible, because
+  // the scraper parsed those bars and then threw them away without storing them.
+  //
+  // It now reads bars_changes() over bars_history (migration 005): every gold bar the
+  // feed lists, at every weight, in stock or not. The CHART is deliberately left on
+  // online_history — one line per bar across ~45 bars is spaghetti, not a chart.
+  //
+  //     chart line -> online_history  (cheapest in-stock 1oz, one story)
+  //     this box   -> bars_history    (all bars, all sizes, every change)
+  //
+  // Rows are still grouped per bar, so a product swap (Argor -> Pamp etc.) reads as its
+  // own "first seen" line instead of a fake price jump inside one bar's story — that
+  // grouping now happens server-side, in bars_changes' partition by item.
+  //
+  // FALLBACK: if the RPC is missing (migration 005 not run yet) or errors, the old
+  // online_history derivation below still runs, so the box degrades to what it showed
+  // yesterday rather than going blank.
+  function renderHistBox(){
+    var host = el("gfhHistRows"), cnt = el("gfhHistCount");
+    if(!host){
+      var anchor = el("chartBox"); if(!anchor) return;
+      var d = document.createElement("details");
+      d.className = "chartbox"; d.id = "gfhHistBox";
+      d.innerHTML =
+        '<summary class="chart-sum">' +
+          '<span class="cs-l"><span class="cs-ic">\ud83e\uddfe</span> Costco bar price history \u2014 all sizes' +
+            '<span class="cs-sub">every bar, every weight \u00b7 window follows the chart timeframe</span></span>' +
+          '<span class="cs-r"><span class="cs-last" id="gfhHistCount">\u2014</span>' +
+            '<span class="cs-toggle"><span class="cs-chev">\u25be</span></span></span>' +
+        '</summary>' +
+        '<div class="chart-body"><div id="gfhHistRows" ' +
+          'style="font-family:monospace;font-size:12px;line-height:1.5;overflow-x:auto"></div></div>';
+      // MOVED TO THE BOTTOM (Medi, 2026-08-04). This used to sit directly under the chart,
+      // which put the 44-bar all-sizes list ahead of the numbers the page is actually for.
+      // The dashboard now carries its own "1 oz bar history" box up top; this one is the
+      // reference dump, so it belongs last. Appended to the chart box's own parent \u2014 the
+      // same container it already lived in \u2014 so it lands at the end of the page content
+      // without needing to know any other element's id.
+      anchor.parentNode.appendChild(d);
+      host = el("gfhHistRows"); cnt = el("gfhHistCount");
+    }
+    if(!host) return;
+    var ev = [], allBars = false, nBars = 0;
+
+    if(_gfhBarsHist && _gfhBarsHist.length){
+      // ---- ALL BARS (bars_changes RPC). Already reduced to changes and ordered newest
+      // first; reverse to oldest-first so the shared display code below is untouched.
+      // prev_price === null means "first row for this bar inside the window" -> "first seen".
+      allBars = true;
+      var uniq = {};
+      _gfhBarsHist.slice().reverse().forEach(function(r){
+        var v = Number(r.price); if(!isFinite(v)) return;
+        uniq[r.item] = true;
+        var p = (r.prev_price == null) ? null : Number(r.prev_price);
+        ev.push({ t: r.t, bar: r.bar_name || "(bar not recorded)", item: r.item,
+                  wt: (r.weight_oz == null ? null : Number(r.weight_oz)),
+                  stock: r.in_stock !== false,
+                  from: (p != null && isFinite(p)) ? p : null, to: v });
+      });
+      for(var k in uniq){ if(Object.prototype.hasOwnProperty.call(uniq, k)) nBars++; }
+    } else {
+      // ---- FALLBACK: the pre-005 story — cheapest-1oz listing + June's manual entries.
+      var rows = gfhBarRows();
+      if(rows.length < 1){
+        host.innerHTML = '<div style="opacity:.6">No recorded history in this window yet. ' +
+          'The collector writes one row per bar per Costco refresh (~8 min), plus June’s manual entries.</div>';
+        if(cnt) cnt.textContent = "0 changes";
+        return;
+      }
+      var lastByBar = {};
+      rows.forEach(function(r){
+        var v = Number(r.price); if(!isFinite(v)) return;
+        var barName = r.bar_name || "(bar not recorded)";
+        var prev = lastByBar[barName];
+        if(prev === undefined) ev.push({ t: r.t, bar: barName, item: r.item, from: null, to: v });
+        else if(Math.abs(v - prev) > 0.001) ev.push({ t: r.t, bar: barName, item: r.item, from: prev, to: v });
+        lastByBar[barName] = v;
+      });
+    }
+
+    if(!ev.length){
+      host.innerHTML = '<div style="opacity:.6">No recorded history in this window yet. ' +
+        'The collector writes one row per bar per Costco refresh (~8 min).</div>';
+      if(cnt) cnt.textContent = "0 changes";
+      return;
+    }
+    function f2(n){ return "$" + n.toFixed(2); }
+    // Weight is only known on the all-bars path, and it is the column that makes a 45-bar
+    // list readable — "$40,499.99" means nothing until you can see it is a 10oz bar.
+    function wtLabel(w){
+      if(w == null || !isFinite(w)) return "";
+      if(Math.abs(w - Math.round(w)) < 0.001) return Math.round(w) + " oz";
+      return (Math.round(w * 1000) / 1000) + " oz";
+    }
+    var SHOW = allBars ? 250 : 120;                // ~45 bars means 45 "first seen" lines alone
+    var shown = ev.slice().reverse().slice(0, SHOW);
+    var html = "";
+    shown.forEach(function(e){
+      var d2 = new Date(e.t);
+      var when = d2.toLocaleDateString("en-US",{month:"short",day:"numeric"}) + " " +
+                 d2.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+      var delta = e.from == null ? "first seen"
+        : (e.to > e.from ? "\u25b2 +" : "\u25bc \u2212") + Math.abs(e.to - e.from).toFixed(2);
+      var col = e.from == null ? "inherit" : (e.to > e.from ? "var(--bad,#d23b45)" : "var(--good,#0f9d6b)");
+      html += '<div style="display:flex;gap:14px;flex-wrap:wrap;padding:3px 0;border-bottom:1px solid var(--line,#333)">' +
+        '<span style="opacity:.6;min-width:110px">' + when + '</span>' +
+        (allBars ? '<span style="opacity:.75;min-width:56px;text-align:right">' + wtLabel(e.wt) + '</span>' : '') +
+        '<span style="min-width:80px;font-weight:700">' + f2(e.to) + '</span>' +
+        '<span style="min-width:110px;color:' + col + '">' + delta +
+          (e.from != null ? ' <span style="opacity:.5">(was ' + f2(e.from) + ')</span>' : '') + '</span>' +
+        '<span style="opacity:.55">' + (e.item
+          ? '<a href="https://www.costco.com/.product.' + e.item + '.html" target="_blank" rel="noopener" ' +
+            'style="color:inherit;text-decoration:underline dotted">' + e.bar + ' ↗</a>'
+          : e.bar) +
+          // "sold out" is said out loud rather than implied: an out-of-stock row is a listed
+          // price, not a price anyone could pay, and the two must not read the same.
+          (allBars && e.stock === false ? ' <span style="opacity:.45">· sold out</span>' : '') +
+        '</span>' +
+      '</div>';
+    });
+    // NO SILENT TRUNCATION. If rows were dropped — by the display cap or by the RPC's own
+    // limit — say so, with the numbers. A list that quietly stops at 250 reads as "that is
+    // everything that happened", which is the exact lie this box now exists to stop telling.
+    if(ev.length > shown.length || _gfhBarsCapped){
+      html += '<div style="opacity:.55;padding:6px 0">showing the newest ' + shown.length +
+              ' of ' + ev.length + (_gfhBarsCapped ? '+ (server row limit reached)' : '') +
+              ' — pick a shorter chart timeframe to see a window in full</div>';
+    }
+    host.innerHTML = html;
+    var nchg = 0;
+    ev.forEach(function(e){ if(e.from != null) nchg++; });
+    if(cnt) cnt.textContent = nchg + " change" + (nchg === 1 ? "" : "s") +
+                              (allBars && nBars ? " · " + nBars + " bars" : "");
+  }
+
+  // ==========================================================================================
+  // RULE 16 — stock verification latch (2026-08-01).
+  //
+  // The feed lied: costcogoldinventory said the Rand bar (1943085) was IN STOCK while
+  // costco.com itself returned "product not available". No robot can re-check for us —
+  // Costco's Akamai wall 403s curl, PowerShell and headless Chrome, and bullion is excluded
+  // from the sitemaps — so verification is one HUMAN click in a real browser, and this table
+  // (stock_checks, migration 004) is the shared memory that makes one person's click flip
+  // every open dashboard + the alert engine at once. Fail-open: no verdict = trust the feed.
+  // A 'no' verdict counts only for the item it names, only while the feed says IN STOCK,
+  // and only for 6 hours; a newer 'yes' overrides it.
+  // ==========================================================================================
+  var CHECK_TTL_MS = 6 * 3600 * 1000;
+  var _gfhCheck = null;                       // latest stock_checks row for the current item
+  function checkVerdict(online){
+    if(!(online && online.in_stock && online.item && _gfhCheck)) return null;
+    if(String(_gfhCheck.item) !== String(online.item)) return null;
+    var age = Date.now() - Date.parse(_gfhCheck.checked_at);
+    if(!(isFinite(age) && age >= 0 && age < CHECK_TTL_MS)) return null;
+    return _gfhCheck.verdict === "no" ? "no" : "yes";
+  }
+  function loadCheck(rows){
+    var online = null;
+    (rows || []).forEach(function(r){ if(r.id === "online") online = r; });
+    if(!(online && online.in_stock && online.item)){ _gfhCheck = null; return Promise.resolve(rows); }
+    return fetch(SB_URL + "/rest/v1/stock_checks?item=eq." + encodeURIComponent(online.item) +
+                 "&select=item,verdict,checked_at&order=checked_at.desc&limit=1", { headers: H })
+      .then(function(r){ return r.ok ? r.json() : []; })
+      .then(function(cs){ _gfhCheck = (Array.isArray(cs) && cs[0]) ? cs[0] : null; return rows; })
+      .catch(function(){ return rows; });     // network blip -> keep the last-known verdict
+  }
+  function writeCheck(item, verdict, host){
+    fetch(SB_URL + "/rest/v1/stock_checks", {
+      method: "POST",
+      headers: Object.assign({ "Content-Type": "application/json", Prefer: "return=minimal" }, H),
+      body: JSON.stringify({ item: String(item), verdict: verdict, note: "dashboard click" })
+    }).then(function(r){
+      if(!r.ok && host) host.innerHTML = '<span style="opacity:.7">⚠ not saved — is migration 004 run?</span>';
+      else load();                            // re-read so THIS click repaints badge + rule 12 now
+    }).catch(function(){ if(host) host.innerHTML = '<span style="opacity:.7">⚠ offline — not saved</span>'; });
+  }
+  function mountVerify(online){
+    var s = el("inStockV"); if(!s || !s.parentNode) return;
+    var w = el("gfhVerify");
+    if(!w){
+      w = document.createElement("span");
+      w.id = "gfhVerify";
+      w.style.cssText = "margin-left:8px;font-size:11px;white-space:nowrap;display:inline-flex;gap:6px;align-items:center;";
+      s.parentNode.insertBefore(w, s.nextSibling);
+    }
+    if(!(online && online.in_stock && online.item)){ w.innerHTML = ""; return; }
+    var url  = "https://www.costco.com/.product." + online.item + ".html";
+    var link = '<a href="' + url + '" target="_blank" rel="noopener" ' +
+               'title="Open the listing on costco.com itself — the 2-second truth check (rule 16)" ' +
+               'style="color:inherit;opacity:.75;text-decoration:underline dotted">Costco ↗</a>';
+    function btn(id, label, title){
+      return '<button id="' + id + '" title="' + title + '" style="font:inherit;font-size:10px;' +
+             'padding:1px 7px;border-radius:9px;border:1px solid var(--line2,#888);' +
+             'background:transparent;color:inherit;cursor:pointer;opacity:.85">' + label + '</button>';
+    }
+    var v = checkVerdict(online);
+    if(v === "no")
+      w.innerHTML = link + btn("gfhCkYes", "✓ it's live now",
+        "Costco shows the listing again — clear the mismatch flag for everyone");
+    else if(v === "yes")
+      w.innerHTML = link + '<span style="opacity:.6" title="A human confirmed the listing live on costco.com">✓ verified ' +
+        (fmtT(_gfhCheck.checked_at) || "").slice(11) + '</span>' +
+        btn("gfhCkNo", "✗", "Costco says NO after all — flag the mismatch");
+    else
+      w.innerHTML = link + btn("gfhCkNo", "✗ Costco says NO?",
+        "Opened the link and got 404 / unavailable? One click flags it on every dashboard and mutes the restock alert (rule 16)");
+    var bn = el("gfhCkNo"), by = el("gfhCkYes");
+    if(bn) bn.addEventListener("click", function(){ bn.disabled = true; writeCheck(online.item, "no",  w); });
+    if(by) by.addEventListener("click", function(){ by.disabled = true; writeCheck(online.item, "yes", w); });
+  }
+
+  function load(){
+    nextAt = Date.now() + 60000;
+    fetch(SB_URL + "/rest/v1/gold_prices?select=*", { headers: H })
+      .then(function(r){ return r.json(); })
+      .then(function(rows){
+        if(!Array.isArray(rows)) return;
+        // verdict first, THEN apply — apply() folds the verdict into the ingest map
+        return loadCheck(rows).then(function(){ apply(rows); });
+      })
+      .catch(function(){ /* keep last-good; applySheet's stale-guard greys after 3 min of no advance */ });
+  }
+
+  var FN_URL = SB_URL + "/functions/v1/refresh-prices?online=1";   // force a fresh spot+online fetch on demand
+  function wirePull(){
+    var b = el("onlinePullBtn"); if(!b) return;
+    var nb = b.cloneNode(true); b.parentNode.replaceChild(nb, b);   // strip the artifact's "tell Claude" handler
+    nb.addEventListener("click", function(){
+      if(nb.disabled) return; nb.disabled = true;
+      var r = el("onlineReq");
+      if(r){ r.textContent = "↻ Fetching a fresh price now…"; r.style.display = "block"; }
+      // log the request (audit) — fire and forget
+      fetch(SB_URL + "/rest/v1/pull_requests", {
+        method: "POST",
+        headers: Object.assign({ "Content-Type": "application/json", Prefer: "return=minimal" }, H),
+        body: JSON.stringify({ note: "brother page pull " + new Date().toISOString() })
+      }).catch(function(){});
+      // trigger a real fresh fetch on Supabase, then reload the displayed values
+      fetch(FN_URL, { method: "POST" })
+        .then(function(res){ return res.json(); })
+        .then(function(j){
+          if(Array.isArray(j && j.data)) apply(j.data);           // instant paint from the function's own return
+          if(r){ r.textContent = (j && j.wrote && j.wrote.length)
+            ? "✓ Fresh price pulled just now."
+            : "✓ Checked — no in-stock change; showing the last saved price."; }
+        })
+        .catch(function(){ if(r){ r.textContent = "↻ Couldn't reach the feed — showing the last saved price."; } load(); })
+        .then(function(){ setTimeout(function(){ nb.disabled = false; }, 1200); });
+    });
+  }
+
+  function start(){
+    var s = el("spotStatus"); if(s){ s.textContent = "● connecting…"; s.className = "spot-status"; }
+    wirePull(); mountTimer(); load(); setInterval(load, 60000); setInterval(tickTimer, 1000);
+    mountSpotChart(); wireSpotHover(); renameFuturesChart(); rewireOnlineBtn(); loadSpotChart(); setInterval(loadSpotChart, 300000);   // chart refetches every 5 min
+    // SVG attributes cannot inherit CSS variables, so the palette is baked in at draw time.
+    // Flipping the theme therefore left the chart in the old theme's colours until the next
+    // redraw — briefly painting a near-black label plate onto the cream page. Redraw on the
+    // toggle instead of waiting for the 60s price tick to clean it up.
+    var tb = el("themeBtn");
+    if(tb) tb.addEventListener("click", function(){
+      setTimeout(function(){ if(_gfhLast) drawSpotChart(_gfhLast.pts, _gfhLast.capped); }, 60);
+    });
+  }
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
+})();
+</script>
