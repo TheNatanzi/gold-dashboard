@@ -2109,7 +2109,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 193de24 · built 2026-08-20 21:21 UTC</span>
+    <span id="verStamp" class="tnum">version: f23f9a2 · built 2026-08-21 01:14 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -5424,24 +5424,50 @@
              d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}); }
     var MAN_ROW = 'display:flex;gap:14px;flex-wrap:wrap;padding:4px 0;' +
                   'border-bottom:1px solid var(--line);background:rgba(217,169,63,.06)';
+    // TYPO BLOCKLIST — rows fat-fingered into the log. The anon key cannot DELETE
+    // (RLS), so they are hidden here until removed in the Supabase dashboard.
+    // log_id 9 = $3,539.99 typed 2026-08-20 (should have been $4,539.99-ish).
+    var PRICE_TYPO_IDS = {9:1};
+    // COMBINE call + typed price (Medi, 2026-08-21): one warehouse visit produces two
+    // rows minutes apart. Pair each price with the nearest call by the SAME person
+    // within 30 minutes and render ONE line carrying both the price and the stock.
+    var usedPrice = {};
+    function nearestPrice(c){
+      var ct = new Date(c.called_at).getTime(), best = null, bestGap = 30*60*1000 + 1;
+      manPrices.forEach(function(p, i){
+        if(usedPrice[i] || !p || !p.updated_at || !isFinite(Number(p.price))) return;
+        if(PRICE_TYPO_IDS[p.log_id]) return;
+        if((p.updated_by || "") !== (c.called_by || "")) return;
+        var gap = Math.abs(new Date(p.updated_at).getTime() - ct);
+        if(gap < bestGap){ bestGap = gap; best = i; }
+      });
+      if(best != null) usedPrice[best] = 1;
+      return best == null ? null : manPrices[best];
+    }
     manCalls.forEach(function(c){
       if(!c || !c.called_at || isNaN(new Date(c.called_at))) return;
       nManual++;
       var okC = c.in_stock ? "var(--good,#0f9d6b)" : "var(--bad,#d23b45)";
       var who = c.called_by === "june" ? "June" : c.called_by === "medi" ? "Medi" : (c.called_by || "?");
       var bars = (Number(c.pamp)||0) + "P / " + (Number(c.generic)||0) + "G";
+      var p = nearestPrice(c);
       pieces.push({t: c.called_at, html: '<div style="' + MAN_ROW + '">' +
         '<span style="opacity:.6;min-width:112px">' + manWhen(c.called_at) + '</span>' +
-        '<span style="min-width:86px;opacity:.4">—</span>' +
+        (p ? '<span style="min-width:86px;font-weight:700">' + barHistFmt(p.price) + '</span>'
+           : '<span style="min-width:86px;opacity:.4">—</span>') +
         '<span style="min-width:96px;display:inline-block;font-weight:700;color:' + okC + '">' +
           (c.in_stock ? "IN STOCK" : "SOLD OUT") + '</span>' +
-        '<span style="min-width:92px;font-weight:700;color:var(--warn,#d9a93f)">📞 call</span>' +
+        '<span style="min-width:92px;font-weight:700;color:var(--warn,#d9a93f)">' +
+          (p ? '📞✍ call+price' : '📞 call') + '</span>' +
         '<span style="color:var(--warn,#d9a93f)">' + escTxt(c.store_name || "?") + " warehouse — " +
-          (c.in_stock ? bars + " in stock" : "sold out") + " · called by " + escTxt(who) +
+          (c.in_stock ? bars + " in stock" : "sold out") +
+          (p ? " · shelf " + barHistFmt(p.price) : "") + " · by " + escTxt(who) +
           (c.note ? " · “" + escTxt(c.note) + "”" : "") + '</span></div>'});
     });
-    manPrices.forEach(function(p){
+    manPrices.forEach(function(p, i){
+      if(usedPrice[i]) return;   // already shown on its call's line
       if(!p || !p.updated_at || isNaN(new Date(p.updated_at)) || !isFinite(Number(p.price))) return;
+      if(PRICE_TYPO_IDS[p.log_id]) return;
       nManual++;
       var who = p.updated_by === "june" ? "June" : p.updated_by === "medi" ? "Medi" : (p.updated_by || "?");
       pieces.push({t: p.updated_at, html: '<div style="' + MAN_ROW + '">' +
@@ -5483,7 +5509,7 @@
              "&called_at=gte." + encodeURIComponent(since) +
              "&order=called_at.desc&limit=200";
     var qp = SB_URL + "/rest/v1/alchemy_price_log" +
-             "?select=price,updated_at,updated_by" +
+             "?select=log_id,price,updated_at,updated_by" +
              "&updated_at=gte." + encodeURIComponent(since) +
              "&order=updated_at.desc&limit=200";
     return Promise.all([sbFetch(qc,{headers:sbH()}), sbFetch(qp,{headers:sbH()})])
