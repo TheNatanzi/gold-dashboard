@@ -1069,6 +1069,23 @@
     <h4>Gold vendors — where the bars get sold</h4>
     <p class="md">Full evidence: MS Resources › Vendor Sweep 2026-08-21 › VENDOR-BOOK.md (149 buyers censused, every price Codex-gate-checked). This is the ranked read as of 2026-08-21.</p></div></div>
 
+  <!-- BUYERS — moved here from the Dashboard tab 2026-08-22 (Medi): live buyer
+       prices belong with the vendor research, not on the daily buy screen. The
+       ids (#buyers, #buyerStamp) are unchanged, so the same renderer fills it. -->
+  <div class="sec-head">
+    <h3>Where you sell — buyer offsets</h3>
+    <span id="buyerStamp">—</span>
+    <div class="rail"></div>
+  </div>
+  <div class="buyers" id="buyers"></div>
+
+  <div class="rules">
+    <span class="rulechip">Elemetal · Pamp <b>spot − $10</b></span>
+    <span class="rulechip">Elemetal · Generic <b>spot − $20</b></span>
+    <span class="rulechip">Alert floor <b>$25 / bar</b></span>
+    <span class="rulechip">Online = in-store <b>+ $10</b></span>
+  </div>
+
   <div class="rx-grp">
     <h6>The one-picture answer — a bar in hand, where does it go?</h6>
     <svg viewBox="0 0 760 300" style="width:100%;max-width:760px;display:block;margin:6px auto" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Decision flow: bars in hand to best vendor">
@@ -1369,27 +1386,11 @@
   </div>
   <div class="matrix" id="matrix"></div>
 
-  <!-- BUYERS -->
-  <div class="sec-head">
-    <h3>Where you sell — buyer offsets</h3>
-    <span id="buyerStamp">—</span>
-    <div class="rail"></div>
-  </div>
-  <div class="buyers" id="buyers"></div>
-
-  <div class="rules">
-    <span class="rulechip">Elemetal · Pamp <b>spot − $10</b></span>
-    <span class="rulechip">Elemetal · Generic <b>spot − $20</b></span>
-    <span class="rulechip">Alert floor <b>$25 / bar</b></span>
-    <span class="rulechip">Online = in-store <b>+ $10</b></span>
-  </div>
-
   <div class="note">
     <b>How to read it:</b> the alert floor is Chase Ink 2.5% with <b>no Taekus</b> — your worst case. When even THAT bar clears <b>+$25</b>, every card clears more. •
     <b>BUY</b> = June's captured price (or online if in stock and higher). <b>SELL</b> = live spot − Elemetal's discount ($10 Pamp / $20 Generic). •
     <b>Venmo = verified 3%</b> + Synchrony Taekus 2.13% = 5.13% → best per-bar card. •
     <b>Citi Double Cash</b> (personal MC) takes <b>no Taekus</b> → 2% only. •
-    <b>Where you sell</b> compares each buyer's price (spot ± their offset); Elemetal is the default. •
     <b>PULL</b> re-reads the live engine sheet (spot + prices); <b>PULL ONLINE</b> flags a Costco.com price refresh for Claude/June (on the shared web page this button is <b>PRODUCT LINK</b> and opens the bar on Costco.com).
   </div>
 
@@ -1427,6 +1428,7 @@
         <button class="rsub-btn" role="tab" data-rsub="june"        aria-selected="false">📞 June call sheet</button>
         <button class="rsub-btn" role="tab" data-rsub="warehouse"   aria-selected="false">📦 Warehouse</button>
         <button class="rsub-btn" role="tab" data-rsub="alerts"      aria-selected="false">📧 Alerts</button>
+        <button class="rsub-btn" role="tab" data-rsub="outbox"      aria-selected="false">📬 Outbox</button>
         <button class="rsub-btn" role="tab" data-rsub="lock"        aria-selected="false">🔒 Lock</button>
         <button class="rsub-btn" role="tab" data-rsub="cards"       aria-selected="false">💳 Cards &amp; rewards</button>
         <button class="rsub-btn" role="tab" data-rsub="buyers"      aria-selected="false">💰 Buyers</button>
@@ -1638,6 +1640,75 @@
       </div>
 
       <!-- ================= 5 · LOCK ================= -->
+      <!-- ================= OUTBOX — every email the system sends =================
+           Mirrors warehouse-inventory/EMAILS.md (kept in step by hand; that file is
+           the written source, this panel is the on-dashboard read). Added 2026-08-22. -->
+      <div class="rsub-panel" id="rsub-outbox" role="tabpanel" hidden>
+        <div class="rx-machine" style="margin-top:4px">
+          <div class="rx-mhead">
+            <span class="em">📬</span>
+            <div class="tt">
+              <h4>The Outbox</h4>
+              <p class="md">Every email the gold system can send you — 16 triggers across 4 machines. If an email arrives, it is on this list; if it is not on this list, something is wrong.</p>
+              <span class="rx-badge live"><span class="d"></span>LIVE — verified 08-22</span>
+            </div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>House rules — true of every email</h6>
+            <div class="rx-srow"><span class="st ok">ALWAYS</span><span class="tx"><b>Rich format</b> — headline card + rows, house palette. Plain text is only the fallback.</span></div>
+            <div class="rx-srow"><span class="st ok">ALWAYS</span><span class="tx"><b>Data only</b> — no explainer sentences about what the watcher is.</span></div>
+            <div class="rx-srow"><span class="st ok">ALWAYS</span><span class="tx"><b>Every number carries its time</b> — “1:33 PM, 0 min ago”, never a raw stamp.</span></div>
+            <div class="rx-srow"><span class="st ok">ALWAYS</span><span class="tx"><b>Warehouse stock</b> — one store per line, tier first: <code>IN STOCK (11 stores)</code> then <code>T1 · Livermore</code>… Unreadable → <code>warehouses: unavailable</code>, never a silent drop.</span></div>
+            <div class="rx-srow"><span class="st ok">ALWAYS</span><span class="tx"><b>Dashboard link</b> — an “Open the dashboard →” button in every email.</span></div>
+            <div class="rx-srow"><span class="st ok">ALWAYS</span><span class="tx"><b>Mobile first</b> — nothing sits side by side; Gmail strips the CSS that would reflow it, so stats stack as rows.</span></div>
+            <div class="rx-srow"><span class="st chk">WHO</span><span class="tx">Alerts + changes → <b>Medi + Hamed</b>. Ops/failure noise → <b>Medi only</b> (he can’t act on plumbing).</span></div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>1 · Gold Alert Engine — cloud, every minute</h6>
+            <div class="rx-srow"><span class="st ok">🟢</span><span class="tx"><b>GOLD ALERT / GOLD CLIMB</b> — profit enters $25/bar, then once per +$5 rung. <span style="color:var(--ink-mute)">· both · warehouse block</span></span></div>
+            <div class="rx-srow"><span class="st deny">🔴</span><span class="tx"><b>Fell out of the buy zone</b> — profit drops under $20 after being in. <span style="color:var(--ink-mute)">· both · warehouse block</span></span></div>
+            <div class="rx-srow"><span class="st chk">PRICE</span><span class="tx"><b>COSTCO BAR PRICE UP / DOWN</b> — the tracked online bar’s price moves. <span style="color:var(--ink-mute)">· both · warehouse block</span></span></div>
+            <div class="rx-srow"><span class="st chk">STOCK</span><span class="tx"><b>BACK IN STOCK / OUT OF STOCK</b> — its stock flag flips. Restock carries the rule-16 “verify first” caveat. <span style="color:var(--ink-mute)">· both · warehouse block</span></span></div>
+            <div class="rx-srow"><span class="st deny">RULE 16</span><span class="tx"><b>FALSE ALARM — feed says IN STOCK, Costco says NO</b> — a human check contradicts the feed. <span style="color:var(--ink-mute)">· both</span></span></div>
+            <div class="rx-srow"><span class="st chk">OPS</span><span class="tx"><b>Ops nag + all-clear</b> — feed stale, buy input stale/dead, alert suppressed. Repeats every ~6h while broken, one note when healthy. <span style="color:var(--ink-mute)">· Medi only</span></span></div>
+            <div class="rx-why">Colour is read off the subject: green circle / ✅ / BACK IN STOCK → green. Red circle / ⚠️ / FALSE / stale / broken / DEAD / OUT OF STOCK / SUPPRESSED → red.</div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>2 · Warehouse Alerts — cloud, reads the Costco Slack bot</h6>
+            <div class="rx-srow"><span class="st ok">🟡</span><span class="tx"><b>GOLD IN STOCK — [stores]</b> — the bot reports in-store stock at a watched warehouse. <span style="color:var(--ink-mute)">· both</span></span></div>
+            <div class="rx-srow"><span class="st chk">⚠️</span><span class="tx"><b>Unreadable bot alert — check Slack</b> — a message announced stock but carried no store coordinates. <span style="color:var(--ink-mute)">· both</span></span></div>
+            <div class="rx-srow"><span class="st chk">OPS</span><span class="tx"><b>Warehouse feed outage</b> — the Slack pipeline goes quiet. Once per outage. <span style="color:var(--ink-mute)">· Medi only</span></span></div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>3 · Bar watcher — this PC, every 10 minutes</h6>
+            <div class="rx-srow"><span class="st ok">CHANGE</span><span class="tx"><b>Costco bars: N changes</b> — any watched 1oz PAMP/generic bar: PRICE, RESTOCK, SOLD OUT, NEW, DELISTED. Silence means nothing moved. <span style="color:var(--ink-mute)">· both</span></span></div>
+            <div class="rx-srow"><span class="st chk">TEST</span><span class="tx"><b>Costco bar watcher — test</b> — on demand only. <span style="color:var(--ink-mute)">· both</span></span></div>
+            <div class="rx-why">Each one carries: gold spot, buy price, profit/bar at 2.5% / 3% / 4.13% cards, the warehouse block, and what is in stock online right now. It reads the cloud-scraped table, never the vendor site — so this PC’s IP is never used.</div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>4 · 15-Minute Machine (lock) — this PC</h6>
+            <div class="rx-srow"><span class="st ok">LOCK</span><span class="tx"><b>TEST TRANSACTION — Gold lock $…</b> — a sellable Elemetal price locked. Screenshots attached; you forward one, the machine never does. <span style="color:var(--ink-mute)">· both</span></span></div>
+            <div class="rx-srow"><span class="st deny">FAIL</span><span class="tx"><b>ALCHEMY ALERT — crash / unreadable feed</b> — the lock watcher hit a problem it cannot fix. <span style="color:var(--ink-mute)">· Medi only</span></span></div>
+            <div class="rx-srow"><span class="st chk">WEEKLY</span><span class="tx"><b>Weekly open report</b> — recap of lock sessions. <span style="color:var(--ink-mute)">· Medi only</span></span></div>
+            <div class="rx-srow"><span class="st chk">PING</span><span class="tx"><b>Heartbeat</b> — periodic “still watching” note. <span style="color:var(--ink-mute)">· Medi only</span></span></div>
+          </div>
+
+          <div class="rx-grp">
+            <h6>Where each rule lives in code</h6>
+            <div class="rx-srow"><span class="st unk">FILE</span><span class="tx"><b>Rich HTML</b> — <code>send_note.mjs</code> · <code>richHtml_/richMail_</code> (.gs) · <code>rich-email.js</code> (lock)</span></div>
+            <div class="rx-srow"><span class="st unk">FILE</span><span class="tx"><b>Warehouse block</b> — <code>build_context()</code> · <code>warehouseSection_</code> · <code>warehouse.js stockLines()</code></span></div>
+            <div class="rx-srow"><span class="st unk">FILE</span><span class="tx"><b>Data times</b> — <code>when()</code> · <code>fmtClock_</code> · <code>when()</code></span></div>
+            <div class="rx-srow"><span class="st unk">FILE</span><span class="tx"><b>Dashboard link</b> — <code>DASHBOARD</code> · <code>DASHBOARD_URL</code> · <code>DASHBOARD_URL</code></span></div>
+            <div class="rx-why">Written source of truth: <code>warehouse-inventory/EMAILS.md</code> in the repo. Engine deploys are a paste into the Apps Script editor — time triggers pick it up, there is no Deploy button.</div>
+          </div>
+        </div>
+      </div>
+
       <div class="rsub-panel" id="rsub-lock" role="tabpanel" hidden>
         <div class="rx-machine" style="margin-top:4px">
           <div class="rx-mhead">
@@ -2138,7 +2209,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: aee4e06 · built 2026-08-22 18:02 UTC</span>
+    <span id="verStamp" class="tnum">version: 2789890 · built 2026-08-23 17:01 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -4615,7 +4686,7 @@
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-08-22T11:02:07-07:00",
+    at: "2026-08-23T10:01:44-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
     price: 4599.99,
@@ -4624,17 +4695,16 @@
     inStock: [],
     // 43 of the 45. Stores whose rail rows were truncated were opened and
     // read from their own page this run, not carried forward.
-    soldOut: {antioch:"2d", brentwood:"today", concord:"1d", danville:"3d",
-              elkgrove:"3m", fairfield:"today", fostercity:"1d", fremont:"1d",
-              gilroy:"27d", hayward:"2d", livermore:"today", lodi:"2d", manteca:"1d",
-              modesto:"4d", mountainview:"2d", newark:"2d", novato:"2d",
-              pleasanton:"1d", ranchocordova:"1d", redwoodcity:"today", richmond:"1d",
-              riverbank:"today", rohnertpark:"1m", saccalexpo:"1m", sacnatomas:"1m",
-              sacstockton:"2d", sanleandro:"1d", santaclara:"1d", santacruz:"today",
-              santarosa:"today", sf:"today", sjalmaden:"today", sjgreatoaks:"today",
-              sjne:"1d", sjsenter:"9d", ssf:"1d", ssfairport:"2d", stockton:"25d",
-              sunnyvale:"1d", tracy:"1d", vacaville:"1m", vallejo:"today",
-              woodland:"28d"}
+    soldOut: {antioch:"3d", brentwood:"1d", concord:"2d", danville:"4d", elkgrove:"3m",
+              fairfield:"1d", fostercity:"1d", fremont:"2d", gilroy:"28d",
+              hayward:"3d", livermore:"1d", lodi:"3d", manteca:"1d", modesto:"5d",
+              mountainview:"3d", newark:"3d", novato:"2d", pleasanton:"2d",
+              ranchocordova:"2d", redwoodcity:"1d", richmond:"2d", riverbank:"1d",
+              rohnertpark:"1m", saccalexpo:"1m", sacnatomas:"1m", sacstockton:"3d",
+              sanleandro:"2d", santaclara:"2d", santacruz:"1d", santarosa:"1d",
+              sf:"1d", sjalmaden:"1d", sjgreatoaks:"1d", sjne:"1d", sjsenter:"10d",
+              ssf:"2d", ssfairport:"3d", stockton:"26d", sunnyvale:"1d", tracy:"2d",
+              vacaville:"1m", vallejo:"1d", woodland:"29d"}
   };
 
   // Turn the snapshot into the same row shape wiRenderNow/wiRenderTable already
