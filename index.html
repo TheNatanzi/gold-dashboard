@@ -1650,7 +1650,7 @@
             <div class="tt">
               <h4>The Outbox</h4>
               <p class="md">Every email the gold system can send you — 16 triggers across 4 machines. If an email arrives, it is on this list; if it is not on this list, something is wrong.</p>
-              <span class="rx-badge live"><span class="d"></span>LIVE — verified 08-22</span>
+              <span class="rx-badge live"><span class="d"></span>LIVE — verified 08-23</span>
             </div>
           </div>
 
@@ -1662,7 +1662,9 @@
             <div class="rx-srow"><span class="st ok">ALWAYS</span><span class="tx"><b>Warehouse stock</b> — one store per line, tier first: <code>IN STOCK (11 stores)</code> then <code>T1 · Livermore</code>… Unreadable → <code>warehouses: unavailable</code>, never a silent drop.</span></div>
             <div class="rx-srow"><span class="st ok">ALWAYS</span><span class="tx"><b>Dashboard link</b> — an “Open the dashboard →” button in every email.</span></div>
             <div class="rx-srow"><span class="st ok">ALWAYS</span><span class="tx"><b>Mobile first</b> — nothing sits side by side; Gmail strips the CSS that would reflow it, so stats stack as rows.</span></div>
-            <div class="rx-srow"><span class="st chk">WHO</span><span class="tx">Alerts + changes → <b>Medi + Hamed</b>. Ops/failure noise → <b>Medi only</b> (he can’t act on plumbing).</span></div>
+            <div class="rx-srow"><span class="st ok">LIVE</span><span class="tx"><b>Chart + log on every email</b> — every alert is really a lock check, so it carries the price chart and the event log, exactly like the lock email. <span style="color:var(--ink-mute)">· live on bar watcher + weekly report · Gold Alert Engine still pending · EMAILS.md</span></span></div>
+            <div class="rx-srow"><span class="st ok">ALWAYS</span><span class="tx"><b>Both brothers, every time</b> — every email on this page goes to Medi AND Hamed. Alerts, changes, failures, reports. Nothing is one-inbox-only.</span></div>
+            <div class="rx-srow"><span class="st ok">ALWAYS</span><span class="tx"><b>Times in your Pacific time (PT)</b> — every clock in every email shows California Pacific (auto PDT/PST). Elemetal quotes ET; it is converted for you, same instant. <span style="color:var(--ink-mute)">· set 2026-08-23</span></span></div>
           </div>
 
           <div class="rx-grp">
@@ -1672,7 +1674,7 @@
             <div class="rx-srow"><span class="st chk">PRICE</span><span class="tx"><b>COSTCO BAR PRICE UP / DOWN</b> — the tracked online bar’s price moves. <span style="color:var(--ink-mute)">· both · warehouse block</span></span></div>
             <div class="rx-srow"><span class="st chk">STOCK</span><span class="tx"><b>BACK IN STOCK / OUT OF STOCK</b> — its stock flag flips. Restock carries the rule-16 “verify first” caveat. <span style="color:var(--ink-mute)">· both · warehouse block</span></span></div>
             <div class="rx-srow"><span class="st deny">RULE 16</span><span class="tx"><b>FALSE ALARM — feed says IN STOCK, Costco says NO</b> — a human check contradicts the feed. <span style="color:var(--ink-mute)">· both</span></span></div>
-            <div class="rx-srow"><span class="st chk">OPS</span><span class="tx"><b>Ops nag + all-clear</b> — feed stale, buy input stale/dead, alert suppressed. Repeats every ~6h while broken, one note when healthy. <span style="color:var(--ink-mute)">· Medi only</span></span></div>
+            <div class="rx-srow"><span class="st chk">OPS</span><span class="tx"><b>Ops nag + all-clear</b> — feed stale, buy input stale/dead, alert suppressed. Repeats every ~6h while broken, one note when healthy. <span style="color:var(--ink-mute)">· both</span></span></div>
             <div class="rx-why">Colour is read off the subject: green circle / ✅ / BACK IN STOCK → green. Red circle / ⚠️ / FALSE / stale / broken / DEAD / OUT OF STOCK / SUPPRESSED → red.</div>
           </div>
 
@@ -1680,22 +1682,22 @@
             <h6>2 · Warehouse Alerts — cloud, reads the Costco Slack bot</h6>
             <div class="rx-srow"><span class="st ok">🟡</span><span class="tx"><b>GOLD IN STOCK — [stores]</b> — the bot reports in-store stock at a watched warehouse. <span style="color:var(--ink-mute)">· both</span></span></div>
             <div class="rx-srow"><span class="st chk">⚠️</span><span class="tx"><b>Unreadable bot alert — check Slack</b> — a message announced stock but carried no store coordinates. <span style="color:var(--ink-mute)">· both</span></span></div>
-            <div class="rx-srow"><span class="st chk">OPS</span><span class="tx"><b>Warehouse feed outage</b> — the Slack pipeline goes quiet. Once per outage. <span style="color:var(--ink-mute)">· Medi only</span></span></div>
+            <div class="rx-srow"><span class="st chk">OPS</span><span class="tx"><b>Warehouse feed outage</b> — the Slack pipeline goes quiet. Once per outage. <span style="color:var(--ink-mute)">· both</span></span></div>
           </div>
 
           <div class="rx-grp">
             <h6>3 · Bar watcher — this PC, every 10 minutes</h6>
             <div class="rx-srow"><span class="st ok">CHANGE</span><span class="tx"><b>Costco bars: N changes</b> — any watched 1oz PAMP/generic bar: PRICE, RESTOCK, SOLD OUT, NEW, DELISTED. Silence means nothing moved. <span style="color:var(--ink-mute)">· both</span></span></div>
             <div class="rx-srow"><span class="st chk">TEST</span><span class="tx"><b>Costco bar watcher — test</b> — on demand only. <span style="color:var(--ink-mute)">· both</span></span></div>
-            <div class="rx-why">Each one carries: gold spot, buy price, profit/bar at 2.5% / 3% / 4.13% cards, the warehouse block, and what is in stock online right now. It reads the cloud-scraped table, never the vendor site — so this PC’s IP is never used.</div>
+            <div class="rx-why">Each one carries: gold spot, buy price, profit/bar at 2.5% / 3% / 4.13% cards, the warehouse block, what is in stock online right now, <b>plus the spot price chart (last 12h), a START/PEAK/NOW timeline, and the full tick log attached</b> — exactly like a lock check. It reads the cloud-scraped table, never the vendor site — so this PC’s IP is never used.</div>
           </div>
 
           <div class="rx-grp">
             <h6>4 · 15-Minute Machine (lock) — this PC</h6>
             <div class="rx-srow"><span class="st ok">LOCK</span><span class="tx"><b>TEST TRANSACTION — Gold lock $…</b> — a sellable Elemetal price locked. Screenshots attached; you forward one, the machine never does. <span style="color:var(--ink-mute)">· both</span></span></div>
-            <div class="rx-srow"><span class="st deny">FAIL</span><span class="tx"><b>ALCHEMY ALERT — crash / unreadable feed</b> — the lock watcher hit a problem it cannot fix. <span style="color:var(--ink-mute)">· Medi only</span></span></div>
-            <div class="rx-srow"><span class="st chk">WEEKLY</span><span class="tx"><b>Weekly open report</b> — recap of lock sessions. <span style="color:var(--ink-mute)">· Medi only</span></span></div>
-            <div class="rx-srow"><span class="st chk">PING</span><span class="tx"><b>Heartbeat</b> — periodic “still watching” note. <span style="color:var(--ink-mute)">· Medi only</span></span></div>
+            <div class="rx-srow"><span class="st deny">FAIL</span><span class="tx"><b>ALCHEMY ALERT — crash / unreadable feed</b> — the lock watcher hit a problem it cannot fix. <span style="color:var(--ink-mute)">· both</span></span></div>
+            <div class="rx-srow"><span class="st chk">WEEKLY</span><span class="tx"><b>Weekly open report</b> — Sunday-open recap: chart (6h before open, ▲ PEAK + red ▼ WOULD-LOCK), the What-happened timeline, and the tick log attached. <span style="color:var(--ink-mute)">· both · full lock-email parity</span></span></div>
+            <div class="rx-srow"><span class="st chk">PING</span><span class="tx"><b>Heartbeat</b> — periodic “still watching” note. <span style="color:var(--ink-mute)">· both</span></span></div>
           </div>
 
           <div class="rx-grp">
@@ -1704,6 +1706,7 @@
             <div class="rx-srow"><span class="st unk">FILE</span><span class="tx"><b>Warehouse block</b> — <code>build_context()</code> · <code>warehouseSection_</code> · <code>warehouse.js stockLines()</code></span></div>
             <div class="rx-srow"><span class="st unk">FILE</span><span class="tx"><b>Data times</b> — <code>when()</code> · <code>fmtClock_</code> · <code>when()</code></span></div>
             <div class="rx-srow"><span class="st unk">FILE</span><span class="tx"><b>Dashboard link</b> — <code>DASHBOARD</code> · <code>DASHBOARD_URL</code> · <code>DASHBOARD_URL</code></span></div>
+            <div class="rx-srow"><span class="st unk">FILE</span><span class="tx"><b>Chart + log</b> — <code>spot_ticks()→send_note.mjs</code> · <span style="color:var(--ink-mute)">engine pending</span> · <code>chart-png.js</code> + <code>rich-email.js</code> (<code>renderChartPng</code>, <code>timelineLines</code>, <code>buildSessionLog</code>)</span></div>
             <div class="rx-why">Written source of truth: <code>warehouse-inventory/EMAILS.md</code> in the repo. Engine deploys are a paste into the Apps Script editor — time triggers pick it up, there is no Deploy button.</div>
           </div>
         </div>
@@ -1764,7 +1767,7 @@
               <div class="rx-node stop"><div class="rx-cond"><span class="ic">!</span>The page shows a frozen / old timestamp</div>
                 <div class="rx-act">Throw the reading away. <b>Never</b> start the clock or lock on a stale feed.</div>
                 <div class="rx-why">Aug 18 bug: a 100-min-stale first read anchored the clock in the past → instant false lock + email to Hamed. This guard exists to stop exactly that.</div></div>
-              <div class="rx-node why-only nl"><div class="rx-cond">Reads the Elemetal page every <b>15 seconds</b>, only during market hours (Sun 5pm ET → Fri). Two watchers can never run at once.</div></div>
+              <div class="rx-node why-only nl"><div class="rx-cond">Reads the Elemetal page every <b>15 seconds</b>, only during market hours (Sun 5pm ET / <b>2pm PT</b> → Fri). Two watchers can never run at once.</div></div>
             </div>
           </div>
         </div>
@@ -2209,7 +2212,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: e56299e · built 2026-08-23 18:01 UTC</span>
+    <span id="verStamp" class="tnum">version: d90a12d · built 2026-08-24 00:17 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
