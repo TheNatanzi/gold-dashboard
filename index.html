@@ -2212,7 +2212,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 415ae95 · built 2026-08-24 02:01 UTC</span>
+    <span id="verStamp" class="tnum">version: d4de77a · built 2026-08-24 02:16 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -4526,6 +4526,11 @@
     // _juneSkipped and surfaces them; this one quietly dropped them. Keep the
     // call, admit the age is unknown, and let wiAgeTxt render "—".
     if(isNaN(ageH)) ageH = null;
+    // Erase June's call once it is 48h+ old (Medi 2026-08-23): a two-day-old
+    // "5 Pamp" is not information any more, so drop it back to the "not called"
+    // state rather than showing a stale count. Unknown age (null) is NOT erased —
+    // we only retire a call we can positively date past 48h.
+    if(ageH != null && ageH >= 48) return null;
     const bars = nnum(c.pamp)+nnum(c.generic);
     let txt, cls;
     if(!c.in_stock){ txt="sold out"; cls="none"; }
