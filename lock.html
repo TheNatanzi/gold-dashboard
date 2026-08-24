@@ -9,7 +9,9 @@
 <title>Alchemy — Lock</title>
 <!-- ALCHEMY-LOCK-HONESTY v4 · 2026-08-18 · STOP resolves cleanly when there's nothing to cancel -->
 <!-- richmail-v1 · 2026-08-19 · END NOW button (two-tap confirm) + rich multi-shot lock email -->
-<meta name="alchemy-build" content="richmail-v1-2026-08-19-endnow" />
+<!-- session-over-v1 · 2026-08-24 · finished sessions freeze their counters (no ticking age),
+     drop live-only tiles to dashes, and the whole panel resets to a clean IDLE after 1 hour -->
+<meta name="alchemy-build" content="session-over-v1-2026-08-24" />
 <style>
   :root{
     --bg:#0e1116; --card:#171b22; --line:#232833; --ink:#e8edf4; --mut:#8a93a3;
@@ -130,7 +132,7 @@
   <!-- 3 · Live chart (centerpiece) -->
   <div class="card chartwrap">
     <div class="cardhdr">Session</div>
-    <div id="chartArea"><div class="empty">Waiting for the first read…</div></div>
+    <div id="chartArea"><div class="empty">No live session — the chart fills in after START.</div></div>
     <div class="legend">
       <span><i style="border-color:var(--accent)"></i>Price</span>
       <span><i style="border-color:var(--ok)"></i>High (ratchets up)</span>
@@ -193,6 +195,7 @@
   const START_PICKUP_MS  = 12*1000;   // after START, a live watcher must pick it up within ~12s
   const STOP_PICKUP_MS   = 12*1000;   // after STOP, the session must go 'cancelled' within ~12s
   const END_ARM_MS       = 4000;      // END NOW two-tap window: the armed state auto-cancels after ~4s
+  const SESSION_LINGER_MS= 60*60*1000; // a finished session stays on screen 1h as a frozen summary, then the panel resets to IDLE
 
   // Client-tracked intent: the moment the phone tapped START / STOP / END. Cleared once confirmed by real
   // state (a fresh watching session / a cancelled session / a 'sent' session). Drives the honest toast + banners.
@@ -268,7 +271,7 @@
   // shaded safe-zone band between them, and dots at each new high.
   function buildChart(ticks){
     const area = $('chartArea');
-    if(!ticks || ticks.length===0){ area.innerHTML = '<div class="empty">Waiting for the first read…</div>'; return; }
+    if(!ticks || ticks.length===0){ area.innerHTML = '<div class="empty">No live session — the chart fills in after START.</div>'; return; }
 
     const W=340, H=180, padL=40, padR=8, padT=12, padB=20;
     const iw = W-padL-padR, ih = H-padT-padB;
@@ -284,7 +287,7 @@
     // y-domain from all series with padding.
     let lo=Infinity, hi=-Infinity;
     pts.forEach(p=>{ lo=Math.min(lo,p.price,p.sell); hi=Math.max(hi,p.high,p.price); });
-    if(!isFinite(lo)||!isFinite(hi)) { area.innerHTML='<div class="empty">Waiting for the first read…</div>'; return; }
+    if(!isFinite(lo)||!isFinite(hi)) { area.innerHTML='<div class="empty">No live session — the chart fills in after START.</div>'; return; }
     if(hi-lo < 1){ hi+=1; lo-=1; }               // avoid flat/zero range
     const padY=(hi-lo)*0.10; lo-=padY; hi+=padY;
 
@@ -345,6 +348,17 @@
     const { sess, ticks, control } = cache;
 
     const active = sess && sess.status==='active';
+
+    // ── Finished-session display rules ──────────────────────────────────────
+    // A session that ended (sent / cancelled / error) must not LOOK live: its counters stop, its
+    // alarms clear. After SESSION_LINGER_MS it disappears entirely and the panel is a clean IDLE.
+    // dSess/dTicks are what we DRAW; sess/ticks stay the real state for command/watcher logic.
+    const over = sess && !active;
+    const endedTs = over ? (ticks.length ? ticks[ticks.length-1].ts
+                                         : (sess.started_at ? new Date(sess.started_at).getTime() : 0)) : null;
+    const expired = over && endedTs!=null && (now - endedTs) > SESSION_LINGER_MS;
+    const dSess  = expired ? null : sess;
+    const dTicks = expired ? []   : ticks;
 
     // ── Connection freshness (is OUR OWN polling alive?) ────────────────────
     // Mobile browsers PAUSE a background tab's timers, so the poll silently stops and the screen freezes
@@ -420,8 +434,8 @@
     else if(startPendingSince!=null){ mEl.textContent='START sent — waiting for the PC to pick it up…'; }
     else if(stopPendingSince!=null){ mEl.textContent='STOP sent — waiting for the PC to cancel…'; }
     else if(active && watcherAlive){ mEl.textContent='PC is watching ✓ — walk away.'; mEl.classList.add('ok'); }
-    else if(sess && sess.status==='cancelled' && !heartbeatStale){ mEl.textContent='Stopped ✓ — session cancelled, no email.'; }
-    else if(sess && sess.status==='sent'){ mEl.textContent='🔒 Locked ✓ — email sent.'; mEl.classList.add('ok'); }
+    else if(dSess && dSess.status==='cancelled' && !heartbeatStale){ mEl.textContent='Stopped ✓ — session cancelled, no email.'; }
+    else if(dSess && dSess.status==='sent'){ mEl.textContent='🔒 Locked ✓ — email sent.'; mEl.classList.add('ok'); }
     else { mEl.textContent='Tap START when you buy · STOP to cancel (no email)'; }
 
     // ── END NOW button state: enabled ONLY during an active session; disabled while ending / when idle ──
@@ -433,11 +447,11 @@
     }
 
     // Badge.
-    const pi=phaseInfo(sess);
+    const pi=phaseInfo(dSess);
     const badge=$('badge'); badge.className='badge '+pi.cls; badge.textContent=pi.label;
 
-    const latest = ticks.length ? ticks[ticks.length-1] : null;
-    const prev   = ticks.length>1 ? ticks[ticks.length-2] : null;
+    const latest = dTicks.length ? dTicks[dTicks.length-1] : null;
+    const prev   = dTicks.length>1 ? dTicks[dTicks.length-2] : null;
     const price  = latest ? latest.price : null;
 
     // Big price + arrow (vs previous tick).
@@ -453,12 +467,13 @@
     if(connStale){ dot.className='dot off'; $('updated').textContent='📵 screen paused — reconnecting, data may be stale ('+ageWords(fetchAge)+')'; }
     else if(!cache.ok){ dot.className='dot off'; $('updated').textContent = cache.everLoaded ? 'reconnecting…' : 'connecting…'; }
     else if(active && heartbeatStale){ dot.className='dot off'; $('updated').textContent='watcher offline · '+hbLine; }  // never green when the PC is dead
-    else if(!sess){ dot.className = heartbeatStale?'dot off':'dot'; $('updated').textContent = heartbeatStale ? 'no watcher · '+hbLine : 'idle · watcher alive'; }
+    else if(!dSess){ dot.className = heartbeatStale?'dot off':'dot'; $('updated').textContent = heartbeatStale ? 'no watcher · '+hbLine : 'idle · watcher alive'; }
+    else if(over){ dot.className='dot'; $('updated').textContent = (sess.status==='sent'?'🔒 locked ':'session ended ')+(latest?hhmmss(latest.iso):'')+' · session over — not live'; }
     else if(!latest){ dot.className='dot warn'; $('updated').textContent='session open — waiting for first read'; }
     else { dot.className = ageMs>90000?'dot warn':'dot'; $('updated').textContent='last read '+hhmmss(latest.iso)+' · '+ageWords(ageMs); }
 
     // HIGH / sell line.
-    const high = (sess && sess.high!=null) ? Number(sess.high) : (ticks.length? Math.max(...ticks.map(t=>t.price)) : null);
+    const high = (dSess && dSess.high!=null) ? Number(dSess.high) : (dTicks.length? Math.max(...dTicks.map(t=>t.price)) : null);
     const sell = high!=null ? high-STOP_USD : null;
 
     // Tiles.
@@ -466,18 +481,20 @@
     $('tPrice').textContent = fmt$(price);
     $('tSell').textContent  = fmt$(sell);
 
-    // Cushion to sell = price − (high − 10).
+    // Cushion to sell = price − (high − 10). Live sessions only — a finished session has no cushion.
     const cWrap=$('tCushionWrap'), cEl=$('tCushion');
     cWrap.className='tile';
-    if(price!=null && sell!=null){
+    if(active && price!=null && sell!=null){
       const cushion = price - sell;
       if(cushion>=0){ cEl.textContent='$'+cushion.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+' above'; cWrap.classList.add('good'); }
       else { cEl.textContent='BELOW SELL'; cWrap.classList.add('bad'); }
     } else { cEl.textContent='—'; }
 
-    // Last-read age tile (amber if >90s).
-    const aWrap=$('tAgeWrap'), aEl=$('tAge'); aWrap.className='tile';
-    if(ageMs!=null){ aEl.textContent=clock(ageMs); if(ageMs>90000) aWrap.classList.add('amber'); }
+    // Last-read age tile (amber if >90s). Only ticks during a LIVE session — a finished session's
+    // "age" would just count forever (the 6844:32 bug) and mean nothing.
+    const aWrap=$('tAgeWrap'), aEl=$('tAge'); aWrap.className='tile'; aEl.className='tv';
+    if(active && ageMs!=null){ aEl.textContent=clock(ageMs); if(ageMs>90000) aWrap.classList.add('amber'); }
+    else if(over && latest){ aEl.textContent='ended '+hhmm(latest.iso); aEl.className='tv small'; }
     else aEl.textContent='—';
 
     // Grace countdown = GRACE_MS − (latestTickOnPage − highOnPage). Drives BOTH the small tile and the
@@ -502,12 +519,12 @@
     }
 
     // Chart.
-    buildChart(ticks);
+    buildChart(dTicks);
 
     // Tick log (newest first).
     const log=$('log');
-    if(ticks.length){
-      log.innerHTML = ticks.slice().reverse().slice(0,60).map(t=>
+    if(dTicks.length){
+      log.innerHTML = dTicks.slice().reverse().slice(0,60).map(t=>
         `<div><b>${hhmmss(t.iso)}</b> ${fmt$(t.price)}${t.note?' · '+String(t.note).slice(0,48):''}</div>`).join('');
     } else {
       log.innerHTML = '<div>—</div>';
