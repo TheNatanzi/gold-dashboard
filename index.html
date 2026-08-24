@@ -2212,7 +2212,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: e2ea0fa · built 2026-08-24 00:50 UTC</span>
+    <span id="verStamp" class="tnum">version: 415ae95 · built 2026-08-24 02:01 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -4840,8 +4840,15 @@
     // the feed has never ingested a message (WI.noFeed). The reason differs and the
     // banner says which; what must NOT differ is that a real reading beats "Unknown".
     if(WI.err || WI.noFeed){
-      if(WI.stock && WI.stock.length && WI.snapAgeH != null){
+      // A real snapshot loaded (snapAgeH set) beats "Unknown" even when the reading
+      // is ZERO in stock — an all-sold-out scan is a real scan, not missing data.
+      // Gating this on WI.stock.length used to drop every all-sold-out day into the
+      // scary "no scan ever ingested" state (broke 2026-08-23 when the last in-stock
+      // store sold out). The count is stated so an empty table reads as a finding.
+      if(WI.snapAgeH != null){
         el.classList.add("stale");
+        const nIn = WI_SNAP.inStock.length;
+        const nOut = Object.keys(WI_SNAP.soldOut||{}).length;
         el.innerHTML = "<span class='ic'>📋</span><b>Hand-read — "+
           esc(fmtDT(WI_SNAP.at))+", not live.</b>"+
           "<span class='sub'>"+
@@ -4849,8 +4856,9 @@
             ? "Couldn't reach the database ("+esc(WI.err)+"), so this is a manual reading from "
             : "Migration 007 is applied, but no scan has been ingested yet — the feed is "+
               "empty, so this is a manual reading from ")+
-          esc(WI_SNAP.src)+", taken "+wiAgeTxt(WI.snapAgeH)+
-          ". It does NOT update. Costco was charging $"+
+          esc(WI_SNAP.src)+", taken "+wiAgeTxt(WI.snapAgeH)+" — "+
+          "read <b>"+nIn+" in stock, "+nOut+" sold out</b> that day. "+
+          "It does NOT update. Costco was charging $"+
           WI_SNAP.price.toFixed(2)+" that day. Call before you drive.</span>";
         return "snapshot";
       }
