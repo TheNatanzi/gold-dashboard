@@ -190,8 +190,12 @@
   // ── Watcher-liveness thresholds (the whole point of the honesty fix) ──────
   // The watcher writes lock_control.health_at on a heartbeat. If that timestamp is fresh the PC is
   // alive; if it is stale the PC is dead/absent — and a stale 'ok' must NEVER read as green.
-  const WATCHER_ALIVE_MS = 45*1000;   // fresh heartbeat < 45s  => watcher is alive
-  const HEALTH_STALE_MS  = 60*1000;   // heartbeat > 60s (or never) => UNHEALTHY / RED, ignore stored 'ok'
+  const WATCHER_ALIVE_MS = 45*1000;   // fresh heartbeat < 45s  => watcher is alive (green)
+  // Grace band: the watcher writes a heartbeat every ~20s (active) / ~25s (idle). A single throttled
+  // Supabase write (the org is over-quota) or a brief PC stall used to trip the 60s "died" alarm on ONE
+  // missed beat. We now treat 45s–90s as "lagging" — amber, self-healing, NOT a death alarm — and only
+  // declare death past 90s (~3+ missed beats). Real deaths still surface within 90s; blips self-heal.
+  const HEALTH_STALE_MS  = 90*1000;   // heartbeat > 90s (or never) => genuinely dead => RED, ignore stored 'ok'
   const START_PICKUP_MS  = 12*1000;   // after START, a live watcher must pick it up within ~12s
   const STOP_PICKUP_MS   = 12*1000;   // after STOP, the session must go 'cancelled' within ~12s
   const END_ARM_MS       = 4000;      // END NOW two-tap window: the armed state auto-cancels after ~4s
@@ -224,6 +228,11 @@
   // Cache of last good data — kept across fetch failures so the screen never blanks.
   const cache = { sess:null, ticks:[], control:null, ok:false, everLoaded:false, lastOkAt:0, lastPollAt:0 };
   let lastArrow = '';
+  // ── Self-heal state — the dashboard repairs itself instead of latching a false alarm ──────────────
+  const pageLoadedAt = Date.now();
+  let failStreak = 0;        // consecutive failed fetches (drives fast retry backoff)
+  let healBurstUntil = 0;    // suppress overlapping heal-bursts
+  let lastReloadAt = 0;      // last-resort auto page-reload guard (never loop-reload)
 
   async function fetchData(){
     // Latest session.
@@ -250,9 +259,39 @@
 
   async function poll(){
     cache.lastPollAt = Date.now();
-    try{ await fetchData(); }
-    catch(e){ cache.ok = false; /* keep last view */ }
+    try{
+      await fetchData();
+      failStreak = 0;                                   // recovered — clear the retry backoff
+    }
+    catch(e){
+      cache.ok = false;                                 // keep last view
+      failStreak++;
+      // Self-heal #1: retry FAST instead of waiting the 4s cadence, backing off gently as the streak grows.
+      const backoff = Math.min(500 * failStreak, 4000);
+      setTimeout(poll, backoff);
+    }
     render();
+    selfHeal();
+  }
+
+  // ── Self-heal watchdog: repair a transient blip before it can become a false "died" alarm ──────────
+  function selfHeal(){
+    const now = Date.now();
+    // #2: heartbeat lagging (45–90s) → fire a rapid re-poll burst to grab a fresh beat before it hits 90s.
+    const hbAt  = (cache.control && cache.control.health_at) ? new Date(cache.control.health_at).getTime() : null;
+    const hbAge = (hbAt!=null && isFinite(hbAt)) ? (now - hbAt) : null;
+    if(cache.ok && hbAge!=null && hbAge > WATCHER_ALIVE_MS && hbAge <= HEALTH_STALE_MS && now > healBurstUntil){
+      healBurstUntil = now + 9000;                      // one burst per ~9s window
+      [800, 2000, 3500, 5500, 8000].forEach(ms => setTimeout(poll, ms));
+    }
+    // #3: hard outage — no successful fetch for >3 min while the tab is visible → reload the page ONCE.
+    // Covers frozen mobile timers / a wedged Supabase client that fast-retry can't clear. Guarded so it
+    // never reload-loops (min 3 min between reloads).
+    const outage = cache.everLoaded ? (now - cache.lastOkAt) : (now - pageLoadedAt);
+    if(outage > 180000 && !document.hidden && (now - lastReloadAt) > 180000){
+      lastReloadAt = now;
+      location.reload();
+    }
   }
 
   // ── Derived phase label ──────────────────────────────────────────────────
@@ -372,7 +411,8 @@
     const hbAt   = (control && control.health_at) ? new Date(control.health_at).getTime() : null;
     const hbAge  = (hbAt!=null && isFinite(hbAt)) ? (now - hbAt) : null;      // null = never sent a heartbeat
     const watcherAlive   = hbAge!=null && hbAge < WATCHER_ALIVE_MS;           // fresh  (<45s)
-    const heartbeatStale = hbAge==null || hbAge > HEALTH_STALE_MS;            // dead/absent (>60s or never)
+    const heartbeatStale = hbAge==null || hbAge > HEALTH_STALE_MS;            // dead/absent (>90s or never)
+    const heartbeatLagging = hbAge!=null && !watcherAlive && !heartbeatStale; // 45–90s: a blip, self-healing
     const hbLine = hbAge==null ? 'no heartbeat ever received' : ('last heartbeat '+ageWords(hbAge));
 
     // ── Resolve the phone's START/STOP intent against real state ────────────
@@ -420,6 +460,8 @@
       note = { t:'Waiting for the PC to pick up START…', d:'START sent. Confirming a watcher opens the session and is heart-beating before we say it is watching.' };
     } else if(!red && stopPendingSince!=null && !stopConfirmed){
       note = { t:'Waiting for the PC to cancel…', d:'STOP sent. Confirming the session actually cancels before we say it stopped.' };
+    } else if(!red && heartbeatLagging){
+      note = { t:'Re-checking the PC…', d:'The heartbeat is a few seconds late — usually a brief network blip. Refreshing now to confirm the watcher is still alive before raising any alarm.' };
     }
     if(note){ nEl.classList.add('on'); $('noticeTitle').innerHTML='<span class="spin"></span>'+note.t; $('noticeDetail').textContent=note.d; }
     else nEl.classList.remove('on');
