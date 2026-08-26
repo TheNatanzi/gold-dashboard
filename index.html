@@ -2212,7 +2212,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 8acd937 · built 2026-08-26 18:01 UTC</span>
+    <span id="verStamp" class="tnum">version: 0911fe1 · built 2026-08-26 21:09 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -4695,23 +4695,23 @@
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-08-26T11:01:48-07:00",
+    at: "2026-08-26T14:09:48-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
     price: 4649.99,
     // Written by warehouse-inventory/daily_pull.py — see DAILY-PULL.md.
-    // 6 of the 45, keyed on the row carrying the SKU, never the store badge.
-    inStock: ["antioch", "fostercity", "livermore", "pleasanton", "sf", "vallejo"],
-    // 36 of the 45. Stores whose rail rows were truncated were opened and
+    // 11 of the 45, keyed on the row carrying the SKU, never the store badge.
+    inStock: ["fostercity", "fremont", "livermore", "newark", "pleasanton",
+              "santaclara", "sf", "sjne", "ssf", "sunnyvale", "vallejo"],
+    // 31 of the 45. Stores whose rail rows were truncated were opened and
     // read from their own page this run, not carried forward.
-    soldOut: {brentwood:"4d", concord:"5d", danville:"7d", fairfield:"4d",
-              fremont:"5d", gilroy:"1m", hayward:"6d", lodi:"6d", manteca:"5d",
-              modesto:"8d", mountainview:"6d", newark:"6d", novato:"6d",
-              ranchocordova:"5d", redwoodcity:"4d", richmond:"5d", riverbank:"4d",
-              rohnertpark:"1m", saccalexpo:"1m", sacnatomas:"1m", sacstockton:"6d",
-              sanleandro:"5d", santaclara:"5d", santacruz:"4d", santarosa:"4d",
-              sjalmaden:"4d", sjgreatoaks:"4d", sjne:"5d", sjsenter:"13d", ssf:"5d",
-              ssfairport:"6d", stockton:"29d", sunnyvale:"5d", tracy:"5d",
+    soldOut: {antioch:"today", brentwood:"5d", concord:"5d", danville:"8d",
+              fairfield:"5d", gilroy:"1m", hayward:"6d", lodi:"6d", manteca:"5d",
+              modesto:"8d", mountainview:"6d", novato:"6d", ranchocordova:"6d",
+              redwoodcity:"5d", richmond:"5d", riverbank:"4d", rohnertpark:"1m",
+              saccalexpo:"1m", sacnatomas:"1m", sacstockton:"6d", sanleandro:"5d",
+              santacruz:"4d", santarosa:"4d", sjalmaden:"5d", sjgreatoaks:"5d",
+              sjsenter:"today", ssfairport:"6d", stockton:"29d", tracy:"5d",
               vacaville:"2m", woodland:"1m"}
   };
 
