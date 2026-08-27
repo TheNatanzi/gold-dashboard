@@ -945,6 +945,59 @@
   .gbf-delta b{color:var(--bad)}
   @media(max-width:620px){.gbf-sop{display:none}.gbf-step{flex:1 1 45%}}
   @media(max-width:430px){.gbf-date{width:100%}}
+
+  /* Day-over-day delta infographic (gdx) — what changed between two Elemetal sheets
+     and WHY, split into the part spot moved vs the part the sheet moved. */
+  .gdx{margin:12px 0 4px;padding:14px 14px 12px;background:linear-gradient(180deg,var(--panel2),var(--panel));
+    border:1px solid var(--line);border-radius:12px}
+  .gdx-head{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--gold);margin-bottom:11px}
+  .gdx-body{display:flex;flex-wrap:wrap;align-items:stretch;gap:9px}
+  .gdx-col{flex:1 1 190px;min-width:172px;background:var(--panel);border:1px solid var(--line);
+    border-radius:9px;padding:10px 11px}
+  .gdx-col.now{border-color:var(--gold-deep)}
+  .gdx-when{display:flex;align-items:baseline;gap:6px;margin-bottom:8px;padding-bottom:7px;
+    border-bottom:1px solid var(--line)}
+  .gdx-when .wd{font-family:var(--mono);font-size:clamp(22px,3.2vw,29px);font-weight:800;line-height:1;color:var(--ink-mute)}
+  .gdx-col.now .gdx-when .wd{color:var(--gold)}
+  .gdx-when .wl{font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-mute)}
+  .gdx-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:3px 0}
+  .gdx-row .k{font-size:10.5px;color:var(--ink-mute)}
+  .gdx-row .v{font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--ink)}
+  .gdx-row.hero{margin-top:5px;padding-top:6px;border-top:1px solid var(--line)}
+  .gdx-row.hero .k{color:var(--ink-soft)}
+  .gdx-row.hero .v{font-size:clamp(16px,2.2vw,20px)}
+  .gdx-col.now .gdx-row.hero .v{color:var(--gold)}
+  .gdx-arrow{align-self:center;font-family:var(--mono);font-size:19px;font-weight:700;color:var(--ink-mute)}
+  .gdx-delta{flex:1 1 150px;min-width:140px;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:3px;padding:11px 12px;border-radius:9px;
+    border:1px solid var(--bad);background:var(--bad-bg)}
+  .gdx-delta .dv{font-family:var(--mono);font-size:clamp(24px,3.6vw,32px);font-weight:800;line-height:1;color:var(--bad)}
+  .gdx-delta .dk{font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-mute);text-align:center}
+  .gdx-why{margin-top:12px}
+  .gdx-whyl{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:5px}
+  .gdx-bar{display:flex;height:26px;border-radius:7px;overflow:hidden;border:1px solid var(--line)}
+  .gdx-seg{display:flex;align-items:center;justify-content:center;font-family:var(--mono);
+    font-size:10.5px;font-weight:700;white-space:nowrap;overflow:hidden;padding:0 6px}
+  .gdx-seg.spot{background:var(--bad-bg);color:var(--bad);border-right:1px solid var(--bad)}
+  .gdx-seg.sheet{background:var(--gold-glow);color:var(--gold)}
+  .gdx-cap{margin-top:9px;font-size:11px;color:var(--ink-soft);line-height:1.5}
+  .gdx-cap b{color:var(--ink)}
+  .gdx-lgd{display:none;flex-wrap:wrap;gap:6px 14px;margin-top:7px}
+  .gdx-lgd span{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10.5px;font-weight:700}
+  .gdx-lgd i{width:10px;height:10px;border-radius:3px;flex:0 0 auto}
+  .gdx-lgd .l-spot{color:var(--bad)} .gdx-lgd .l-spot i{background:var(--bad)}
+  .gdx-lgd .l-sheet{color:var(--gold)} .gdx-lgd .l-sheet i{background:var(--gold)}
+  @media(max-width:620px){
+    .gdx-arrow{display:none}
+    .gdx-col{flex:1 1 100%}
+    .gdx-delta{flex:1 1 100%}
+    /* the sheet slice is only 15% wide — too narrow for a label on a phone,
+       so drop the in-bar text and read it off the legend underneath instead. */
+    .gdx-bar{height:18px}
+    .gdx-seg{font-size:0;padding:0}
+    .gdx-lgd{display:flex}
+  }
   .foot{margin-top:16px;display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:space-between;
     font-family:var(--mono);font-size:10.5px;color:var(--ink-mute)}
   .theme-btn{cursor:pointer;background:var(--panel);border:1px solid var(--line2);color:var(--ink-soft);
@@ -1477,6 +1530,46 @@
         <div class="gbf-keep" style="width:43%">+$50.46 kept</div>
       </div>
       <div class="gbf-cap">The <b>2.5% card reward (+$116.25)</b> still covers the <b>−$65.79</b> lost on the metal → you keep <b>+$50.46 a bar</b>. <span style="opacity:.8">The reward is the real engine, not the spread — which is why a $5 worse sheet dents the profit but does not kill it.</span></div>
+    </div>
+
+    <!-- DAY-OVER-DAY DELTA — what changed between the 8/25 and 8/27 Elemetal sheets,
+         and how much of the drop is spot vs how much is the sheet. Hand-stamped;
+         same inputs as the gbf card above (buy and card rate never moved). -->
+    <div class="gdx">
+      <div class="gdx-head">◎ What changed since the last sheet · 8/25 → 8/27 · Chase Ink 2.5%</div>
+      <div class="gdx-body">
+        <div class="gdx-col">
+          <div class="gdx-when"><span class="wd">8/25</span><span class="wl">last sheet</span></div>
+          <div class="gdx-row"><span class="k">Gold spot</span><span class="v">$4,637.40</span></div>
+          <div class="gdx-row"><span class="k">Elemetal pays</span><span class="v">$4,617.40</span></div>
+          <div class="gdx-row"><span class="k">Metal spread</span><span class="v">−$32.59</span></div>
+          <div class="gdx-row hero"><span class="k">Profit / bar</span><span class="v">+$83.66</span></div>
+        </div>
+        <div class="gdx-arrow">→</div>
+        <div class="gdx-col now">
+          <div class="gdx-when"><span class="wd">8/27</span><span class="wl">today</span></div>
+          <div class="gdx-row"><span class="k">Gold spot</span><span class="v">$4,609.20</span></div>
+          <div class="gdx-row"><span class="k">Elemetal pays</span><span class="v">$4,584.20</span></div>
+          <div class="gdx-row"><span class="k">Metal spread</span><span class="v">−$65.79</span></div>
+          <div class="gdx-row hero"><span class="k">Profit / bar</span><span class="v">+$50.46</span></div>
+        </div>
+        <div class="gdx-delta">
+          <span class="dv">−$33.20</span>
+          <span class="dk">per bar, vs 8/25</span>
+        </div>
+      </div>
+      <div class="gdx-why">
+        <div class="gdx-whyl">Where the −$33.20 came from</div>
+        <div class="gdx-bar" role="img" aria-label="Of the $33.20 drop per bar, $28.20 is gold spot falling and $5.00 is Elemetal widening its bid">
+          <div class="gdx-seg spot" style="width:85%">−$28.20 · spot fell</div>
+          <div class="gdx-seg sheet" style="width:15%">−$5.00 · sheet</div>
+        </div>
+        <div class="gdx-lgd" aria-hidden="true">
+          <span class="l-spot"><i></i>−$28.20 spot fell</span>
+          <span class="l-sheet"><i></i>−$5.00 sheet</span>
+        </div>
+        <div class="gdx-cap">Most of the damage is <b>gold spot dropping $28.20</b>, which nobody controls. Only <b>$5.00</b> is Elemetal widening the Pamp bid from −$30 to −$35. <span style="opacity:.8">Costco's price ($4,649.99) and the 2.5% card reward (+$116.25) did not move, so those two cancel out of the comparison entirely.</span></div>
+      </div>
     </div>
     <b>Venmo = verified 3%</b> + Synchrony Taekus 2.13% = 5.13% → best per-bar card. •
     <b>Citi Double Cash</b> (personal MC) takes <b>no Taekus</b> → 2% only. •
@@ -2301,7 +2394,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: e184b2c · built 2026-08-27 19:51 UTC</span>
+    <span id="verStamp" class="tnum">version: 3e5964d · built 2026-08-27 23:33 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
