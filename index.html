@@ -2301,7 +2301,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 0f9ae85 · built 2026-08-27 19:42 UTC</span>
+    <span id="verStamp" class="tnum">version: e184b2c · built 2026-08-27 19:51 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -4638,7 +4638,12 @@
     // Too old to arbitrate — and ageH null means the call's timestamp would not
     // parse, so we cannot tell whether it is recent. Unknown age never arbitrates.
     if(!j || j.ageH == null || j.ageH >= 48) return null;
-    const botSaysStock = botList.some(function(x){ return x.level!=="unrecognised"; });
+    // out_of_stock (a site read's explicit zero, migration 010) AGREES with June's
+    // sold-out — counting it as "bot says stock" would fire a conflict banner on
+    // the one case where the two sources are saying the same thing.
+    const botSaysStock = botList.some(function(x){
+      return x.level!=="unrecognised" && x.level!=="out_of_stock";
+    });
     if(botSaysStock && !j.hasBars) return "bot says stock · June says sold out";
     if(!botSaysStock && j.hasBars && botList.length===0) return null;  // she just knows more
     return null;
@@ -4702,7 +4707,9 @@
     in_stock:"In stock",
     low:"Low (<5)",
     unknown:"Yes · no count",       // present, level not reported. NOT absence.
-    unrecognised:"New format ⚠"
+    unrecognised:"New format ⚠",
+    out_of_stock:"Sold out"         // site reads only (migration 010) — an explicit,
+                                    // stated zero. The Slack feed never emits this.
   };
 
   function wiAgeTxt(h){
@@ -5274,8 +5281,15 @@
         rowCls = "unknown";
       } else if(s){
         // One badge per size actually reported, so a warehouse holding both shows both.
+        // out_of_stock reuses the 'none' style — visually it IS the confirmed-zero
+        // state the snapshot branch below has always rendered; the badge text and
+        // availability_raw tooltip carry the "when it last had it" detail.
         lvlHtml = list.map(function(x){
-          return "<span class='wi-lvl "+esc(x.level)+"'>"+
+          const cls = (x.level==="out_of_stock") ? "none" : esc(x.level);
+          const tip = (x.level==="out_of_stock" && x.availability_raw)
+            ? " title='"+esc(x.availability_raw)+" — from the "+esc(fmtDT(x.observed_at))+" site read.'"
+            : "";
+          return "<span class='wi-lvl "+cls+"'"+tip+">"+
                  "<b>"+esc(WI_SKU_TXT[x.sku]||x.sku)+"</b> "+
                  esc(WI_LEVEL_TXT[x.level]||x.level)+"</span>";
         }).join(" ");
@@ -5285,8 +5299,14 @@
         // no-highlight would make nearly half the sightings look like nothing.
         // The "Yes · no count" badge carries the caveat, the row carries the signal.
         // Across all sizes: any real sighting wins the gold tint. Only when EVERY
-        // size is unreadable does the row fall back to the flagged amber.
-        rowCls = list.some(function(x){ return x.level!=="unrecognised"; }) ? "best" : "stale";
+        // size is unreadable does the row fall back to the flagged amber — and an
+        // explicit out_of_stock (site read) is neither: it is a confirmed zero and
+        // must never tint the row gold. All-zero rows take the sold-out grey.
+        const anyBars = list.some(function(x){
+          return x.level==="in_stock" || x.level==="low" || x.level==="unknown";
+        });
+        const allZero = list.every(function(x){ return x.level==="out_of_stock"; });
+        rowCls = anyBars ? "best" : (allZero ? "todo" : "stale");
       } else if(state==="snapshot"){
         // The snapshot's own three answers, kept distinct. This source reports a
         // REAL out-of-stock, which the Slack feed never could, so a confirmed
