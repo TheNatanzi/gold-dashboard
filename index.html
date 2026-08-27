@@ -895,6 +895,29 @@
   .note{margin-top:20px;padding:14px 16px;background:var(--panel);border:1px solid var(--line);
     border-left:3px solid var(--gold);border-radius:10px;font-size:12.5px;color:var(--ink-soft);line-height:1.6}
   .note b{color:var(--ink)}
+  /* Gold-buy formula infographic (gbf) */
+  .gbf{margin:14px 0 4px;padding:14px 14px 12px;background:linear-gradient(180deg,var(--panel2),var(--panel));
+    border:1px solid var(--line2);border-radius:12px}
+  .gbf-head{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--gold);margin-bottom:12px}
+  .gbf-flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px}
+  .gbf-chip{flex:1 1 120px;min-width:108px;background:var(--panel);border:1px solid var(--line);
+    border-radius:10px;padding:9px 10px;display:flex;flex-direction:column;gap:2px}
+  .gbf-chip .gl{font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-mute)}
+  .gbf-chip .gv{font-family:var(--mono);font-size:clamp(15px,2.1vw,19px);font-weight:700;color:var(--ink);line-height:1.15}
+  .gbf-chip .gs{font-size:10px;color:var(--ink-mute)}
+  .gbf-chip.bad{border-color:var(--bad);background:var(--bad-bg)} .gbf-chip.bad .gv{color:var(--bad)}
+  .gbf-chip.good{border-color:var(--good);background:var(--good-bg)} .gbf-chip.good .gv{color:var(--good)}
+  .gbf-chip.profit{border-color:var(--gold-deep);background:var(--gold-glow)} .gbf-chip.profit .gv{color:var(--gold);font-size:clamp(17px,2.5vw,22px)}
+  .gbf-op{align-self:center;font-family:var(--mono);font-size:17px;font-weight:700;color:var(--ink-mute);padding:0 1px}
+  .gbf-track{display:flex;height:26px;margin:12px 0 6px;border-radius:7px;overflow:hidden;border:1px solid var(--line)}
+  .gbf-loss{background:var(--bad-bg);color:var(--bad);border-right:1px solid var(--bad)}
+  .gbf-keep{background:var(--good-bg);color:var(--good)}
+  .gbf-loss,.gbf-keep{display:flex;align-items:center;justify-content:center;font-family:var(--mono);
+    font-size:11px;font-weight:700;white-space:nowrap}
+  .gbf-cap{font-size:11px;color:var(--ink-soft);line-height:1.5}
+  .gbf-cap b{color:var(--ink)}
+  @media(max-width:560px){.gbf-op{display:none}.gbf-chip{flex:1 1 46%}}
   .foot{margin-top:16px;display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:space-between;
     font-family:var(--mono);font-size:10.5px;color:var(--ink-mute)}
   .theme-btn{cursor:pointer;background:var(--panel);border:1px solid var(--line2);color:var(--ink-soft);
@@ -1388,12 +1411,25 @@
 
   <div class="note">
     <b>How to read it:</b> the alert floor is Chase Ink 2.5% with <b>no Taekus</b> — your worst case. When even THAT bar clears <b>+$25</b>, every card clears more. •
-    <b>Gold-buy formula</b> (Chase Ink 2.5%, worst case) — worked with Elemetal's newest <b>8/25</b> sheet · snapshot <b>Aug 26 · 6:57 PM</b>:<br>
-    <code>Profit / bar = (Sell − Buy) + 2.5% × Buy</code><br>
-    • <b>Buy</b> = Costco online − $10 = <b>$4,649.99</b><br>
-    • <b>Sell</b> = spot − $20 to Elemetal <span style="opacity:.75">(8/25 sheet −$30 + $10 call-in bonus)</span> = <b>$4,617.40</b><br>
-    • <b>Spread</b> = Sell − Buy = <b>−$32.59</b> &nbsp; • <b>Reward</b> = 2.5% × Buy = <b>+$116.25</b><br>
-    • <b>→ Profit = +$83.66 / bar</b> •
+    <div class="gbf">
+      <div class="gbf-head">◎ Gold-buy math · Chase Ink 2.5% (worst case) · Elemetal 8/25 sheet · Aug 26 · 6:57 PM</div>
+      <div class="gbf-flow">
+        <div class="gbf-chip"><span class="gl">Buy · Costco</span><span class="gv">$4,649.99</span><span class="gs">online − $10</span></div>
+        <div class="gbf-op">−</div>
+        <div class="gbf-chip"><span class="gl">Sell · Elemetal</span><span class="gv">$4,617.40</span><span class="gs">spot − $20*</span></div>
+        <div class="gbf-op">=</div>
+        <div class="gbf-chip bad"><span class="gl">Metal spread</span><span class="gv">−$32.59</span><span class="gs">you lose this</span></div>
+        <div class="gbf-op">+</div>
+        <div class="gbf-chip good"><span class="gl">Card reward</span><span class="gv">+$116.25</span><span class="gs">2.5% × buy</span></div>
+        <div class="gbf-op">=</div>
+        <div class="gbf-chip profit"><span class="gl">Profit / bar</span><span class="gv">+$83.66</span><span class="gs">what you keep</span></div>
+      </div>
+      <div class="gbf-track" role="img" aria-label="Card reward covers the metal loss, leaving $83.66 profit per bar">
+        <div class="gbf-loss" style="width:28%">−$32.59 metal</div>
+        <div class="gbf-keep" style="width:72%">+$83.66 kept</div>
+      </div>
+      <div class="gbf-cap">The <b>2.5% card reward (+$116.25)</b> more than covers the <b>−$32.59</b> lost on the metal → you keep <b>+$83.66 a bar</b>. <span style="opacity:.8">*Sell = spot − $20 = Elemetal's 8/25 sheet (−$30) + your $10 call-in bonus. The reward is the real engine, not the spread.</span></div>
+    </div>
     <b>Venmo = verified 3%</b> + Synchrony Taekus 2.13% = 5.13% → best per-bar card. •
     <b>Citi Double Cash</b> (personal MC) takes <b>no Taekus</b> → 2% only. •
     <b>PULL</b> re-reads the live engine sheet (spot + prices); <b>PULL ONLINE</b> flags a Costco.com price refresh for Claude/June (on the shared web page this button is <b>PRODUCT LINK</b> and opens the bar on Costco.com).
@@ -2217,7 +2253,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 4e5ea60 · built 2026-08-27 02:24 UTC</span>
+    <span id="verStamp" class="tnum">version: 7018c4d · built 2026-08-27 02:32 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
