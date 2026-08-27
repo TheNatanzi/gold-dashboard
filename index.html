@@ -1388,7 +1388,12 @@
 
   <div class="note">
     <b>How to read it:</b> the alert floor is Chase Ink 2.5% with <b>no Taekus</b> — your worst case. When even THAT bar clears <b>+$25</b>, every card clears more. •
-    <b>BUY</b> = June's captured price (or online if in stock and higher). <b>SELL</b> = live spot − Elemetal's discount ($10 Pamp / $20 Generic). •
+    <b>Gold-buy formula</b> (Chase Ink 2.5%, worst case) — worked with Elemetal's newest <b>8/25</b> sheet · snapshot <b>Aug 26 · 6:57 PM</b>:<br>
+    <code>Profit / bar = (Sell − Buy) + 2.5% × Buy</code><br>
+    • <b>Buy</b> = Costco online − $10 = <b>$4,649.99</b><br>
+    • <b>Sell</b> = spot − $20 to Elemetal <span style="opacity:.75">(8/25 sheet −$30 + $10 call-in bonus)</span> = <b>$4,617.40</b><br>
+    • <b>Spread</b> = Sell − Buy = <b>−$32.59</b> &nbsp; • <b>Reward</b> = 2.5% × Buy = <b>+$116.25</b><br>
+    • <b>→ Profit = +$83.66 / bar</b> •
     <b>Venmo = verified 3%</b> + Synchrony Taekus 2.13% = 5.13% → best per-bar card. •
     <b>Citi Double Cash</b> (personal MC) takes <b>no Taekus</b> → 2% only. •
     <b>PULL</b> re-reads the live engine sheet (spot + prices); <b>PULL ONLINE</b> flags a Costco.com price refresh for Claude/June (on the shared web page this button is <b>PRODUCT LINK</b> and opens the bar on Costco.com).
@@ -2212,7 +2217,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 936329d · built 2026-08-27 01:54 UTC</span>
+    <span id="verStamp" class="tnum">version: 4e5ea60 · built 2026-08-27 02:24 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -2255,8 +2260,8 @@
 
   // Buyers (sell price = spot + offset). Elemetal is the default/preferred buyer.
   const BUYERS = [
-    {key:"elemetal_pamp",    name:"Elemetal · Pamp",    offset:-20,  note:"Verified 7/30 price sheet (GB1PAMPF) + $10 call-in (working relationship). Must be Veriscan + green foot, else any-brand.", t:"2026-07-30"},
-    {key:"elemetal_generic", name:"Elemetal · Generic", offset:-30,  note:"Verified 7/30 price sheet (GB1C, sealed/carded any brand) + $10 call-in.", t:"2026-07-30"},
+    {key:"elemetal_pamp",    name:"Elemetal · Pamp",    offset:-30,  note:"Verified 8/25 price sheet (GB1PAMPF Bid = spot −$30) + $10 call-in (working relationship) → net spot −$20. Must be Veriscan + green foot, else any-brand. Gold-bar bid column widened $10 on 8/25.", t:"2026-08-25"},
+    {key:"elemetal_generic", name:"Elemetal · Generic", offset:-40,  note:"Verified 8/25 price sheet (GB1C any-brand = spot −$40) + $10 call-in → net spot −$30.", t:"2026-08-25"},
     {key:"upstate",          name:"Upstate",            offset:7,    note:"Pays over spot; ship-in or drive.", t:"2026-07-24"},
     {key:"amark",            name:"AMARK",              offset:null, note:"Las Vegas; no price-pull yet.", t:null},
     {key:"collectpure",      name:"CollectPure",        offset:null, note:"Online marketplace; ship-in.", t:null},
@@ -4695,7 +4700,7 @@
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-08-26T18:54:49-07:00",
+    at: "2026-08-26T19:24:52-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
     price: 4649.99,
@@ -4707,10 +4712,10 @@
     // read from their own page this run, not carried forward.
     soldOut: {antioch:"today", brentwood:"5d", concord:"5d", danville:"8d",
               fairfield:"5d", fremont:"today", gilroy:"1m", hayward:"7d", lodi:"7d",
-              manteca:"5d", modesto:"8d", mountainview:"7d", newark:"today",
+              manteca:"5d", modesto:"9d", mountainview:"7d", newark:"today",
               novato:"6d", ranchocordova:"6d", redwoodcity:"5d", richmond:"6d",
               riverbank:"5d", rohnertpark:"1m", saccalexpo:"1m", sacnatomas:"1m",
-              sacstockton:"7d", sanleandro:"5d", santacruz:"5d", santarosa:"5d",
+              sacstockton:"7d", sanleandro:"6d", santacruz:"5d", santarosa:"5d",
               sjalmaden:"5d", sjgreatoaks:"5d", sjne:"today", sjsenter:"today",
               ssf:"today", ssfairport:"6d", stockton:"1m", tracy:"5d", vacaville:"2m",
               woodland:"1m"}
