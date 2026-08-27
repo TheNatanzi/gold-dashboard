@@ -918,6 +918,33 @@
   .gbf-cap{font-size:11px;color:var(--ink-soft);line-height:1.5}
   .gbf-cap b{color:var(--ink)}
   @media(max-width:560px){.gbf-op{display:none}.gbf-chip{flex:1 1 46%}}
+
+  /* Elemetal sheet breakdown — big date + the full spot→sheet→call-in→net chain.
+     Static, hand-stamped from the captured morning sheet in Project Alchemy/_inbox.
+     Rule: always the NEWEST sheet offset (see memory: elemetal-offset-always-newest). */
+  .gbf-elem{display:flex;flex-wrap:wrap;align-items:stretch;gap:10px;margin:12px 0 2px;
+    padding:11px 12px;background:var(--panel);border:1px solid var(--line);border-radius:9px}
+  .gbf-date{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-width:96px;padding:7px 13px;border-radius:9px;border:1px solid var(--gold-deep);background:var(--gold-glow)}
+  .gbf-date .dnum{font-family:var(--mono);font-size:clamp(28px,4.6vw,40px);font-weight:800;line-height:1;
+    color:var(--gold);letter-spacing:-.02em}
+  .gbf-date .dyr{font-family:var(--mono);font-size:11px;color:var(--gold);opacity:.75;line-height:1.3}
+  .gbf-date .dlab{font-size:9px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-mute);margin-top:3px}
+  .gbf-steps{flex:1 1 340px;display:flex;flex-wrap:wrap;align-items:stretch;gap:6px}
+  .gbf-step{flex:1 1 100px;min-width:92px;background:var(--panel2);border:1px solid var(--line);
+    border-radius:8px;padding:7px 9px;display:flex;flex-direction:column;gap:2px;justify-content:center}
+  .gbf-step .sl{font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-mute)}
+  .gbf-step .sv{font-family:var(--mono);font-size:clamp(13px,1.8vw,15px);font-weight:700;color:var(--ink);line-height:1.15}
+  .gbf-step .sn{font-size:9.5px;color:var(--ink-mute);line-height:1.3}
+  .gbf-step.neg .sv{color:var(--bad)}
+  .gbf-step.pos .sv{color:var(--good)}
+  .gbf-step.net{border-color:var(--gold-deep);background:var(--gold-glow)}
+  .gbf-step.net .sv{color:var(--gold)}
+  .gbf-sop{align-self:center;font-family:var(--mono);font-size:15px;font-weight:700;color:var(--ink-mute);padding:0 1px}
+  .gbf-delta{margin:8px 0 0;font-size:10.5px;color:var(--ink-soft);line-height:1.5}
+  .gbf-delta b{color:var(--bad)}
+  @media(max-width:620px){.gbf-sop{display:none}.gbf-step{flex:1 1 45%}}
+  @media(max-width:430px){.gbf-date{width:100%}}
   .foot{margin-top:16px;display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:space-between;
     font-family:var(--mono);font-size:10.5px;color:var(--ink-mute)}
   .theme-btn{cursor:pointer;background:var(--panel);border:1px solid var(--line2);color:var(--ink-soft);
@@ -1412,23 +1439,44 @@
   <div class="note">
     <b>How to read it:</b> the alert floor is Chase Ink 2.5% with <b>no Taekus</b> — your worst case. When even THAT bar clears <b>+$25</b>, every card clears more. •
     <div class="gbf">
-      <div class="gbf-head">◎ Gold-buy math · Chase Ink 2.5% (worst case) · Elemetal 8/25 sheet · Aug 26 · 6:57 PM</div>
+      <div class="gbf-head">◎ Gold-buy math · Chase Ink 2.5% (worst case) · Elemetal sheet · Aug 27 · 12:39 PM</div>
+
+      <!-- ELEMETAL SHEET BREAKDOWN — what Elemetal actually pays, spelled out.
+           Hand-stamped from _inbox/call-sheet-2026-08-27.txt (row GB1PAMPF). -->
+      <div class="gbf-elem">
+        <div class="gbf-date">
+          <span class="dnum">8/27</span>
+          <span class="dyr">2026</span>
+          <span class="dlab">Elemetal sheet</span>
+        </div>
+        <div class="gbf-steps">
+          <div class="gbf-step"><span class="sl">Gold spot</span><span class="sv">$4,609.20</span><span class="sn">live, 12:39 PM</span></div>
+          <div class="gbf-sop">−</div>
+          <div class="gbf-step neg"><span class="sl">Sheet bid</span><span class="sv">−$35.00</span><span class="sn">GB1PAMPF · was −$30</span></div>
+          <div class="gbf-sop">+</div>
+          <div class="gbf-step pos"><span class="sl">Call-in bonus</span><span class="sv">+$10.00</span><span class="sn">phone, not the sheet</span></div>
+          <div class="gbf-sop">=</div>
+          <div class="gbf-step net"><span class="sl">Elemetal pays</span><span class="sv">$4,584.20</span><span class="sn">spot − $25</span></div>
+        </div>
+      </div>
+      <div class="gbf-delta">Elemetal widened the Pamp bid on the 8/27 sheet: <b>−$30 → −$35</b>, so net went −$20 → −$25. That is <b>$5 less per bar</b> than yesterday, before anything else moves. Any-brand bar (GB1C) held at −$40.</div>
+
       <div class="gbf-flow">
         <div class="gbf-chip"><span class="gl">Buy · Costco</span><span class="gv">$4,649.99</span><span class="gs">online − $10</span></div>
         <div class="gbf-op">−</div>
-        <div class="gbf-chip"><span class="gl">Sell · Elemetal</span><span class="gv">$4,617.40</span><span class="gs">spot − $20*</span></div>
+        <div class="gbf-chip"><span class="gl">Sell · Elemetal</span><span class="gv">$4,584.20</span><span class="gs">spot − $25</span></div>
         <div class="gbf-op">=</div>
-        <div class="gbf-chip bad"><span class="gl">Metal spread</span><span class="gv">−$32.59</span><span class="gs">you lose this</span></div>
+        <div class="gbf-chip bad"><span class="gl">Metal spread</span><span class="gv">−$65.79</span><span class="gs">you lose this</span></div>
         <div class="gbf-op">+</div>
         <div class="gbf-chip good"><span class="gl">Card reward</span><span class="gv">+$116.25</span><span class="gs">2.5% × buy</span></div>
         <div class="gbf-op">=</div>
-        <div class="gbf-chip profit"><span class="gl">Profit / bar</span><span class="gv">+$83.66</span><span class="gs">what you keep</span></div>
+        <div class="gbf-chip profit"><span class="gl">Profit / bar</span><span class="gv">+$50.46</span><span class="gs">what you keep</span></div>
       </div>
-      <div class="gbf-track" role="img" aria-label="Card reward covers the metal loss, leaving $83.66 profit per bar">
-        <div class="gbf-loss" style="width:28%">−$32.59 metal</div>
-        <div class="gbf-keep" style="width:72%">+$83.66 kept</div>
+      <div class="gbf-track" role="img" aria-label="Card reward covers the metal loss, leaving $50.46 profit per bar">
+        <div class="gbf-loss" style="width:57%">−$65.79 metal</div>
+        <div class="gbf-keep" style="width:43%">+$50.46 kept</div>
       </div>
-      <div class="gbf-cap">The <b>2.5% card reward (+$116.25)</b> more than covers the <b>−$32.59</b> lost on the metal → you keep <b>+$83.66 a bar</b>. <span style="opacity:.8">*Sell = spot − $20 = Elemetal's 8/25 sheet (−$30) + your $10 call-in bonus. The reward is the real engine, not the spread.</span></div>
+      <div class="gbf-cap">The <b>2.5% card reward (+$116.25)</b> still covers the <b>−$65.79</b> lost on the metal → you keep <b>+$50.46 a bar</b>. <span style="opacity:.8">The reward is the real engine, not the spread — which is why a $5 worse sheet dents the profit but does not kill it.</span></div>
     </div>
     <b>Venmo = verified 3%</b> + Synchrony Taekus 2.13% = 5.13% → best per-bar card. •
     <b>Citi Double Cash</b> (personal MC) takes <b>no Taekus</b> → 2% only. •
@@ -2253,7 +2301,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 80fa213 · built 2026-08-27 19:09 UTC</span>
+    <span id="verStamp" class="tnum">version: 0f9ae85 · built 2026-08-27 19:42 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
