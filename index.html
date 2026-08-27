@@ -930,6 +930,52 @@
     color:var(--gold);letter-spacing:-.02em}
   .gbf-date .dyr{font-family:var(--mono);font-size:11px;color:var(--gold);opacity:.75;line-height:1.3}
   .gbf-date .dlab{font-size:9px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-mute);margin-top:3px}
+  /* Freshness colour on the sheet date. Painted by JS from data-sheet="YYYY-MM-DD":
+     today = green, 1–2 days = yellow, 3+ days = red. The gold default below is only
+     what shows if the script never runs — never treat gold as "fresh". */
+  .gbf-date.age-fresh{border-color:var(--good);background:var(--good-bg)}
+  .gbf-date.age-fresh .dnum,.gbf-date.age-fresh .dyr{color:var(--good)}
+  .gbf-date.age-aging{border-color:var(--warn);background:var(--warn-bg)}
+  .gbf-date.age-aging .dnum,.gbf-date.age-aging .dyr{color:var(--warn)}
+  .gbf-date.age-stale{border-color:var(--bad);background:var(--bad-bg)}
+  .gbf-date.age-stale .dnum,.gbf-date.age-stale .dyr,.gbf-date.age-stale .dlab{color:var(--bad)}
+  .gbf-date.age-future{border-color:var(--ink-mute);background:transparent}
+  .gbf-date.age-future .dnum,.gbf-date.age-future .dyr{color:var(--ink-mute)}
+  .gbf-agekey{margin:7px 0 0;font-size:10px;color:var(--ink-mute);line-height:1.5}
+  .gbf-agekey i{display:inline-block;width:8px;height:8px;border-radius:2px;margin:0 3px 0 0;vertical-align:baseline}
+  .gbf-agekey .k-g{background:var(--good)} .gbf-agekey .k-y{background:var(--warn)} .gbf-agekey .k-r{background:var(--bad)}
+
+  /* ============ ELEMETAL PRICE CHANGE LOG (accordion) ============
+     Every captured morning sheet, newest first. Source of truth is the raw
+     archive in Project Alchemy/_inbox/call-sheet-YYYY-MM-DD.txt — nothing here
+     is interpolated: a day with no capture is simply not a row. */
+  .epl-sum .cs-toggle-txt::after{content:"Show log"}
+  details[open] .epl-sum .cs-toggle-txt::after{content:"Hide log"}
+  .epl-lede{font-size:11.5px;color:var(--ink-soft);line-height:1.55;margin:0 0 10px}
+  .epl-lede b{color:var(--ink)}
+  .epl-wrap{overflow-x:auto}
+  .epl{width:100%;min-width:640px;border-collapse:collapse;font-size:12px}
+  .epl th{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--ink-mute);font-weight:600;text-align:right;padding:0 8px 6px;border-bottom:1px solid var(--line2);white-space:nowrap}
+  .epl th:first-child,.epl th:last-child{text-align:left}
+  .epl td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:middle;
+    font-family:var(--mono);text-align:right;white-space:nowrap}
+  .epl td:first-child,.epl td:last-child{text-align:left}
+  .epl td.d{font-weight:700;color:var(--ink)}
+  .epl td.wt{font-family:inherit;font-size:11px;color:var(--ink-mute);white-space:normal;min-width:190px}
+  .epl tr.chg td{background:var(--bad-bg)}
+  .epl tr.chg td.d{color:var(--bad)}
+  .epl tr.chg td.wt{color:var(--ink-soft)}
+  .epl tr.chg td.wt b{color:var(--bad)}
+  .epl tr.now td.d::after{content:"NOW";margin-left:6px;font-size:8.5px;letter-spacing:.1em;
+    color:var(--gold);border:1px solid var(--gold-deep);border-radius:4px;padding:1px 4px;vertical-align:2px}
+  .epl .bidcell{display:flex;align-items:center;justify-content:flex-end;gap:7px}
+  .epl .bidbar{height:8px;border-radius:3px;background:var(--bad);opacity:.55;flex:0 0 auto}
+  .epl tr.chg .bidbar{opacity:1}
+  .epl .net{color:var(--gold);font-weight:700}
+  .epl-foot{margin-top:9px;font-size:10.5px;color:var(--ink-mute);line-height:1.5}
+  .epl-foot b{color:var(--ink-soft)}
+  @media(max-width:560px){.epl{min-width:560px}.epl td.wt{min-width:150px}}
   .gbf-steps{flex:1 1 340px;display:flex;flex-wrap:wrap;align-items:stretch;gap:6px}
   .gbf-step{flex:1 1 100px;min-width:92px;background:var(--panel2);border:1px solid var(--line);
     border-radius:8px;padding:7px 9px;display:flex;flex-direction:column;gap:2px;justify-content:center}
@@ -1497,7 +1543,7 @@
       <!-- ELEMETAL SHEET BREAKDOWN — what Elemetal actually pays, spelled out.
            Hand-stamped from _inbox/call-sheet-2026-08-27.txt (row GB1PAMPF). -->
       <div class="gbf-elem">
-        <div class="gbf-date">
+        <div class="gbf-date" data-sheet="2026-08-27">
           <span class="dnum">8/27</span>
           <span class="dyr">2026</span>
           <span class="dlab">Elemetal sheet</span>
@@ -1512,6 +1558,7 @@
           <div class="gbf-step net"><span class="sl">Elemetal pays</span><span class="sv">$4,584.20</span><span class="sn">spot − $25</span></div>
         </div>
       </div>
+      <div class="gbf-agekey"><i class="k-g"></i>green = today's sheet · <i class="k-y"></i>yellow = 1–2 days old · <i class="k-r"></i>red = 3+ days old, the numbers below may have moved.</div>
       <div class="gbf-delta">Elemetal widened the Pamp bid on the 8/27 sheet: <b>−$30 → −$35</b>, so net went −$20 → −$25. That is <b>$5 less per bar</b> than yesterday, before anything else moves. Any-brand bar (GB1C) held at −$40.</div>
 
       <div class="gbf-flow">
@@ -1575,6 +1622,130 @@
     <b>Citi Double Cash</b> (personal MC) takes <b>no Taekus</b> → 2% only. •
     <b>PULL</b> re-reads the live engine sheet (spot + prices); <b>PULL ONLINE</b> flags a Costco.com price refresh for Claude/June (on the shared web page this button is <b>PRODUCT LINK</b> and opens the bar on Costco.com).
   </div>
+
+  <!-- ELEMETAL PRICE CHANGE LOG (accordion) — every captured morning sheet.
+       Hand-maintained from _inbox/call-sheet-*.txt. Add a row the day a new
+       sheet lands; never interpolate a day that was never captured. -->
+  <details class="chartbox" id="elemLogBox">
+    <summary class="chart-sum epl-sum">
+      <span class="cs-l">
+        <span class="cs-ic">💰</span>
+        <b>Elemetal price change log</b>
+        <span class="cs-sub">what they pay for a 1oz bar · every captured sheet</span>
+      </span>
+      <span class="cs-r"><span class="cs-last down">2 changes · 9 sheets</span>
+        <span class="cs-toggle"><span class="cs-toggle-txt"></span><span class="cs-chev">▾</span></span></span>
+    </summary>
+    <div class="chart-body">
+      <p class="epl-lede">Bid is what Elemetal <b>pays you</b>, written as a discount off spot — so a
+        <b>bigger number is worse for you</b>, and the red bar grows as it gets worse. <b>Net</b> adds your
+        <b>+$10 call-in bonus</b>, which is the number the profit math actually uses. Ask is what they
+        <b>sell</b> at; you never pay it. Since 7/28 the Pamp bid has gone <b>−$20 → −$35</b>, so
+        <b>$15 per bar</b> of profit has quietly walked away on the sheet alone.</p>
+      <div class="epl-wrap">
+        <table class="epl">
+          <thead>
+            <tr>
+              <th>Sheet</th>
+              <th>Pamp bid</th>
+              <th>Pamp ask</th>
+              <th>Net w/ call-in</th>
+              <th>Any brand</th>
+              <th>Valcambi</th>
+              <th>What changed</th>
+            </tr>
+          </thead>
+          <tbody>
+        <tr class="chg now">
+          <td class="d">8/27</td>
+          <td><span class="bidcell"><span class="bidbar" style="width:52px"></span>−$35.00</span></td>
+          <td>$22.00</td>
+          <td class="net">−$25.00</td>
+          <td>−$40.00</td>
+          <td>−$35.00</td>
+          <td class="wt"><b>Pamp bid −$30 → −$35.</b> Valcambi the same. Both asks cut ($27/$24 → $22). Any-brand held.</td>
+        </tr>
+        <tr class="chg">
+          <td class="d">8/25</td>
+          <td><span class="bidcell"><span class="bidbar" style="width:44px"></span>−$30.00</span></td>
+          <td>$24.00</td>
+          <td class="net">−$20.00</td>
+          <td>−$40.00</td>
+          <td>−$30.00</td>
+          <td class="wt"><b>Whole gold-bar bid column widened $10</b> after 7 flat sheets. Pamp −$20 → −$30, any-brand −$30 → −$40, scrap $8 → $4.</td>
+        </tr>
+        <tr>
+          <td class="d">8/12</td>
+          <td><span class="bidcell"><span class="bidbar" style="width:29px"></span>−$20.00</span></td>
+          <td>$27.00</td>
+          <td class="net">−$10.00</td>
+          <td>−$30.00</td>
+          <td>−$20.00</td>
+          <td class="wt">No change — seventh identical sheet.</td>
+        </tr>
+        <tr>
+          <td class="d">8/7</td>
+          <td><span class="bidcell"><span class="bidbar" style="width:29px"></span>−$20.00</span></td>
+          <td>$27.00</td>
+          <td class="net">−$10.00</td>
+          <td>−$30.00</td>
+          <td>−$20.00</td>
+          <td class="wt">No change.</td>
+        </tr>
+        <tr>
+          <td class="d">8/5</td>
+          <td><span class="bidcell"><span class="bidbar" style="width:29px"></span>−$20.00</span></td>
+          <td>$27.00</td>
+          <td class="net">−$10.00</td>
+          <td>−$30.00</td>
+          <td>−$20.00</td>
+          <td class="wt">No change.</td>
+        </tr>
+        <tr>
+          <td class="d">8/4</td>
+          <td><span class="bidcell"><span class="bidbar" style="width:29px"></span>−$20.00</span></td>
+          <td>$27.00</td>
+          <td class="net">−$10.00</td>
+          <td>−$30.00</td>
+          <td>−$20.00</td>
+          <td class="wt">No change.</td>
+        </tr>
+        <tr>
+          <td class="d">7/30</td>
+          <td><span class="bidcell"><span class="bidbar" style="width:29px"></span>−$20.00</span></td>
+          <td>$27.00</td>
+          <td class="net">−$10.00</td>
+          <td>−$30.00</td>
+          <td>−$20.00</td>
+          <td class="wt">Prices flat. Only the any-brand note moved: Few Live → Live.</td>
+        </tr>
+        <tr>
+          <td class="d">7/29</td>
+          <td><span class="bidcell"><span class="bidbar" style="width:29px"></span>−$20.00</span></td>
+          <td>$27.00</td>
+          <td class="net">−$10.00</td>
+          <td>−$30.00</td>
+          <td>−$20.00</td>
+          <td class="wt">No change.</td>
+        </tr>
+        <tr>
+          <td class="d">7/28</td>
+          <td><span class="bidcell"><span class="bidbar" style="width:29px"></span>−$20.00</span></td>
+          <td>$27.00</td>
+          <td class="net">−$10.00</td>
+          <td>−$30.00</td>
+          <td>−$20.00</td>
+          <td class="wt">First capture in the archive — the baseline.</td>
+        </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="epl-foot">Rows are <b>only</b> days a sheet was actually captured — gaps (weekends, the
+        8/13–8/24 stretch when the forward stopped) are left empty rather than filled in.
+        Raw sheets live in <b>Project Alchemy/_inbox/call-sheet-YYYY-MM-DD.txt</b>.
+        Codes: <b>GB1PAMPF</b> Pamp Fortuna (Veriscan + green foot) · <b>GB1C</b> sealed/carded any brand · <b>GB1VAL</b> sealed Valcambi.</p>
+    </div>
+  </details>
 
   </div><!-- /tab-dash -->
 
@@ -2394,7 +2565,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 3e5964d · built 2026-08-27 23:33 UTC</span>
+    <span id="verStamp" class="tnum">version: 45e3d02 · built 2026-08-27 23:41 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -5957,6 +6128,61 @@
   pullBarHist();
   pullOnlinePrev();
   setInterval(function(){ pullBarNow(); pullBarHist(); pullOnlinePrev(); }, 300000);  // recorder writes every ~8 min
+})();
+</script>
+
+<script>
+/* =========================================================================
+   CALL-SHEET FRESHNESS PAINT
+   The Elemetal date badge is hand-stamped with the sheet it was built from,
+   so it silently goes out of date while the page keeps looking authoritative.
+   This colours the badge by how old that sheet is:
+
+       0 days  (today)      GREEN
+       1-2 days             YELLOW
+       3+ days              RED  + "CHECK"
+
+   Medi's words were "today green / 2 days yellow / more than 3 days red".
+   That left day 1 and day 3 unnamed, so they are folded to the nearer bucket
+   (1 -> yellow, 3 -> red) to leave no uncoloured gap.
+
+   Dates are compared as LOCAL calendar days, never UTC: new Date("2026-08-27")
+   parses as UTC midnight and reads as the 26th anywhere west of Greenwich,
+   which would show a fresh sheet as a day old every single morning.
+   ========================================================================= */
+(function(){
+  function daysOld(iso){
+    var p = String(iso).split("-");
+    if (p.length !== 3) return null;
+    var sheet = new Date(+p[0], +p[1] - 1, +p[2]);
+    if (isNaN(sheet)) return null;
+    var n = new Date();
+    var today = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+    return Math.round((today - sheet) / 864e5);
+  }
+
+  function paint(){
+    var els = document.querySelectorAll("[data-sheet]");
+    for (var i = 0; i < els.length; i++){
+      var el = els[i];
+      var n  = daysOld(el.getAttribute("data-sheet"));
+      el.classList.remove("age-fresh","age-aging","age-stale","age-future");
+      if (n === null) continue;                       // unparseable: leave the gold default
+      var cls, lab;
+      if (n < 0)        { cls = "age-future"; lab = "dated ahead"; }
+      else if (n === 0) { cls = "age-fresh";  lab = "today's sheet"; }
+      else if (n <= 2)  { cls = "age-aging";  lab = n === 1 ? "1 day old" : "2 days old"; }
+      else              { cls = "age-stale";  lab = n + " days old · check"; }
+      el.classList.add(cls);
+      var lb = el.querySelector(".dlab");
+      if (lb) lb.textContent = lab;
+      el.title = "Elemetal sheet dated " + el.getAttribute("data-sheet") + " — " + lab;
+    }
+  }
+
+  paint();
+  // Repaint so a tab left open overnight rolls from green to yellow on its own.
+  setInterval(paint, 600000);
 
   window.__gfhIngest = applySheet;   // public-page ingest hook (build-injected; unused in the artifact)
 })();
