@@ -654,7 +654,7 @@
     }
     refDraw.slice().sort(function(a, b){ return a.y - b.y; }).forEach(function(o){
       var isBuy = o.r.key === "buy";
-      var col = isBuy ? good : mute;
+      var col = isBuy ? good : bad;   // costco line in RED (Medi 2026-08-27) — "what it costs" vs green "where you win"
       var op  = isBuy ? 0.95 : (o.r.stale ? 0.25 : 0.45);
       if(o.r.series){
         // Real recorded history. Clamp each point into the plot rather than dropping it, so a
@@ -741,7 +741,7 @@
         // spot tag. Muted fill = reference, gold fill = the live line - hierarchy by colour.
         var cty = placeTag(o.y);
         s += '<rect x="' + (padL + cw) + '" y="' + (cty - 9).toFixed(1) + '" width="' + padR +
-             '" height="18" rx="3" fill="' + mute + '"/>' +
+             '" height="18" rx="3" fill="' + bad + '"/>' +
              '<text x="' + (padL + cw + padR / 2) + '" y="' + (cty + 4).toFixed(1) +
              '" text-anchor="middle" fill="' + panel + '" font-family="monospace" font-size="11" font-weight="700">' +
              Math.round(o.r.v) + '</text>';
