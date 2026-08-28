@@ -2589,7 +2589,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 0bb888b · built 2026-08-28 00:30 UTC</span>
+    <span id="verStamp" class="tnum">version: 0bb888b · built 2026-08-28 01:05 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -6425,6 +6425,7 @@
   // ---- pulse-on-change: flash every displayed number the update actually moved ----
   var WATCH = ["spotStamp","junePriceV","juneTimeV","onlinePriceV","onlineTimeV","inStockV",
                "deltaV","deltaStamp","gaugeVal","verdict","heroStamp","mBuy","mSell","mLoss",
+               "gbcBuy","gbcSell","gbcSpread","gbcReward","gbcProfit","gbeSpot","gbeNet","gdxDv",
                "bpCredit","bpBars","bpDeployed","bpProfit","bpUnused","matrixStamp","chartLast"];
   var firstPaint = true;                       // first fill after PIN: no flash-fest
   function snapNums(){
@@ -6491,7 +6492,8 @@
   // June's register price or the online listing minus the $10 in-store premium — there is no
   // third possibility. In the bug BUY silently became online − $2.90 and nothing objected.
   function checkBuyPrice(online, june){
-    var e = el("mBuy"); if(!e || !online || online.price == null) return null;
+    var e = el("mBuy") || el("gbcBuy");   // gauge band removed 8/27; the math card shows the same BUY
+    if(!e || !online || online.price == null) return null;
     var shown = Number(String(e.textContent).replace(/[^\d.]/g, ""));
     if(!isFinite(shown) || shown === 0) return null;
     var legal = [];
@@ -6737,12 +6739,26 @@
   //   job (every 5 min, deduped on t = gold_prices.fetched_at, so one row per genuine
   //   refresh), and only while the bar is in stock — a gap means nothing was buyable.
   function gfhRefLines(){
-    var out = [], g = el("gaugeVal"), sp = el("spot");
-    if(g && sp && /\//.test(g.textContent)){
-      var parts = g.textContent.split("/");
-      var hero = pMoney(parts[0]), floor = pMoney(parts[1]), s = parseFloat(sp.value);
-      if(isFinite(hero) && isFinite(floor) && isFinite(s)){
-        var bz = { key: "buy", v: s + (floor - hero), live: hero >= floor };   // live = already in the zone
+    var out = [], sp = el("spot");
+    /* The alert-gauge band was REMOVED from the dashboard 2026-08-27, so there is no
+       "hero / floor" text to parse any more — doing so silently dropped the buy-zone
+       line, the buy trigger AND stopped recordBuyZone() writing history. Read the
+       engine's published constants instead: __gfhZone.trigger IS spot + (floor − hero),
+       computed by compute() itself — same single source of truth, one hop earlier.
+       The gauge parse stays only as a fallback for a stale build that still renders it. */
+    var zz = (typeof window !== "undefined") && window.__gfhZone;
+    var s0 = sp ? parseFloat(sp.value) : NaN;
+    var trig = (zz && isFinite(zz.trigger)) ? Number(zz.trigger) : NaN;
+    if(!isFinite(trig)){
+      var g = el("gaugeVal");
+      if(g && /\//.test(g.textContent)){
+        var parts = g.textContent.split("/");
+        var hero = pMoney(parts[0]), floor = pMoney(parts[1]);
+        if(isFinite(hero) && isFinite(floor) && isFinite(s0)) trig = s0 + (floor - hero);
+      }
+    }
+    if(isFinite(trig)){
+        var bz = { key: "buy", v: trig, live: isFinite(s0) && s0 >= trig - 1e-9 };   // live = already in the zone
         // RECORDED history first (buyzone_history, written by whichever dashboard is open —
         // one row per minute at most, plus one per real trigger move). The recorded curve is
         // the truth: it survives basis switches (June <-> online), discount edits and floor
@@ -6811,7 +6827,6 @@
         }
         out.push(bz);
         recordBuyZone(bz);
-      }
     }
     if(_gfhOnline && isFinite(Number(_gfhOnline.price))){
       // Once online_history has two or more points in the window the Costco line becomes a
