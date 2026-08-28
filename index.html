@@ -2589,7 +2589,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: b89d8b8 · built 2026-08-28 00:27 UTC</span>
+    <span id="verStamp" class="tnum">version: 0bb888b · built 2026-08-28 00:30 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -6252,6 +6252,8 @@
   pullBarHist();
   pullOnlinePrev();
   setInterval(function(){ pullBarNow(); pullBarHist(); pullOnlinePrev(); }, 300000);  // recorder writes every ~8 min
+
+  window.__gfhIngest = applySheet;   // public-page ingest hook (build-injected; unused in the artifact)
 })();
 </script>
 
@@ -6273,8 +6275,16 @@
    Dates are compared as LOCAL calendar days, never UTC: new Date("2026-08-27")
    parses as UTC midnight and reads as the 26th anywhere west of Greenwich,
    which would show a fresh sheet as a day old every single morning.
+
+   `!function(){...}();` ON PURPOSE, and this comment must never spell out the
+   paren-brace closer either: build-public.py injects window.__gfhIngest right
+   before the LAST occurrence of the close-paren IIFE terminator in this file,
+   assuming that is the main IIFE. When this block used the ordinary closer, the
+   hook landed in THIS closure, where applySheet does not exist — the public page
+   threw and NEVER went live (the "LIVE badge but seed prices" bug of 8/27).
+   Same convention as the watchdog below.
    ========================================================================= */
-(function(){
+!function(){
   function daysOld(iso){
     var p = String(iso).split("-");
     if (p.length !== 3) return null;
@@ -6307,9 +6317,7 @@
   paint();
   // Repaint so a tab left open overnight rolls from green to yellow on its own.
   setInterval(paint, 600000);
-
-  window.__gfhIngest = applySheet;   // public-page ingest hook (build-injected; unused in the artifact)
-})();
+}();
 </script>
 
 <script>
