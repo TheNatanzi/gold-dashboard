@@ -499,7 +499,7 @@
     var cw = W - padL - padR, ch = H - padT - padB;
     var tok = getComputedStyle(document.documentElement);
     function T(n, fb){ var v = tok.getPropertyValue(n).trim(); return v || fb; }
-    var good = T("--good", "#4bd6a0"), bad = T("--bad", "#f2686f"),
+    var good = T("--good", "#4bd6a0"), bad = T("--bad", "#f2686f"), costRed = "#c92e3a",
         grid = T("--line", "#262c3a"), mute = T("--ink-mute", "#767d90"), gold = T("--gold", "#e8c46a"),
         panel = T("--panel", "#141824");                // backing plate for the reference-line labels
 
@@ -654,8 +654,8 @@
     }
     refDraw.slice().sort(function(a, b){ return a.y - b.y; }).forEach(function(o){
       var isBuy = o.r.key === "buy";
-      var col = isBuy ? good : bad;   // costco line in RED (Medi 2026-08-27) — "what it costs" vs green "where you win"
-      var op  = isBuy ? 0.95 : (o.r.stale ? 0.25 : 0.45);
+      var col = isBuy ? good : costRed;   // costco line in DEEP red (Medi 2026-08-27) — "what it costs" vs green "where you win"
+      var op  = isBuy ? 0.95 : (o.r.stale ? 0.3 : 0.9);
       if(o.r.series){
         // Real recorded history. Clamp each point into the plot rather than dropping it, so a
         // stretch that runs off the top still reads as "up there" instead of vanishing.
@@ -672,7 +672,7 @@
         if(o.r.key === "costco"){
           // Base pass: the WHOLE series extra faint (sold-out stretches included).
           if(n >= 2) s += '<path d="' + dd + '" fill="none" stroke="' + col +
-                          '" stroke-width="1.4" stroke-dasharray="2 5" opacity="0.16"/>';
+                          '" stroke-width="2" stroke-dasharray="6 3" opacity="0.22"/>';
           // Overlay pass: only the in-stock runs at full reference opacity.
           var sdd = "", run = 0;
           o.r.series.forEach(function(p){
@@ -683,7 +683,7 @@
             sdd += (run++ ? "L" : "M") + xx2.toFixed(1) + "," + yy2.toFixed(1);
           });
           if(/L/.test(sdd)) s += '<path d="' + sdd + '" fill="none" stroke="' + col +
-                          '" stroke-width="1.4" stroke-dasharray="2 5" opacity="' + op + '"/>';
+                          '" stroke-width="2" stroke-dasharray="6 3" opacity="' + op + '"/>';
           dd = "";                                      // handled here; skip the generic draw below
         }
         // The buy-zone line is a forward-looking level ("spot here = buy"), so it carries on
@@ -719,8 +719,8 @@
         }
       } else {
         s += '<line x1="' + padL + '" y1="' + o.y.toFixed(1) + '" x2="' + (padL + cw) + '" y2="' + o.y.toFixed(1) +
-             '" stroke="' + col + '" stroke-width="' + (isBuy ? 1.5 : 1) + '" stroke-dasharray="' +
-             (isBuy ? "7 4" : "2 5") + '" opacity="' + op + '"/>';
+             '" stroke="' + col + '" stroke-width="' + (isBuy ? 1.5 : 2) + '" stroke-dasharray="' +
+             (isBuy ? "7 4" : "6 3") + '" opacity="' + op + '"/>';
       }
       var ty = o.y - 5; if(ty < padT + 11) ty = o.y + 13;
       for(var q = 0; q < labY.length; q++) if(Math.abs(ty - labY[q]) < 13) ty = labY[q] + 13;
@@ -741,9 +741,9 @@
         // spot tag. Muted fill = reference, gold fill = the live line - hierarchy by colour.
         var cty = placeTag(o.y);
         s += '<rect x="' + (padL + cw) + '" y="' + (cty - 9).toFixed(1) + '" width="' + padR +
-             '" height="18" rx="3" fill="' + bad + '"/>' +
+             '" height="18" rx="3" fill="' + costRed + '"/>' +
              '<text x="' + (padL + cw + padR / 2) + '" y="' + (cty + 4).toFixed(1) +
-             '" text-anchor="middle" fill="' + panel + '" font-family="monospace" font-size="11" font-weight="700">' +
+             '" text-anchor="middle" fill="#fff" font-family="monospace" font-size="11" font-weight="700">' +
              Math.round(o.r.v) + '</text>';
       }
       var arrow = o.off === 1 ? " ↑" : o.off === -1 ? " ↓" : "";
