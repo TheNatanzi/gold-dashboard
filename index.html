@@ -1051,6 +1051,11 @@
     font-size:10.5px;font-weight:700;white-space:nowrap;overflow:hidden;padding:0 6px}
   .gdx-seg.spot{background:var(--bad-bg);color:var(--bad);border-right:1px solid var(--bad)}
   .gdx-seg.sheet{background:var(--gold-glow);color:var(--gold)}
+  .gdx-seg.buy{background:var(--warn-bg);color:var(--warn);border-right:1px solid var(--warn)}
+  .gdx-lgd .l-buy{color:var(--warn)} .gdx-lgd .l-buy i{background:var(--warn)}
+  /* profit ABOVE the 8/25 snapshot — the delta panel flips green */
+  .gdx-delta.up{border-color:var(--good);background:var(--good-bg)}
+  .gdx-delta.up .dv{color:var(--good)}
   .gdx-cap{margin-top:9px;font-size:11px;color:var(--ink-soft);line-height:1.5}
   .gdx-cap b{color:var(--ink)}
   .gdx-lgd{display:none;flex-wrap:wrap;gap:6px 14px;margin-top:7px}
@@ -1080,7 +1085,7 @@
     <div class="spotbar">
       <div class="spot-lead">
         <span class="spot-lab">Gold spot $/oz</span>
-        <div class="spot-num"><span class="cur">$</span><input class="spot-in tnum" id="spot" value="4053.70" inputmode="decimal" aria-label="Gold spot price per ounce"></div>
+        <div class="spot-num"><span class="cur">$</span><input class="spot-in tnum" id="spot" value="4609.20" inputmode="decimal" aria-label="Gold spot price per ounce"></div>
         <div class="stamp" id="spotStamp">spot pulled —</div>
         <div class="mktnote" id="marketNote" style="display:none"></div>
       </div>
@@ -1252,8 +1257,8 @@
   <div class="buyers" id="buyers"></div>
 
   <div class="rules">
-    <span class="rulechip">Elemetal · Pamp <b>spot − $10</b></span>
-    <span class="rulechip">Elemetal · Generic <b>spot − $20</b></span>
+    <span class="rulechip">Elemetal · Pamp <b>spot − $25</b> <span style="opacity:.6">(8/27 sheet −$35 + $10 call-in)</span></span>
+    <span class="rulechip">Elemetal · Generic <b>spot − $30</b> <span style="opacity:.6">(8/27 sheet −$40 + $10 call-in)</span></span>
     <span class="rulechip">Alert floor <b>$25 / bar</b></span>
     <span class="rulechip">Online = in-store <b>+ $10</b></span>
   </div>
@@ -1519,21 +1524,13 @@
        verdict) is still computed in renderJune(). To restore: git revert this change. -->
 
 
-  <!-- ALERT GAUGE (full-width band) -->
-  <div class="gaugebar">
-    <div class="gb-left">
-      <div class="gauge-title">◎ Alert floor · Chase Ink 2.5% (no Taekus)</div>
-      <div class="gauge-head"><span class="t">Distance to $25/bar alert</span><span class="v" id="gaugeVal">—</span></div>
-      <div class="track"><div class="fill" id="gaugeFill" style="width:0%"></div></div>
-      <div class="verdict no" id="verdict">—</div>
-      <div class="stamp" id="heroStamp">—</div>
-    </div>
-    <div class="mini">
-      <div><div class="l">Buy Pamp</div><div class="n tnum" id="mBuy">—</div></div>
-      <div><div class="l" id="mSellLab">Sell · Elemetal</div><div class="n tnum" id="mSell">—</div></div>
-      <div><div class="l">NET</div><div class="n tnum" id="mLoss">—</div></div>
-    </div>
-  </div>
+  <!-- ALERT GAUGE band REMOVED 2026-08-27 — redundant with the gold-buy math card below,
+       which shows the same buy / sell / net for the same worst-case Chase Ink 2.5% card,
+       and additionally spells out the Elemetal sheet behind the sell price.
+       The ARITHMETIC is NOT dead: compute() still derives heroSel and floorV because they
+       publish window.__gfhZone, which the live layer's chart reads to draw the buy-zone
+       trigger line. Every write that fed this band is null-guarded, so pasting this markup
+       back revives the band with no JS change. To restore: git revert this change. -->
 
   <!-- BUYING POWER (above the cards) -->
   <div class="bpbar">
@@ -1561,7 +1558,7 @@
   <div class="note">
     <b>How to read it:</b> the alert floor is Chase Ink 2.5% with <b>no Taekus</b> — your worst case. When even THAT bar clears <b>+$25</b>, every card clears more. •
     <div class="gbf">
-      <div class="gbf-head">◎ Gold-buy math · Chase Ink 2.5% (worst case) · Elemetal sheet · Aug 27 · 12:39 PM</div>
+      <div class="gbf-head">◎ Gold-buy math · Chase Ink 2.5% (worst case) · <span id="gbfWhen">Elemetal sheet</span></div>
 
       <!-- ELEMETAL SHEET BREAKDOWN — what Elemetal actually pays, spelled out.
            Hand-stamped from _inbox/call-sheet-2026-08-27.txt (row GB1PAMPF). -->
@@ -1571,42 +1568,44 @@
           <span class="dyr">2026</span>
           <span class="dlab">Elemetal sheet</span>
         </div>
+        <!-- Values here are LIVE (compute() writes them); only the seed text is static.
+             The seed numbers below match the 8/27 capture so a JS-less render is honest. -->
         <div class="gbf-steps">
-          <div class="gbf-step"><span class="sl">Gold spot</span><span class="sv">$4,609.20</span><span class="sn">live, 12:39 PM</span></div>
+          <div class="gbf-step"><span class="sl">Gold spot</span><span class="sv" id="gbeSpot">$4,609.20</span><span class="sn" id="gbeSpotSub">live</span></div>
           <div class="gbf-sop">−</div>
-          <div class="gbf-step neg"><span class="sl">Sheet bid</span><span class="sv">−$35.00</span><span class="sn">GB1PAMPF · was −$30</span></div>
+          <div class="gbf-step neg"><span class="sl">Sheet bid</span><span class="sv" id="gbeBid">−$35.00</span><span class="sn">GB1PAMPF · was −$30</span></div>
           <div class="gbf-sop">+</div>
-          <div class="gbf-step pos"><span class="sl">Call-in bonus</span><span class="sv">+$10.00</span><span class="sn">phone, not the sheet</span></div>
+          <div class="gbf-step pos"><span class="sl">Call-in bonus</span><span class="sv" id="gbeBonus">+$10.00</span><span class="sn">phone, not the sheet</span></div>
           <div class="gbf-sop">=</div>
-          <div class="gbf-step net"><span class="sl">Elemetal pays</span><span class="sv">$4,584.20</span><span class="sn">spot − $25</span></div>
+          <div class="gbf-step net"><span class="sl">Elemetal pays</span><span class="sv" id="gbeNet">$4,584.20</span><span class="sn" id="gbeNetSub">spot − $25</span></div>
         </div>
       </div>
       <div class="gbf-agekey"><i class="k-g"></i>green = today's sheet · <i class="k-y"></i>yellow = 1–2 days old · <i class="k-r"></i>red = 3+ days old, the numbers below may have moved.</div>
       <div class="gbf-delta">Elemetal widened the Pamp bid on the 8/27 sheet: <b>−$30 → −$35</b>, so net went −$20 → −$25. That is <b>$5 less per bar</b> than yesterday, before anything else moves. Any-brand bar (GB1C) held at −$40.</div>
 
       <div class="gbf-flow">
-        <div class="gbf-chip"><span class="gl">Buy · Costco</span><span class="gv">$4,649.99</span><span class="gs">online − $10</span></div>
+        <div class="gbf-chip"><span class="gl">Buy · same as cards</span><span class="gv" id="gbcBuy">$4,649.99</span><span class="gs" id="gbcBuySub">active BUY basis</span></div>
         <div class="gbf-op">−</div>
-        <div class="gbf-chip"><span class="gl">Sell · Elemetal</span><span class="gv">$4,584.20</span><span class="gs">spot − $25</span></div>
+        <div class="gbf-chip"><span class="gl">Sell · Elemetal</span><span class="gv" id="gbcSell">$4,584.20</span><span class="gs" id="gbcSellSub">spot − $25</span></div>
         <div class="gbf-op">=</div>
-        <div class="gbf-chip bad"><span class="gl">Metal spread</span><span class="gv">−$65.79</span><span class="gs">you lose this</span></div>
+        <div class="gbf-chip bad" id="gbcSpreadBox"><span class="gl">Metal spread</span><span class="gv" id="gbcSpread">−$65.79</span><span class="gs" id="gbcSpreadSub">you lose this</span></div>
         <div class="gbf-op">+</div>
-        <div class="gbf-chip good"><span class="gl">Card reward</span><span class="gv">+$116.25</span><span class="gs">2.5% × buy</span></div>
+        <div class="gbf-chip good"><span class="gl">Card reward</span><span class="gv" id="gbcReward">+$116.25</span><span class="gs" id="gbcRewardSub">2.5% × buy</span></div>
         <div class="gbf-op">=</div>
-        <div class="gbf-chip profit"><span class="gl">Profit / bar</span><span class="gv">+$50.46</span><span class="gs">what you keep</span></div>
+        <div class="gbf-chip profit"><span class="gl">Profit / bar</span><span class="gv" id="gbcProfit">+$50.46</span><span class="gs">what you keep</span></div>
       </div>
-      <div class="gbf-track" role="img" aria-label="Card reward covers the metal loss, leaving $50.46 profit per bar">
-        <div class="gbf-loss" style="width:57%">−$65.79 metal</div>
-        <div class="gbf-keep" style="width:43%">+$50.46 kept</div>
+      <div class="gbf-track" role="img" id="gbfTrack" aria-label="Card reward vs metal loss per bar">
+        <div class="gbf-loss" id="gbfLoss" style="width:57%">−$65.79 metal</div>
+        <div class="gbf-keep" id="gbfKeep" style="width:43%">+$50.46 kept</div>
       </div>
-      <div class="gbf-cap">The <b>2.5% card reward (+$116.25)</b> still covers the <b>−$65.79</b> lost on the metal → you keep <b>+$50.46 a bar</b>. <span style="opacity:.8">The reward is the real engine, not the spread — which is why a $5 worse sheet dents the profit but does not kill it.</span></div>
+      <div class="gbf-cap" id="gbfCap">The <b>2.5% card reward (+$116.25)</b> still covers the <b>−$65.79</b> lost on the metal → you keep <b>+$50.46 a bar</b>.</div>
     </div>
 
-    <!-- DAY-OVER-DAY DELTA — what changed between the 8/25 and 8/27 Elemetal sheets,
-         and how much of the drop is spot vs how much is the sheet. Hand-stamped;
-         same inputs as the gbf card above (buy and card rate never moved). -->
+    <!-- DAY-OVER-DAY DELTA — the frozen 8/25 snapshot (PREV_SHEET in the JS) vs NOW,
+         computed live by compute() from the same spot/buy/discP the matrix uses. Only the
+         8/25 column is hand-stamped — it is history and may never drift. -->
     <div class="gdx">
-      <div class="gdx-head">◎ What changed since the last sheet · 8/25 → 8/27 · Chase Ink 2.5%</div>
+      <div class="gdx-head">◎ What changed since the last sheet · 8/25 → now · Chase Ink 2.5%</div>
       <div class="gdx-body">
         <div class="gdx-col">
           <div class="gdx-when"><span class="wd">8/25</span><span class="wl">last sheet</span></div>
@@ -1617,28 +1616,30 @@
         </div>
         <div class="gdx-arrow">→</div>
         <div class="gdx-col now">
-          <div class="gdx-when"><span class="wd">8/27</span><span class="wl">today</span></div>
-          <div class="gdx-row"><span class="k">Gold spot</span><span class="v">$4,609.20</span></div>
-          <div class="gdx-row"><span class="k">Elemetal pays</span><span class="v">$4,584.20</span></div>
-          <div class="gdx-row"><span class="k">Metal spread</span><span class="v">−$65.79</span></div>
-          <div class="gdx-row hero"><span class="k">Profit / bar</span><span class="v">+$50.46</span></div>
+          <div class="gdx-when"><span class="wd" id="gdxNowDate">8/27</span><span class="wl">now (live)</span></div>
+          <div class="gdx-row"><span class="k">Gold spot</span><span class="v" id="gdxNowSpot">$4,609.20</span></div>
+          <div class="gdx-row"><span class="k">Elemetal pays</span><span class="v" id="gdxNowSell">$4,584.20</span></div>
+          <div class="gdx-row"><span class="k">Metal spread</span><span class="v" id="gdxNowSpread">−$65.79</span></div>
+          <div class="gdx-row hero"><span class="k">Profit / bar</span><span class="v" id="gdxNowProfit">+$50.46</span></div>
         </div>
-        <div class="gdx-delta">
-          <span class="dv">−$33.20</span>
+        <div class="gdx-delta" id="gdxDeltaBox">
+          <span class="dv" id="gdxDv">−$33.20</span>
           <span class="dk">per bar, vs 8/25</span>
         </div>
       </div>
       <div class="gdx-why">
-        <div class="gdx-whyl">Where the −$33.20 came from</div>
-        <div class="gdx-bar" role="img" aria-label="Of the $33.20 drop per bar, $28.20 is gold spot falling and $5.00 is Elemetal widening its bid">
-          <div class="gdx-seg spot" style="width:85%">−$28.20 · spot fell</div>
-          <div class="gdx-seg sheet" style="width:15%">−$5.00 · sheet</div>
+        <div class="gdx-whyl" id="gdxWhyl">Where the −$33.20 came from</div>
+        <div class="gdx-bar" role="img" id="gdxBar" aria-label="Split of the per-bar change: spot vs sheet vs Costco price">
+          <div class="gdx-seg spot"  id="gdxSegSpot"  style="width:85%">−$28.20 · spot</div>
+          <div class="gdx-seg buy"   id="gdxSegBuy"   style="width:0%;display:none"></div>
+          <div class="gdx-seg sheet" id="gdxSegSheet" style="width:15%">−$5.00 · sheet</div>
         </div>
         <div class="gdx-lgd" aria-hidden="true">
-          <span class="l-spot"><i></i>−$28.20 spot fell</span>
-          <span class="l-sheet"><i></i>−$5.00 sheet</span>
+          <span class="l-spot"><i></i><span id="gdxLgSpot">−$28.20 spot</span></span>
+          <span class="l-buy" id="gdxLgBuyWrap" style="display:none"><i></i><span id="gdxLgBuy"></span></span>
+          <span class="l-sheet"><i></i><span id="gdxLgSheet">−$5.00 sheet</span></span>
         </div>
-        <div class="gdx-cap">Most of the damage is <b>gold spot dropping $28.20</b>, which nobody controls. Only <b>$5.00</b> is Elemetal widening the Pamp bid from −$30 to −$35. <span style="opacity:.8">Costco's price ($4,649.99) and the 2.5% card reward (+$116.25) did not move, so those two cancel out of the comparison entirely.</span></div>
+        <div class="gdx-cap" id="gdxCap">Most of the damage is <b>gold spot dropping $28.20</b>, which nobody controls. Only <b>$5.00</b> is Elemetal widening the Pamp bid from −$30 to −$35.</div>
       </div>
     </div>
     <b>Venmo = verified 3%</b> + Synchrony Taekus 2.13% = 5.13% → best per-bar card. •
@@ -2588,7 +2589,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: c18599a · built 2026-08-28 00:09 UTC</span>
+    <span id="verStamp" class="tnum">version: b89d8b8 · built 2026-08-28 00:27 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -2605,7 +2606,7 @@
     // true = verified live · false = "feed says IN, Costco says NO" (rule 16) · null = unchecked.
     // Only the live layer ever sets it; in the artifact it stays null and nothing changes.
     costcoOk:null,
-    discPamp:20, discGen:30, floor:25, onlinePrem:10
+    discPamp:35, discGen:40, floor:25, onlinePrem:10   // fallbacks = 8/27 sheet AS PRINTED (pre call-in); BUYERS wins when present
   };
   // The built-in starting price, captured before anything can overwrite it. CFG.junePrice
   // used to be written and never reverted, so a price that expired — or one Medi explicitly
@@ -2631,8 +2632,8 @@
 
   // Buyers (sell price = spot + offset). Elemetal is the default/preferred buyer.
   const BUYERS = [
-    {key:"elemetal_pamp",    name:"Elemetal · Pamp",    offset:-30,  note:"Verified 8/25 price sheet (GB1PAMPF Bid = spot −$30) + $10 call-in (working relationship) → net spot −$20. Must be Veriscan + green foot, else any-brand. Gold-bar bid column widened $10 on 8/25.", t:"2026-08-25"},
-    {key:"elemetal_generic", name:"Elemetal · Generic", offset:-40,  note:"Verified 8/25 price sheet (GB1C any-brand = spot −$40) + $10 call-in → net spot −$30.", t:"2026-08-25"},
+    {key:"elemetal_pamp",    name:"Elemetal · Pamp",    offset:-35,  note:"Verified 8/27 price sheet (GB1PAMPF Bid = spot −$35) + $10 call-in (working relationship) → net spot −$25. Must be Veriscan + green foot, else any-brand. Bid widened −$20 → −$30 on 8/25, then −$30 −> −$35 on 8/27.", t:"2026-08-27"},
+    {key:"elemetal_generic", name:"Elemetal · Generic", offset:-40,  note:"Verified 8/27 price sheet (GB1C any-brand = spot −$40, unchanged from 8/25) + $10 call-in → net spot −$30.", t:"2026-08-27"},
     {key:"upstate",          name:"Upstate",            offset:7,    note:"Pays over spot; ship-in or drive.", t:"2026-07-24"},
     {key:"amark",            name:"AMARK",              offset:null, note:"Las Vegas; no price-pull yet.", t:null},
     {key:"collectpure",      name:"CollectPure",        offset:null, note:"Online marketplace; ship-in.", t:null},
@@ -2656,6 +2657,11 @@
   const avail={}; OWNED.forEach(c=>avail[c.name]=true);
 
   const $ = id => document.getElementById(id);
+  // Write only if the element still exists. Bands get retired from this page fairly often
+  // (coverage 8/11, the trio 8/11, the alert gauge 8/27) and an unguarded write to a
+  // removed id throws mid-compute(), taking every later paint down with it.
+  const setTxt  = (id,txt) => { const e=$(id); if(e) e.textContent=txt; };
+  const setTxt2 = (id,html)=> { const e=$(id); if(e) e.innerHTML=html; };
   const money = n => (n<0?"−$":"$") + Math.abs(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
   const signMoney = n => (n<0?"−$":"+$") + Math.abs(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
   const pct = n => n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})+"%";
@@ -2881,26 +2887,30 @@
     const h=computeCard(hero,buy,lossP,lossG,prem);
     const heroSel=barType==="pamp"?h.barP:h.barG;
     const usedLoss=barType==="pamp"?lossP:lossG;
-    $("mBuy").textContent=money(buy);
-    $("mSellLab").textContent=`Sell · ${barType==="pamp"?"Pamp":"Generic"}`;
-    $("mSell").textContent=money(barType==="pamp"?sellP:sellG);
+    // These six ids lived in the ALERT GAUGE band, removed 2026-08-27. The writes stay,
+    // null-guarded, so restoring that markup needs no JS change — and the math above them
+    // must run regardless, because __gfhZone below is built from heroSel + floorV.
     const net=-usedLoss;                      // sell − buy (negative = you lose on metal)
+    setTxt("mBuy",money(buy));
+    setTxt("mSellLab",`Sell · ${barType==="pamp"?"Pamp":"Generic"}`);
+    setTxt("mSell",money(barType==="pamp"?sellP:sellG));
     const netEl=$("mLoss");
-    netEl.textContent=money(net);
-    netEl.className="n tnum "+(net<0?"bad":"good");
+    if(netEl){ netEl.textContent=money(net); netEl.className="n tnum "+(net<0?"bad":"good"); }
     const gp=Math.max(0,Math.min(1,heroSel/(floorV||1)));
-    const fill=$("gaugeFill"); fill.style.width=(gp*100)+"%";
-    fill.className="fill "+(heroSel>=floorV?"good":"bad");
-    $("gaugeVal").textContent=`${money(heroSel)} / ${money(floorV)}`;
+    const fill=$("gaugeFill");
+    if(fill){ fill.style.width=(gp*100)+"%"; fill.className="fill "+(heroSel>=floorV?"good":"bad"); }
+    setTxt("gaugeVal",`${money(heroSel)} / ${money(floorV)}`);
     // Published for the live layer's chart: enough to reconstruct where the buy-zone
     // trigger sat at any historical bar price. effFrac is the hero card's total reward
     // rate; profit moves by (1 - effFrac) per dollar of buy.
     try{ window.__gfhZone = { trigger: spot + (floorV - heroSel),
                               effFrac: (hero.card + hero.tk) / 100,
                               buyNow: buy, onlineBased: overridden }; }catch(e){}
-    const v=$("verdict");
-    if(heroSel>=floorV){v.className="verdict go";v.textContent="✓ ALERT — floor clears "+money(floorV)+"/bar";}
-    else{v.className="verdict no";v.textContent=`✗ No-go — need ${money(floorV-heroSel)} more/bar`;}
+    const v=$("verdict");                    // also removed with the gauge band; kept guarded
+    if(v){
+      if(heroSel>=floorV){v.className="verdict go";v.textContent="✓ ALERT — floor clears "+money(floorV)+"/bar";}
+      else{v.className="verdict no";v.textContent=`✗ No-go — need ${money(floorV-heroSel)} more/bar`;}
+    }
 
     // matrix: fixed order, Visa group then MC divider then MC group
     const rows=OWNED.slice().sort((a,b)=>a.order-b.order).map(c=>computeCard(c,buy,lossP,lossG,prem));
@@ -2944,9 +2954,98 @@
       : st==="expired-held"    ? (priceWhoWord()+" "+fmtDT(buyPriceAt())+" · STALE")
       : st==="expired-dropped" ? "starting figure — the phoned-in price expired"
       :                          "starting figure — nobody has phoned yet";
-    $("heroStamp").innerHTML=`spot <b>${sp}</b> · buy from <b>${priceSrc}</b>`;
+    setTxt2("heroStamp",`spot <b>${sp}</b> · buy from <b>${priceSrc}</b>`);  // gauge band, guarded
     $("matrixStamp").innerHTML=`spot ${sp} · price ${priceSrc}`;
     $("deltaStamp").innerHTML=`vs spot <b>${sp}</b>`;
+
+    /* ---- GOLD-BUY MATH + DELTA infographics (live since 2026-08-27) ----
+       These two cards shipped hand-stamped and disagreed with the matrix within hours
+       (Medi caught it: card said +$50.46 while the hero row said −$22.29, because the
+       card was frozen at 12:39 PM's spot and the matrix priced off the live inputs).
+       Every figure below now comes from the SAME variables the matrix just used —
+       spot, buy, discP, h.barP — so the two surfaces cannot diverge again. The only
+       hand-stamped survivors: the sheet-date badge (data-sheet, aged by colour) and
+       PREV_SHEET, which is frozen history. */
+    const rwPct = hero.card + hero.tk;                    // hero = Chase Ink: 2.5 + 0
+    const gbReward = (rwPct/100)*buy;
+    const gbSpread = sellP - buy;                         // negative = metal loss
+    const gbProfit = h.barP;                              // identical to the matrix hero row
+    setTxt2("gbfWhen", `Elemetal sheet · spot ${sp}`);
+    setTxt("gbeSpot", money(spot));
+    setTxt("gbeSpotSub", $("spotStamp").dataset.t ? "live" : "typed · not live");
+    setTxt("gbeBid",  signMoney(-(discP+CALL_IN_BONUS)));
+    setTxt("gbeBonus", signMoney(CALL_IN_BONUS));
+    setTxt("gbeNet",  money(sellP));
+    setTxt("gbeNetSub", "spot − $"+discP);
+    setTxt("gbcBuy",  money(buy));
+    setTxt("gbcBuySub", _juneOverridden ? "online lookup − $"+((CFG.onlinePrem==null||isNaN(CFG.onlinePrem))?10:Number(CFG.onlinePrem)) : "starting figure / June");
+    setTxt("gbcSell", money(sellP));
+    setTxt("gbcSellSub", "spot − $"+discP);
+    setTxt("gbcSpread", signMoney(gbSpread));
+    setTxt("gbcSpreadSub", gbSpread<0 ? "you lose this" : "you gain this");
+    const spreadBox=$("gbcSpreadBox"); if(spreadBox) spreadBox.className="gbf-chip "+(gbSpread<0?"bad":"good");
+    setTxt("gbcReward", signMoney(gbReward));
+    setTxt("gbcRewardSub", rwPct+"% × buy");
+    setTxt("gbcProfit", signMoney(gbProfit));
+    const lossAbs=Math.max(0,-gbSpread);
+    const denom=lossAbs+Math.max(0,gbProfit);
+    const track=$("gbfTrack");
+    if(track){
+      if(gbProfit<0 || denom<=0){
+        // reward doesn't cover the metal: the bar is all loss — don't draw a fake green sliver
+        $("gbfLoss").style.width="100%"; $("gbfLoss").textContent=signMoney(gbSpread)+" metal";
+        $("gbfKeep").style.width="0%";   $("gbfKeep").textContent="";
+      }else{
+        const lw=Math.round(100*lossAbs/denom);
+        $("gbfLoss").style.width=lw+"%";       $("gbfLoss").textContent=signMoney(gbSpread)+" metal";
+        $("gbfKeep").style.width=(100-lw)+"%"; $("gbfKeep").textContent=signMoney(gbProfit)+" kept";
+      }
+      track.setAttribute("aria-label", gbProfit>=0
+        ? `Card reward covers the metal loss, leaving ${money(gbProfit)} profit per bar`
+        : `Metal loss exceeds the card reward by ${money(-gbProfit)} per bar`);
+    }
+    setTxt2("gbfCap", gbProfit>=0
+      ? `The <b>${rwPct}% card reward (${signMoney(gbReward)})</b> covers the <b>${signMoney(gbSpread)}</b> on the metal → you keep <b>${signMoney(gbProfit)} a bar</b>. <span style="opacity:.8">The reward is the real engine, not the spread.</span>`
+      : `The <b>${rwPct}% card reward (${signMoney(gbReward)})</b> does NOT cover the <b>${signMoney(gbSpread)}</b> lost on the metal → <b>${signMoney(gbProfit)} a bar</b> on the worst-case card. Better cards may still clear — read the matrix below.`);
+
+    // ---- delta vs the frozen 8/25 snapshot ----
+    // PREV_SHEET is HISTORY: the state of this page when the 8/25 sheet was live.
+    // Never recompute it from live inputs — update it only when a NEW sheet lands
+    // (copy that day's live figures in, move data-sheet forward).
+    const PREV_SHEET={label:"8/25", spot:4637.40, sell:4617.40, spread:-32.59, profit:83.66, disc:20, buy:4649.99, rate:2.5};
+    const dProfit=gbProfit-PREV_SHEET.profit;
+    // exact decomposition of dProfit (derivation: profit = r·buy − buy + spot − disc):
+    const dSpot  = spot-PREV_SHEET.spot;                       // spot moved
+    const dSheet = -(discP-PREV_SHEET.disc);                   // Elemetal moved the sheet
+    const dBuy   = -(1-rwPct/100)*(buy-PREV_SHEET.buy);        // Costco price moved
+    const dRate  = dProfit-(dSpot+dSheet+dBuy);                // residual: reward-rate change (normally 0)
+    setTxt("gdxNowDate",(new Date().getMonth()+1)+"/"+new Date().getDate());
+    setTxt("gdxNowSpot",  money(spot));
+    setTxt("gdxNowSell",  money(sellP));
+    setTxt("gdxNowSpread",signMoney(gbSpread));
+    setTxt("gdxNowProfit",signMoney(gbProfit));
+    setTxt("gdxDv", signMoney(dProfit));
+    const dBox=$("gdxDeltaBox"); if(dBox) dBox.className="gdx-delta"+(dProfit>=0?" up":"");
+    setTxt2("gdxWhyl", `Where the ${signMoney(dProfit)} came from`);
+    const parts=[["gdxSegSpot","gdxLgSpot",null,      dSpot,  "spot"],
+                 ["gdxSegBuy", "gdxLgBuy","gdxLgBuyWrap", dBuy+dRate, "Costco price"],
+                 ["gdxSegSheet","gdxLgSheet",null,    dSheet, "sheet"]];
+    const totAbs=parts.reduce((a,x)=>a+Math.abs(x[3]),0);
+    parts.forEach(([segId,lgId,wrapId,val,lab])=>{
+      const seg=$(segId); if(!seg) return;
+      const show=Math.abs(val)>=0.005 && totAbs>0;
+      seg.style.display=show?"":"none";
+      if(show){ seg.style.width=Math.max(4,Math.round(100*Math.abs(val)/totAbs))+"%";
+                seg.textContent=signMoney(val)+" · "+lab; }
+      const lg=$(lgId); if(lg) lg.textContent=signMoney(val)+" "+lab;
+      const wrap=wrapId?$(wrapId):(lg&&lg.parentElement);
+      if(wrap) wrap.style.display=show?"":"none";
+    });
+    setTxt2("gdxCap",
+      `Spot ${dSpot<0?"fell":"rose"} <b>${money(Math.abs(dSpot))}</b> (nobody controls that), the sheet moved profit <b>${signMoney(dSheet)}</b>`+
+      (Math.abs(dBuy+dRate)>=0.005?`, and the Costco/buy side moved it <b>${signMoney(dBuy+dRate)}</b>`:``)+
+      ` → <b>${signMoney(dProfit)}/bar</b> vs the 8/25 sheet. <span style="opacity:.8">Both columns price the same worst-case ${rwPct}% card.</span>`);
+
 
     // FLASH PULSE ripple — only on a live update that moved spot, never while the user is typing.
     if(_pulse && document.activeElement!==$("spot")){
@@ -3257,7 +3356,7 @@
 
   // SAMPLE candles — a smooth pseudo-random walk near the current spot (placeholder until live).
   function sampleCandles(){
-    const base = num("spot") || 4053;
+    const base = num("spot") || 4609;
     const gen=(n,stepSec,vol)=>{
       const out=[]; let px=base - vol*3;
       let t=Math.floor(Date.now()/1000) - n*stepSec;
@@ -4940,14 +5039,16 @@
   const WI_WATCHED_KEY = "alchemy_wi_watchedonly";
 
   let wiTiersOn = (function(){
-    const raw = localStorage.getItem(WI_TIERS_KEY);
+    // try/catch like every other storage read: in a sandboxed/data: context this line
+    // THREW during IIFE evaluation and took the entire dashboard script down with it.
+    let raw=null; try{ raw = localStorage.getItem(WI_TIERS_KEY); }catch(e){}
     const src = (raw==null||raw==="") ? "1,2,3" : raw;
     const m = {};
     src.split(",").forEach(function(n){ n=parseInt(n,10); if(n>=1&&n<=4) m[n]=true; });
     // An empty set would show a blank page with no obvious way back.
     return Object.keys(m).length ? m : {1:true,2:true,3:true};
   })();
-  let wiWatchedOnly = localStorage.getItem(WI_WATCHED_KEY)==="1";
+  let wiWatchedOnly = (function(){ try{ return localStorage.getItem(WI_WATCHED_KEY)==="1"; }catch(e){ return false; } })();
 
   // Effective tier = the override in warehouse_tiers, else the tier hardcoded on
   // the roster. This is the whole point of the shared table: June's call sheet and
