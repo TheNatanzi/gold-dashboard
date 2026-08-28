@@ -899,34 +899,51 @@
   .gbf{margin:14px 0 4px;padding:14px 14px 12px;background:linear-gradient(180deg,var(--panel2),var(--panel));
     border:1px solid var(--line2);border-radius:12px}
   .gbf-head{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
-    color:var(--gold);margin-bottom:12px}
-  .gbf-flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px}
-  .gbf-chip{flex:1 1 120px;min-width:108px;background:var(--panel);border:1px solid var(--line);
-    border-radius:10px;padding:9px 10px;display:flex;flex-direction:column;gap:2px}
-  .gbf-chip .gl{font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-mute)}
-  .gbf-chip .gv{font-family:var(--mono);font-size:clamp(15px,2.1vw,19px);font-weight:700;color:var(--ink);line-height:1.15}
-  .gbf-chip .gs{font-size:10px;color:var(--ink-mute)}
+    color:var(--gold);margin-bottom:10px}
+  /* Every box in this card — the 4 Elemetal steps and the 5 flow chips — shares one
+     three-row skeleton with FIXED row heights (label / value / note). The fixed rows are the
+     whole trick: a chip whose note wrapped to two lines used to grow and drag its value off
+     the line its neighbours sat on. Font size may differ per box; row height may not.
+     Widths come from grid 1fr columns, so the boxes are equal by construction, not by luck. */
+  .gbf-flow{display:grid;grid-template-columns:repeat(4,1fr auto) 1fr;gap:8px;align-items:stretch;margin-top:10px}
+  .gbf-chip{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:10px 11px;display:grid;grid-template-rows:13px 24px 13px;row-gap:3px;align-content:center;min-width:0}
+  .gbf-chip .gl,.gbf-step .sl{font-size:10px;line-height:13px;letter-spacing:.04em;text-transform:uppercase;
+    color:var(--ink-mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gbf-chip .gv,.gbf-step .sv{font-family:var(--mono);font-weight:700;line-height:24px;
+    color:var(--ink);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .gbf-chip .gv{font-size:18px}
+  .gbf-chip .gs,.gbf-step .sn{font-size:10px;line-height:13px;color:var(--ink-mute);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .gbf-chip.bad{border-color:var(--bad);background:var(--bad-bg)} .gbf-chip.bad .gv{color:var(--bad)}
   .gbf-chip.good{border-color:var(--good);background:var(--good-bg)} .gbf-chip.good .gv{color:var(--good)}
-  .gbf-chip.profit{border-color:var(--gold-deep);background:var(--gold-glow)} .gbf-chip.profit .gv{color:var(--gold);font-size:clamp(17px,2.5vw,22px)}
-  .gbf-op{align-self:center;font-family:var(--mono);font-size:17px;font-weight:700;color:var(--ink-mute);padding:0 1px}
-  .gbf-track{display:flex;height:26px;margin:12px 0 6px;border-radius:7px;overflow:hidden;border:1px solid var(--line)}
+  .gbf-chip.profit{border-color:var(--gold-deep);background:var(--gold-glow)}
+  .gbf-chip.profit .gv{color:var(--gold);font-size:20px}
+  /* Operators live in their own auto-width grid column, so the gap to the left of an
+     operator always equals the gap to its right. */
+  .gbf-op,.gbf-sop{display:grid;align-items:center;justify-items:center;font-family:var(--mono);
+    font-weight:700;color:var(--ink-mute);width:14px;user-select:none}
+  .gbf-op{font-size:17px}
+  .gbf-track{display:flex;height:26px;margin:10px 0;border-radius:7px;overflow:hidden;border:1px solid var(--line)}
   .gbf-loss{background:var(--bad-bg);color:var(--bad);border-right:1px solid var(--bad)}
   .gbf-keep{background:var(--good-bg);color:var(--good)}
   .gbf-loss,.gbf-keep{display:flex;align-items:center;justify-content:center;font-family:var(--mono);
     font-size:11px;font-weight:700;white-space:nowrap}
   .gbf-cap{font-size:11px;color:var(--ink-soft);line-height:1.5}
   .gbf-cap b{color:var(--ink)}
-  @media(max-width:560px){.gbf-op{display:none}.gbf-chip{flex:1 1 46%}}
+  @media(max-width:700px){
+    .gbf-flow{grid-template-columns:1fr 1fr}
+    .gbf-op{display:none}
+  }
 
   /* Elemetal sheet breakdown — big date + the full spot→sheet→call-in→net chain.
      Static, hand-stamped from the captured morning sheet in Project Alchemy/_inbox.
      Rule: always the NEWEST sheet offset (see memory: elemetal-offset-always-newest). */
-  .gbf-elem{display:flex;flex-wrap:wrap;align-items:stretch;gap:10px;margin:12px 0 2px;
+  .gbf-elem{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:stretch;margin:10px 0 0;
     padding:11px 12px;background:var(--panel);border:1px solid var(--line);border-radius:9px}
-  .gbf-date{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    min-width:96px;padding:7px 13px;border-radius:9px;border:1px solid var(--gold-deep);background:var(--gold-glow)}
-  .gbf-date .dnum{font-family:var(--mono);font-size:clamp(28px,4.6vw,40px);font-weight:800;line-height:1;
+  .gbf-date{display:flex;flex-direction:column;align-items:center;justify-content:center;
+    width:114px;padding:7px 10px;border-radius:9px;border:1px solid var(--gold-deep);background:var(--gold-glow)}
+  .gbf-date .dnum{font-family:var(--mono);font-size:34px;font-weight:800;line-height:1;
     color:var(--gold);letter-spacing:-.02em}
   .gbf-date .dyr{font-family:var(--mono);font-size:11px;color:var(--gold);opacity:.75;line-height:1.3}
   .gbf-date .dlab{font-size:9px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-mute);margin-top:3px}
@@ -941,7 +958,7 @@
   .gbf-date.age-stale .dnum,.gbf-date.age-stale .dyr,.gbf-date.age-stale .dlab{color:var(--bad)}
   .gbf-date.age-future{border-color:var(--ink-mute);background:transparent}
   .gbf-date.age-future .dnum,.gbf-date.age-future .dyr{color:var(--ink-mute)}
-  .gbf-agekey{margin:7px 0 0;font-size:10px;color:var(--ink-mute);line-height:1.5}
+  .gbf-agekey{margin:10px 0 0;font-size:10px;color:var(--ink-mute);line-height:1.5}
   .gbf-agekey i{display:inline-block;width:8px;height:8px;border-radius:2px;margin:0 3px 0 0;vertical-align:baseline}
   .gbf-agekey .k-g{background:var(--good)} .gbf-agekey .k-y{background:var(--warn)} .gbf-agekey .k-r{background:var(--bad)}
 
@@ -976,51 +993,58 @@
   .epl-foot{margin-top:9px;font-size:10.5px;color:var(--ink-mute);line-height:1.5}
   .epl-foot b{color:var(--ink-soft)}
   @media(max-width:560px){.epl{min-width:560px}.epl td.wt{min-width:150px}}
-  .gbf-steps{flex:1 1 340px;display:flex;flex-wrap:wrap;align-items:stretch;gap:6px}
-  .gbf-step{flex:1 1 100px;min-width:92px;background:var(--panel2);border:1px solid var(--line);
-    border-radius:8px;padding:7px 9px;display:flex;flex-direction:column;gap:2px;justify-content:center}
-  .gbf-step .sl{font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-mute)}
-  .gbf-step .sv{font-family:var(--mono);font-size:clamp(13px,1.8vw,15px);font-weight:700;color:var(--ink);line-height:1.15}
-  .gbf-step .sn{font-size:9.5px;color:var(--ink-mute);line-height:1.3}
+  .gbf-steps{display:grid;grid-template-columns:repeat(3,1fr auto) 1fr;gap:8px;align-items:stretch}
+  .gbf-step{background:var(--panel2);border:1px solid var(--line);border-radius:8px;
+    padding:10px 11px;display:grid;grid-template-rows:13px 24px 13px;row-gap:3px;align-content:center;min-width:0}
+  .gbf-step .sv{font-size:15px}
   .gbf-step.neg .sv{color:var(--bad)}
   .gbf-step.pos .sv{color:var(--good)}
   .gbf-step.net{border-color:var(--gold-deep);background:var(--gold-glow)}
   .gbf-step.net .sv{color:var(--gold)}
-  .gbf-sop{align-self:center;font-family:var(--mono);font-size:15px;font-weight:700;color:var(--ink-mute);padding:0 1px}
-  .gbf-delta{margin:8px 0 0;font-size:10.5px;color:var(--ink-soft);line-height:1.5}
+  .gbf-sop{font-size:15px}
+  .gbf-delta{margin:10px 0 0;font-size:10.5px;color:var(--ink-soft);line-height:1.5}
   .gbf-delta b{color:var(--bad)}
-  @media(max-width:620px){.gbf-sop{display:none}.gbf-step{flex:1 1 45%}}
-  @media(max-width:430px){.gbf-date{width:100%}}
+  @media(max-width:700px){
+    .gbf-elem{grid-template-columns:1fr}
+    .gbf-date{width:100%;flex-direction:row;gap:9px;padding:9px 12px}
+    .gbf-date .dnum{font-size:28px}
+    .gbf-date .dlab{margin-top:0}
+    .gbf-steps{grid-template-columns:1fr 1fr}
+    .gbf-sop{display:none}
+  }
 
   /* Day-over-day delta infographic (gdx) — what changed between two Elemetal sheets
      and WHY, split into the part spot moved vs the part the sheet moved. */
   .gdx{margin:12px 0 4px;padding:14px 14px 12px;background:linear-gradient(180deg,var(--panel2),var(--panel));
     border:1px solid var(--line);border-radius:12px}
   .gdx-head{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
-    color:var(--gold);margin-bottom:11px}
-  .gdx-body{display:flex;flex-wrap:wrap;align-items:stretch;gap:9px}
-  .gdx-col{flex:1 1 190px;min-width:172px;background:var(--panel);border:1px solid var(--line);
-    border-radius:9px;padding:10px 11px}
+    color:var(--gold);margin-bottom:10px}
+  /* 3 equal columns + a fixed operator column, so the delta panel is exactly as wide
+     as each dated column instead of taking whatever was left over. */
+  .gdx-body{display:grid;grid-template-columns:1fr auto 1fr 1fr;gap:9px;align-items:stretch}
+  .gdx-col{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:11px 12px;min-width:0}
   .gdx-col.now{border-color:var(--gold-deep)}
   .gdx-when{display:flex;align-items:baseline;gap:6px;margin-bottom:8px;padding-bottom:7px;
     border-bottom:1px solid var(--line)}
   .gdx-when .wd{font-family:var(--mono);font-size:clamp(22px,3.2vw,29px);font-weight:800;line-height:1;color:var(--ink-mute)}
   .gdx-col.now .gdx-when .wd{color:var(--gold)}
   .gdx-when .wl{font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-mute)}
-  .gdx-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:3px 0}
-  .gdx-row .k{font-size:10.5px;color:var(--ink-mute)}
-  .gdx-row .v{font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--ink)}
-  .gdx-row.hero{margin-top:5px;padding-top:6px;border-top:1px solid var(--line)}
+  .gdx-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;
+    height:22px;line-height:22px}
+  .gdx-row .k{font-size:10.5px;color:var(--ink-mute);white-space:nowrap}
+  .gdx-row .v{font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--ink);
+    font-variant-numeric:tabular-nums;white-space:nowrap}
+  .gdx-row.hero{height:32px;line-height:32px;margin-top:6px;border-top:1px solid var(--line)}
   .gdx-row.hero .k{color:var(--ink-soft)}
   .gdx-row.hero .v{font-size:clamp(16px,2.2vw,20px)}
   .gdx-col.now .gdx-row.hero .v{color:var(--gold)}
-  .gdx-arrow{align-self:center;font-family:var(--mono);font-size:19px;font-weight:700;color:var(--ink-mute)}
-  .gdx-delta{flex:1 1 150px;min-width:140px;display:flex;flex-direction:column;align-items:center;
-    justify-content:center;gap:3px;padding:11px 12px;border-radius:9px;
-    border:1px solid var(--bad);background:var(--bad-bg)}
+  .gdx-arrow{display:grid;align-items:center;justify-items:center;width:14px;
+    font-family:var(--mono);font-size:19px;font-weight:700;color:var(--ink-mute);user-select:none}
+  .gdx-delta{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    padding:11px 12px;border-radius:9px;border:1px solid var(--bad);background:var(--bad-bg);min-width:0}
   .gdx-delta .dv{font-family:var(--mono);font-size:clamp(24px,3.6vw,32px);font-weight:800;line-height:1;color:var(--bad)}
   .gdx-delta .dk{font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-mute);text-align:center}
-  .gdx-why{margin-top:12px}
+  .gdx-why{margin-top:10px}
   .gdx-whyl{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:5px}
   .gdx-bar{display:flex;height:26px;border-radius:7px;overflow:hidden;border:1px solid var(--line)}
   .gdx-seg{display:flex;align-items:center;justify-content:center;font-family:var(--mono);
@@ -1034,10 +1058,9 @@
   .gdx-lgd i{width:10px;height:10px;border-radius:3px;flex:0 0 auto}
   .gdx-lgd .l-spot{color:var(--bad)} .gdx-lgd .l-spot i{background:var(--bad)}
   .gdx-lgd .l-sheet{color:var(--gold)} .gdx-lgd .l-sheet i{background:var(--gold)}
-  @media(max-width:620px){
+  @media(max-width:700px){
+    .gdx-body{grid-template-columns:1fr}
     .gdx-arrow{display:none}
-    .gdx-col{flex:1 1 100%}
-    .gdx-delta{flex:1 1 100%}
     /* the sheet slice is only 15% wide — too narrow for a label on a phone,
        so drop the in-bar text and read it off the legend underneath instead. */
     .gdx-bar{height:18px}
@@ -2565,7 +2588,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 45e3d02 · built 2026-08-27 23:41 UTC</span>
+    <span id="verStamp" class="tnum">version: c18599a · built 2026-08-28 00:09 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
