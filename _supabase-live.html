@@ -720,29 +720,14 @@
         // stretches keep their "can't buy" distinction by DASH PATTERN alone (tight dots vs
         // the normal dash), with boundary points shared so the line never breaks.
         if(o.r.key === "costco"){
-          var inDD = "", outDD = "", inN = 0, outN = 0, prev = null;
-          o.r.series.forEach(function(p){
-            var v2 = Number(p.price); if(!isFinite(v2)) return;
-            var xx2 = Math.max(padL, Math.min(padL + cw, X(p.t)));
-            var yy2 = Math.max(padT, Math.min(padT + ch, Y(v2)));
-            var pt = xx2.toFixed(1) + "," + yy2.toFixed(1);
-            var stocked = p.in_stock !== false;
-            if(prev && prev.stocked !== stocked){
-              // boundary: the new segment starts back at the previous point so the two
-              // dash styles meet with no gap
-              if(stocked) inDD += "M" + prev.pt + "L" + pt, inN += 2;
-              else        outDD += "M" + prev.pt + "L" + pt, outN += 2;
-            } else if(stocked){
-              inDD += (inN++ && prev ? "L" : "M") + pt;
-            } else {
-              outDD += (outN++ && prev ? "L" : "M") + pt;
-            }
-            prev = { pt: pt, stocked: stocked };
-          });
-          if(/L/.test(inDD))  s += '<path d="' + inDD + '" fill="none" stroke="' + col +
+          // ONE line, ONE look (Medi 2026-09-01, second ask): earlier versions marked
+          // sold-out stretches on the line itself — first by opacity, then by a dot
+          // pattern — and both read as "the line changes weight for no reason". The
+          // line's job is the price; availability lives in the label ("out of stock"),
+          // the change-dot tooltips, and the bars accordion. Nothing is dropped — it
+          // is just no longer encoded in the stroke.
+          if(n >= 2) s += '<path d="' + dd + '" fill="none" stroke="' + col +
                           '" stroke-width="2" stroke-dasharray="6 3" opacity="' + op + '"/>';
-          if(/L/.test(outDD)) s += '<path d="' + outDD + '" fill="none" stroke="' + col +
-                          '" stroke-width="2" stroke-dasharray="1.5 4" opacity="' + op + '"/>';
           dd = "";                                      // handled here; skip the generic draw below
         }
         // The buy-zone line is a forward-looking level ("spot here = buy"), so it carries on

@@ -2589,7 +2589,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 1195d18 · built 2026-09-01 20:22 UTC</span>
+    <span id="verStamp" class="tnum">version: 1195d18 · built 2026-09-01 20:38 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -6668,7 +6668,7 @@
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "1195d18 2026-09-01 20:22 UTC".indexOf("STAMP") >= 0 ? "dev" : "1195d18 2026-09-01 20:22 UTC";
+  var GFH_BUILD = "1195d18 2026-09-01 20:38 UTC".indexOf("STAMP") >= 0 ? "dev" : "1195d18 2026-09-01 20:38 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
@@ -7095,29 +7095,14 @@
         // stretches keep their "can't buy" distinction by DASH PATTERN alone (tight dots vs
         // the normal dash), with boundary points shared so the line never breaks.
         if(o.r.key === "costco"){
-          var inDD = "", outDD = "", inN = 0, outN = 0, prev = null;
-          o.r.series.forEach(function(p){
-            var v2 = Number(p.price); if(!isFinite(v2)) return;
-            var xx2 = Math.max(padL, Math.min(padL + cw, X(p.t)));
-            var yy2 = Math.max(padT, Math.min(padT + ch, Y(v2)));
-            var pt = xx2.toFixed(1) + "," + yy2.toFixed(1);
-            var stocked = p.in_stock !== false;
-            if(prev && prev.stocked !== stocked){
-              // boundary: the new segment starts back at the previous point so the two
-              // dash styles meet with no gap
-              if(stocked) inDD += "M" + prev.pt + "L" + pt, inN += 2;
-              else        outDD += "M" + prev.pt + "L" + pt, outN += 2;
-            } else if(stocked){
-              inDD += (inN++ && prev ? "L" : "M") + pt;
-            } else {
-              outDD += (outN++ && prev ? "L" : "M") + pt;
-            }
-            prev = { pt: pt, stocked: stocked };
-          });
-          if(/L/.test(inDD))  s += '<path d="' + inDD + '" fill="none" stroke="' + col +
+          // ONE line, ONE look (Medi 2026-09-01, second ask): earlier versions marked
+          // sold-out stretches on the line itself — first by opacity, then by a dot
+          // pattern — and both read as "the line changes weight for no reason". The
+          // line's job is the price; availability lives in the label ("out of stock"),
+          // the change-dot tooltips, and the bars accordion. Nothing is dropped — it
+          // is just no longer encoded in the stroke.
+          if(n >= 2) s += '<path d="' + dd + '" fill="none" stroke="' + col +
                           '" stroke-width="2" stroke-dasharray="6 3" opacity="' + op + '"/>';
-          if(/L/.test(outDD)) s += '<path d="' + outDD + '" fill="none" stroke="' + col +
-                          '" stroke-width="2" stroke-dasharray="1.5 4" opacity="' + op + '"/>';
           dd = "";                                      // handled here; skip the generic draw below
         }
         // The buy-zone line is a forward-looking level ("spot here = buy"), so it carries on
