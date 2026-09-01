@@ -2589,7 +2589,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: e0043c4 · built 2026-09-01 20:16 UTC</span>
+    <span id="verStamp" class="tnum">version: e0043c4 · built 2026-09-01 20:21 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -6668,7 +6668,7 @@
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "e0043c4 2026-09-01 20:16 UTC".indexOf("STAMP") >= 0 ? "dev" : "e0043c4 2026-09-01 20:16 UTC";
+  var GFH_BUILD = "e0043c4 2026-09-01 20:21 UTC".indexOf("STAMP") >= 0 ? "dev" : "e0043c4 2026-09-01 20:21 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
@@ -6935,7 +6935,13 @@
     // near — admitted only while the price keeps >=57% of the height, so a far-off weekend
     // trigger no longer squashes the line into a ribbon. Costco keeps its tighter 35% guard.
     var refs = gfhRefLines(), band0lo = lo, band0hi = hi;
-    var priceSpan = hi - lo, maxSpanBuy = priceSpan / 0.57, maxSpanCostco = priceSpan / 0.35;
+    // Short windows (5M..6H) get their own tuning (Medi 2026-09-01: "1d/1w/1m look good,
+    // the others…"): the buy-zone guard loosens to 35% so the zone line actually makes it
+    // into frame on views where spot only travelled a few dollars, and (below) the ref
+    // labels drop under their lines instead of crowding the price line above them.
+    var winMin = ((Date.parse(pts[pts.length - 1].t) || 0) - (Date.parse(pts[0].t) || 0)) / 60000;
+    var shortWin = winMin > 0 && winMin <= 400;
+    var priceSpan = hi - lo, maxSpanBuy = priceSpan / (shortWin ? 0.35 : 0.57), maxSpanCostco = priceSpan / 0.35;
     function refDist(r){
       return refLo(r) > band0hi ? refLo(r) - band0hi : (refHi(r) < band0lo ? band0lo - refHi(r) : 0);
     }
@@ -7150,7 +7156,11 @@
              '" stroke="' + col + '" stroke-width="' + (isBuy ? 1.5 : 2) + '" stroke-dasharray="' +
              (isBuy ? "7 4" : "6 3") + '" opacity="' + op + '"/>';
       }
-      var ty = o.y - 5; if(ty < padT + 11) ty = o.y + 13;
+      // Short windows: label sits BELOW its line — above it, the label overlapped the
+      // spot line that runs through the same narrow band (Medi 2026-09-01).
+      var ty = shortWin ? o.y + 13 : o.y - 5;
+      if(shortWin && ty > padT + ch - 4) ty = o.y - 5;
+      if(ty < padT + 11) ty = o.y + 13;
       for(var q = 0; q < labY.length; q++) if(Math.abs(ty - labY[q]) < 13) ty = labY[q] + 13;
       labY.push(ty);
       if(o.r.key === "buy"){
