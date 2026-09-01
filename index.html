@@ -2589,7 +2589,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: e0043c4 · built 2026-09-01 18:02 UTC</span>
+    <span id="verStamp" class="tnum">version: e0043c4 · built 2026-09-01 20:12 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -6768,24 +6768,54 @@
         if(rec.length >= 2){
           // Append the live value so the curve reaches "now" instead of dying at the last save.
           rec.push({ t: new Date().toISOString(), price: bz.v });
-          // DESPIKE: a browser tab still running an OLD build (or a different buy input)
-          // writes a rival trigger between everyone else's rows, and the line saw-tooths —
-          // the "green static" of 2026-07-30 ($10 apart) and the A,B,A,B jitter of
-          // 2026-08-20 (only $4.54 apart). The tell is the same for BOTH: a point whose two
-          // neighbours AGREE with each other but which itself sits off them. A real trigger
-          // move persists across >=2 rows, so its transition point has DISagreeing neighbours
-          // (old value vs new) and survives; a smooth spot-driven drift has neighbours that
-          // differ by more than the gate, so it survives too. Only a lone/alternating writer
-          // — neighbours nearly equal, middle clearly off — gets dropped. The old $5
-          // magnitude gate let the $4.54 alternation through; the neighbours-agree test is
-          // the real guard, so we gate on that (tight) plus a small "middle is off" epsilon.
-          var sp = [rec[0]], dropped = 0;
-          for(var ri = 1; ri < rec.length - 1; ri++){
-            var a = rec[ri - 1].price, b = rec[ri].price, c = rec[ri + 1].price;
-            if(Math.abs(a - c) < 0.5 && Math.abs(b - a) > 1 && Math.abs(b - c) > 1){ dropped++; continue; }
-            sp.push(rec[ri]);
-          }
-          sp.push(rec[rec.length - 1]);
+          // RIVAL-WRITER FILTER (2026-09-01, replaces the lone-spike despike): a tab still
+          // running an OLD build (or holding a different buy input) interleaves a rival
+          // trigger between everyone else's rows. The old neighbours-agree test only caught
+          // a LONE spike — two rival writers alternating in runs (A,A,B,B,A…) sailed through
+          // and drew the whole line as a staircase (2026-09-01: four values, 649 flips in
+          // 1000 rows, two rivals $15 apart). The robust rule is CONTINUITY, not spikiness:
+          // bucket the rows into 10-minute windows, then walk newest -> oldest choosing, in
+          // each bucket, the value closest to the choice already made for the newer bucket —
+          // seeded with the LIVE trigger this very tab just computed, which is the one series
+          // we know is current. A real trigger move survives (the transition bucket adopts
+          // the newer value, older buckets keep the older one — the step stays sharp); a
+          // rival writer loses every bucket because its value never matches the chosen chain.
+          var BUCKET = 600000, buckets = {}, order = [];
+          rec.forEach(function(p){
+            var k = Math.floor(Date.parse(p.t) / BUCKET);
+            if(!buckets[k]){ buckets[k] = []; order.push(k); }
+            buckets[k].push(p);
+          });
+          order.sort(function(x, y){ return y - x; });   // newest bucket first
+          // Sticky + gap-bridging: keep the chain's value while it is present in the
+          // bucket, and CARRY it through up to 5 buckets (~50 min) where only rivals
+          // wrote — a rival winning a short silent stretch must not flip the line.
+          // Only when the chain's value stays gone longer than that do we concede the
+          // move is real and adopt the nearest value. (Sim on the real 2026-09-01
+          // pollution: raw 649 flips -> 7 sharp steps, all $15/$97.50 = real events.)
+          var chosen = bz.v, keep = {};
+          order.forEach(function(k, ki){
+            var vals = buckets[k].map(function(p){ return p.price; });
+            var has = function(list, v){ return list.some(function(x){ return Math.abs(x - v) < 0.005; }); };
+            if(has(vals, chosen)){ keep[k] = chosen; return; }
+            for(var bi = ki + 1; bi <= ki + 5 && bi < order.length; bi++){
+              if(has(buckets[order[bi]].map(function(p){ return p.price; }), chosen)){ keep[k] = chosen; return; }
+            }
+            var best = null, bd = Infinity;
+            vals.forEach(function(v){
+              var d = Math.abs(v - chosen);
+              if(d < bd){ bd = d; best = v; }
+            });
+            keep[k] = best;
+            chosen = best;
+          });
+          var sp = [], dropped = 0;
+          rec.forEach(function(p){
+            var k = Math.floor(Date.parse(p.t) / BUCKET);
+            if(Math.abs(p.price - keep[k]) < 0.005) sp.push(p);
+            else dropped++;
+          });
+          if(!sp.length) sp = [rec[rec.length - 1]];   // never draw from nothing
           // AUDIT RULE (Medi 2026-07-30): filtering is a bandage, not health. Surface how much
           // got filtered so a still-open outdated tab gets refreshed instead of quietly
           // polluting the table forever. Read by the chart's footer note.
