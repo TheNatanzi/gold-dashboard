@@ -752,7 +752,7 @@
           if(isFinite(endV)) dd += "L" + (padL + cw).toFixed(1) + "," +
             Math.max(padT, Math.min(padT + ch, Y(endV))).toFixed(1);
         }
-        if(n >= 2) s += '<path d="' + dd + '" fill="none" stroke="' + col +
+        if(n >= 2 && dd) s += '<path d="' + dd + '" fill="none" stroke="' + col +
                         '" stroke-width="1.4" stroke-dasharray="2 5" opacity="' + op + '"/>';
         // Mark each moment the recorded price actually CHANGED - a dot on the curve and the
         // clock time under it. Costco only: the buy-zone curve is derived from these same

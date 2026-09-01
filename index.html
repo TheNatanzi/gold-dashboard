@@ -2589,7 +2589,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: e0043c4 · built 2026-09-01 20:21 UTC</span>
+    <span id="verStamp" class="tnum">version: 1195d18 · built 2026-09-01 20:22 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -6668,7 +6668,7 @@
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "e0043c4 2026-09-01 20:21 UTC".indexOf("STAMP") >= 0 ? "dev" : "e0043c4 2026-09-01 20:21 UTC";
+  var GFH_BUILD = "1195d18 2026-09-01 20:22 UTC".indexOf("STAMP") >= 0 ? "dev" : "1195d18 2026-09-01 20:22 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
@@ -7127,7 +7127,7 @@
           if(isFinite(endV)) dd += "L" + (padL + cw).toFixed(1) + "," +
             Math.max(padT, Math.min(padT + ch, Y(endV))).toFixed(1);
         }
-        if(n >= 2) s += '<path d="' + dd + '" fill="none" stroke="' + col +
+        if(n >= 2 && dd) s += '<path d="' + dd + '" fill="none" stroke="' + col +
                         '" stroke-width="1.4" stroke-dasharray="2 5" opacity="' + op + '"/>';
         // Mark each moment the recorded price actually CHANGED - a dot on the curve and the
         // clock time under it. Costco only: the buy-zone curve is derived from these same
