@@ -84,6 +84,13 @@ _built = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M U
 dash_patched = dash_patched.replace(
     VER_MARKER, "version: %s · built %s" % (_commit, _built), 1)
 
+# BUILD STAMP for the live layer (2026-09-01): buyzone_history writes carry this so
+# migration 011's trigger can reject rows from outdated tabs (the rival-writer fix).
+STAMP_MARKER = "__GFH_BUILD_STAMP__"
+if STAMP_MARKER not in live:
+    raise SystemExit("ERROR: GFH build-stamp placeholder missing from _supabase-live.html.")
+live = live.replace(STAMP_MARKER, "%s %s" % (_commit, _built))
+
 out = head + pin + dash_patched + live
 with io.open(os.path.join(BASE, "index.html"), "w", encoding="utf-8", newline="\n") as f:
     f.write(out)

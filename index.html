@@ -2589,7 +2589,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: e0043c4 · built 2026-09-01 20:12 UTC</span>
+    <span id="verStamp" class="tnum">version: e0043c4 · built 2026-09-01 20:16 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -6666,6 +6666,9 @@
     });
   }
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
+  // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
+  // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
+  var GFH_BUILD = "e0043c4 2026-09-01 20:16 UTC".indexOf("STAMP") >= 0 ? "dev" : "e0043c4 2026-09-01 20:16 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
@@ -6709,7 +6712,13 @@
         body: JSON.stringify([{ t: new Date(Math.floor(now / 60000) * 60000).toISOString(),
                                 price: Math.round(bz.v * 100) / 100,
                                 basis: (z && z.onlineBased) ? "online" : "june",
-                                in_zone: !!bz.live }])
+                                in_zone: !!bz.live,
+                                // Build stamp (2026-09-01): build-public.py replaces the
+                                // placeholder with the publish timestamp. Migration 011's
+                                // trigger REJECTS rows with no stamp — that is what finally
+                                // kills the stale-tab rival writer: an outdated tab still
+                                // running pre-stamp code simply can't write any more.
+                                build: GFH_BUILD }])
       }).catch(function(){});                           // table missing / offline -> just skip
     }catch(e){}
   }
@@ -7072,23 +7081,37 @@
           dd += (n++ ? "L" : "M") + xx.toFixed(1) + "," + yy.toFixed(1);
         });
         // Costco: since 2026-07-30 the collector records the LISTED price around the clock,
-        // stocked or not (Medi: the line must always show). Sold-out stretches draw extra
-        // faint — visible, but clearly "look, can't buy" against the buyable stretches.
+        // stocked or not (Medi: the line must always show). REDRAWN 2026-09-01 (Medi: "why
+        // different line weights in different places") — the old version double-drew: a
+        // whole-series pass at opacity 0.22 PLUS an in-stock overlay at 0.9, so buyable
+        // stretches rendered ~1.1 opacity-thick and sold-out stretches a ghost, reading as
+        // random weight changes. Now ONE weight and ONE opacity everywhere; the sold-out
+        // stretches keep their "can't buy" distinction by DASH PATTERN alone (tight dots vs
+        // the normal dash), with boundary points shared so the line never breaks.
         if(o.r.key === "costco"){
-          // Base pass: the WHOLE series extra faint (sold-out stretches included).
-          if(n >= 2) s += '<path d="' + dd + '" fill="none" stroke="' + col +
-                          '" stroke-width="2" stroke-dasharray="6 3" opacity="0.22"/>';
-          // Overlay pass: only the in-stock runs at full reference opacity.
-          var sdd = "", run = 0;
+          var inDD = "", outDD = "", inN = 0, outN = 0, prev = null;
           o.r.series.forEach(function(p){
-            var v2 = Number(p.price);
-            if(!isFinite(v2) || p.in_stock === false){ run = 0; return; }
+            var v2 = Number(p.price); if(!isFinite(v2)) return;
             var xx2 = Math.max(padL, Math.min(padL + cw, X(p.t)));
             var yy2 = Math.max(padT, Math.min(padT + ch, Y(v2)));
-            sdd += (run++ ? "L" : "M") + xx2.toFixed(1) + "," + yy2.toFixed(1);
+            var pt = xx2.toFixed(1) + "," + yy2.toFixed(1);
+            var stocked = p.in_stock !== false;
+            if(prev && prev.stocked !== stocked){
+              // boundary: the new segment starts back at the previous point so the two
+              // dash styles meet with no gap
+              if(stocked) inDD += "M" + prev.pt + "L" + pt, inN += 2;
+              else        outDD += "M" + prev.pt + "L" + pt, outN += 2;
+            } else if(stocked){
+              inDD += (inN++ && prev ? "L" : "M") + pt;
+            } else {
+              outDD += (outN++ && prev ? "L" : "M") + pt;
+            }
+            prev = { pt: pt, stocked: stocked };
           });
-          if(/L/.test(sdd)) s += '<path d="' + sdd + '" fill="none" stroke="' + col +
+          if(/L/.test(inDD))  s += '<path d="' + inDD + '" fill="none" stroke="' + col +
                           '" stroke-width="2" stroke-dasharray="6 3" opacity="' + op + '"/>';
+          if(/L/.test(outDD)) s += '<path d="' + outDD + '" fill="none" stroke="' + col +
+                          '" stroke-width="2" stroke-dasharray="1.5 4" opacity="' + op + '"/>';
           dd = "";                                      // handled here; skip the generic draw below
         }
         // The buy-zone line is a forward-looking level ("spot here = buy"), so it carries on
