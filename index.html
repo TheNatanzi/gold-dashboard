@@ -2589,7 +2589,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: f41f987 · built 2026-09-03 04:39 UTC</span>
+    <span id="verStamp" class="tnum">version: d3f2327 · built 2026-09-03 08:09 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -5179,24 +5179,24 @@
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-09-02T21:39:51-07:00",
+    at: "2026-09-03T01:09:50-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
     price: 4449.99,
     // Written by warehouse-inventory/daily_pull.py — see DAILY-PULL.md.
-    // 20 of the 45, keyed on the row carrying the SKU, never the store badge.
-    inStock: ["danville", "fairfield", "fostercity", "fremont", "livermore", "modesto",
-              "novato", "pleasanton", "richmond", "sacstockton", "santaclara", "sf",
-              "sjalmaden", "sjgreatoaks", "sjne", "ssf", "ssfairport", "sunnyvale",
-              "tracy", "vallejo"],
-    // 22 of the 45. Stores whose rail rows were truncated were opened and
+    // 17 of the 45, keyed on the row carrying the SKU, never the store badge.
+    inStock: ["danville", "fairfield", "fostercity", "livermore", "modesto", "novato",
+              "richmond", "sacstockton", "santaclara", "sf", "sjalmaden",
+              "sjgreatoaks", "ssf", "ssfairport", "sunnyvale", "tracy", "vallejo"],
+    // 25 of the 45. Stores whose rail rows were truncated were opened and
     // read from their own page this run, not carried forward.
-    soldOut: {antioch:"today", brentwood:"12d", concord:"13d", gilroy:"1m",
-              hayward:"today", lodi:"14d", manteca:"12d", mountainview:"14d",
-              newark:"today", ranchocordova:"13d", redwoodcity:"12d", riverbank:"12d",
+    soldOut: {antioch:"today", brentwood:"12d", concord:"13d", fremont:"today",
+              gilroy:"1m", hayward:"today", lodi:"14d", manteca:"12d",
+              mountainview:"14d", newark:"today", pleasanton:"today",
+              ranchocordova:"13d", redwoodcity:"12d", riverbank:"12d",
               rohnertpark:"1m", saccalexpo:"1m", sacnatomas:"2m", sanleandro:"13d",
-              santacruz:"12d", santarosa:"12d", sjsenter:"today", stockton:"1m",
-              vacaville:"2m", woodland:"1m"}
+              santacruz:"12d", santarosa:"12d", sjne:"today", sjsenter:"today",
+              stockton:"1m", vacaville:"2m", woodland:"1m"}
   };
 
   // Turn the snapshot into the same row shape wiRenderNow/wiRenderTable already
@@ -6667,7 +6667,7 @@
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "f41f987 2026-09-03 04:39 UTC".indexOf("STAMP") >= 0 ? "dev" : "f41f987 2026-09-03 04:39 UTC";
+  var GFH_BUILD = "d3f2327 2026-09-03 08:09 UTC".indexOf("STAMP") >= 0 ? "dev" : "d3f2327 2026-09-03 08:09 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
