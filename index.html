@@ -1257,8 +1257,8 @@
   <div class="buyers" id="buyers"></div>
 
   <div class="rules">
-    <span class="rulechip">Elemetal · Pamp <b>spot − $25</b> <span style="opacity:.6">(8/27 sheet −$35 + $10 call-in)</span></span>
-    <span class="rulechip">Elemetal · Generic <b>spot − $30</b> <span style="opacity:.6">(8/27 sheet −$40 + $10 call-in)</span></span>
+    <span class="rulechip">Elemetal · Pamp <b>spot − $25</b> <span style="opacity:.6">(9/4 sheet −$35 + $10 call-in)</span></span>
+    <span class="rulechip">Elemetal · Generic <b>spot − $30</b> <span style="opacity:.6">(9/4 sheet −$40 + $10 call-in)</span></span>
     <span class="rulechip">Alert floor <b>$25 / bar</b></span>
     <span class="rulechip">Online = in-store <b>+ $10</b></span>
   </div>
@@ -1406,9 +1406,12 @@
   <!-- LOCK TAB — the 15-Minute Machine phone control, embedded from the standalone lock.html
        (its own Supabase client + anon key), so it stays byte-independent from this dashboard. -->
   <div class="tabpanel" id="tab-lock" role="tabpanel" aria-labelledby="tabBtnLock" hidden>
-    <iframe src="lock.html" id="lockFrame" title="Alchemy Lock — 15-Minute Machine" scrolling="no"
+    <iframe src="lock.html?v=0" id="lockFrame" data-cache-bust="1" title="Alchemy Lock — 15-Minute Machine" scrolling="no"
       style="display:block;width:100%;height:720px;border:0;border-radius:14px;background:transparent;overflow:hidden"
       loading="lazy" referrerpolicy="no-referrer"></iframe>
+    <!-- Cache-bust (2026-09-04): GitHub Pages caches lock.html for 10 min and the phone showed a stale
+         STOP button after a deploy. A fresh query string per page load forces a real fetch every time. -->
+    <script>(function(){var f=document.getElementById("lockFrame");if(f)f.src="lock.html?v="+Date.now();})();</script>
   </div>
   <script>
     // Native fit: size the Lock iframe to its real content height (posted by lock.html), so there is
@@ -1561,15 +1564,20 @@
       <div class="gbf-head">◎ Gold-buy math · Chase Ink 2.5% (worst case) · <span id="gbfWhen">Elemetal sheet</span></div>
 
       <!-- ELEMETAL SHEET BREAKDOWN — what Elemetal actually pays, spelled out.
-           Hand-stamped from _inbox/call-sheet-2026-08-27.txt (row GB1PAMPF). -->
+           Hand-stamped from _inbox/call-sheet-2026-09-04.txt (row GB1PAMPF).
+           The bid has now held at −$35 for SEVEN straight sheets: 8/27, 8/28,
+           8/29-30, 8/31, 9/2, 9/3, 9/4. Re-stamp this date every time a fresh
+           capture lands, even when no number moves — the age badge below is what
+           tells Medi whether to trust the figures, and a stale stamp reads as
+           "check this" even when the numbers are perfectly current. -->
       <div class="gbf-elem">
-        <div class="gbf-date" data-sheet="2026-08-27">
-          <span class="dnum">8/27</span>
+        <div class="gbf-date" data-sheet="2026-09-04">
+          <span class="dnum">9/4</span>
           <span class="dyr">2026</span>
           <span class="dlab">Elemetal sheet</span>
         </div>
         <!-- Values here are LIVE (compute() writes them); only the seed text is static.
-             The seed numbers below match the 8/27 capture so a JS-less render is honest. -->
+             The seed numbers below match the 9/4 capture so a JS-less render is honest. -->
         <div class="gbf-steps">
           <div class="gbf-step"><span class="sl">Gold spot</span><span class="sv" id="gbeSpot">$4,609.20</span><span class="sn" id="gbeSpotSub">live</span></div>
           <div class="gbf-sop">−</div>
@@ -1581,7 +1589,7 @@
         </div>
       </div>
       <div class="gbf-agekey"><i class="k-g"></i>green = today's sheet · <i class="k-y"></i>yellow = 1–2 days old · <i class="k-r"></i>red = 3+ days old, the numbers below may have moved.</div>
-      <div class="gbf-delta">Elemetal widened the Pamp bid on the 8/27 sheet: <b>−$30 → −$35</b>, so net went −$20 → −$25. That is <b>$5 less per bar</b> than yesterday, before anything else moves. Any-brand bar (GB1C) held at −$40.</div>
+      <div class="gbf-delta">Elemetal widened the Pamp bid on the <b>8/27</b> sheet: <b>−$30 → −$35</b>, so net went −$20 → −$25 — <b>$5 less per bar</b>. It has not moved since: <b>−$35 on seven straight sheets</b> (8/27, 8/28, 8/29-30, 8/31, 9/2, 9/3, 9/4). Any-brand bar (GB1C) held at −$40 throughout.</div>
 
       <div class="gbf-flow">
         <div class="gbf-chip"><span class="gl">Buy · same as cards</span><span class="gv" id="gbcBuy">$4,649.99</span><span class="gs" id="gbcBuySub">active BUY basis</span></div>
@@ -1616,7 +1624,7 @@
         </div>
         <div class="gdx-arrow">→</div>
         <div class="gdx-col now">
-          <div class="gdx-when"><span class="wd" id="gdxNowDate">8/27</span><span class="wl">now (live)</span></div>
+          <div class="gdx-when"><span class="wd" id="gdxNowDate">9/4</span><span class="wl">now (live)</span></div>
           <div class="gdx-row"><span class="k">Gold spot</span><span class="v" id="gdxNowSpot">$4,609.20</span></div>
           <div class="gdx-row"><span class="k">Elemetal pays</span><span class="v" id="gdxNowSell">$4,584.20</span></div>
           <div class="gdx-row"><span class="k">Metal spread</span><span class="v" id="gdxNowSpread">−$65.79</span></div>
@@ -1680,7 +1688,16 @@
             </tr>
           </thead>
           <tbody>
-        <tr class="chg now">
+        <tr class="now">
+          <td class="d">9/4</td>
+          <td><span class="bidcell"><span class="bidbar" style="width:52px"></span>−$35.00</span></td>
+          <td>$22.00</td>
+          <td class="net">−$25.00</td>
+          <td>−$40.00</td>
+          <td>−$35.00</td>
+          <td class="wt"><b>No change.</b> Seventh straight sheet at −$35 (8/27, 8/28, 8/29-30, 8/31, 9/2, 9/3, 9/4). Nothing on the gold-bar rows has moved since 8/27.</td>
+        </tr>
+        <tr class="chg">
           <td class="d">8/27</td>
           <td><span class="bidcell"><span class="bidbar" style="width:52px"></span>−$35.00</span></td>
           <td>$22.00</td>
@@ -2589,7 +2606,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 4274304 · built 2026-09-04 19:54 UTC</span>
+    <span id="verStamp" class="tnum">version: c175956 · built 2026-09-04 22:59 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -2606,7 +2623,7 @@
     // true = verified live · false = "feed says IN, Costco says NO" (rule 16) · null = unchecked.
     // Only the live layer ever sets it; in the artifact it stays null and nothing changes.
     costcoOk:null,
-    discPamp:35, discGen:40, floor:25, onlinePrem:10   // fallbacks = 8/27 sheet AS PRINTED (pre call-in); BUYERS wins when present
+    discPamp:35, discGen:40, floor:25, onlinePrem:10   // fallbacks = 9/4 sheet AS PRINTED (pre call-in); BUYERS wins when present
   };
   // The built-in starting price, captured before anything can overwrite it. CFG.junePrice
   // used to be written and never reverted, so a price that expired — or one Medi explicitly
@@ -2632,8 +2649,8 @@
 
   // Buyers (sell price = spot + offset). Elemetal is the default/preferred buyer.
   const BUYERS = [
-    {key:"elemetal_pamp",    name:"Elemetal · Pamp",    offset:-35,  note:"Verified 8/27 price sheet (GB1PAMPF Bid = spot −$35) + $10 call-in (working relationship) → net spot −$25. Must be Veriscan + green foot, else any-brand. Bid widened −$20 → −$30 on 8/25, then −$30 −> −$35 on 8/27.", t:"2026-08-27"},
-    {key:"elemetal_generic", name:"Elemetal · Generic", offset:-40,  note:"Verified 8/27 price sheet (GB1C any-brand = spot −$40, unchanged from 8/25) + $10 call-in → net spot −$30.", t:"2026-08-27"},
+    {key:"elemetal_pamp",    name:"Elemetal · Pamp",    offset:-35,  note:"Verified 9/4 price sheet (GB1PAMPF Bid = spot −$35) + $10 call-in (working relationship) → net spot −$25. Must be Veriscan + green foot, else any-brand. Bid widened −$20 → −$30 on 8/25, then −$30 −> −$35 on 8/27, and has held at −$35 for seven straight sheets since.", t:"2026-09-04"},
+    {key:"elemetal_generic", name:"Elemetal · Generic", offset:-40,  note:"Verified 9/4 price sheet (GB1C any-brand = spot −$40, unchanged since 8/25) + $10 call-in → net spot −$30.", t:"2026-09-04"},
     {key:"upstate",          name:"Upstate",            offset:7,    note:"Pays over spot; ship-in or drive.", t:"2026-07-24"},
     {key:"amark",            name:"AMARK",              offset:null, note:"Las Vegas; no price-pull yet.", t:null},
     {key:"collectpure",      name:"CollectPure",        offset:null, note:"Online marketplace; ship-in.", t:null},
@@ -6666,7 +6683,7 @@
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "4274304 2026-09-04 19:54 UTC".indexOf("STAMP") >= 0 ? "dev" : "4274304 2026-09-04 19:54 UTC";
+  var GFH_BUILD = "c175956 2026-09-04 22:59 UTC".indexOf("STAMP") >= 0 ? "dev" : "c175956 2026-09-04 22:59 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
