@@ -157,16 +157,17 @@
 
   <!-- 1 · Controls -->
   <div class="card">
-    <div class="btns">
+    <!-- STOP removed 2026-09-04 (Medi): only START LOCK + END NOW & LOCK. The watcher still honors a
+         'stop' command written to lock_control (kept as the emergency path from the PC / SQL). -->
+    <div class="btns3">
       <button class="start" id="startBtn">START LOCK</button>
-      <button class="stop" id="stopBtn">STOP</button>
     </div>
     <div class="btns3">
       <!-- END NOW — lock + email the best still-valid shot right now. Enabled only during an active
            session. Two-tap confirm so an accidental tap NEVER sends. -->
       <button class="end" id="endBtn" disabled>END NOW &amp; LOCK</button>
     </div>
-    <div class="msg" id="msg">Tap START when you buy · STOP to cancel (no email)</div>
+    <div class="msg" id="msg">Tap START LOCK when you buy · END NOW &amp; LOCK to finish early</div>
   </div>
 
   <div class="card">
@@ -462,6 +463,10 @@
       note = { t:'Waiting for the PC to cancel…', d:'STOP sent. Confirming the session actually cancels before we say it stopped.' };
     } else if(!red && heartbeatLagging){
       note = { t:'Re-checking the PC…', d:'The heartbeat is a few seconds late — usually a brief network blip. Refreshing now to confirm the watcher is still alive before raising any alarm.' };
+    } else if(!red && active && control && control.health==='ok' && /^Warming up/.test(control.health_detail||'')){
+      // 2026-09-04: the first read(s) after START hit the price widget's cached paint (stale clock). The
+      // PC retries every 3s and says so — this is expected, not an alarm. Red takes over only if it persists.
+      note = { t:'Warming up — give it a few seconds…', d:(control.health_detail||'') + ' The PC is retrying every 3s; the first live price lands shortly.' };
     }
     if(note){ nEl.classList.add('on'); $('noticeTitle').innerHTML='<span class="spin"></span>'+note.t; $('noticeDetail').textContent=note.d; }
     else nEl.classList.remove('on');
@@ -478,7 +483,7 @@
     else if(active && watcherAlive){ mEl.textContent='PC is watching ✓ — walk away.'; mEl.classList.add('ok'); }
     else if(dSess && dSess.status==='cancelled' && !heartbeatStale){ mEl.textContent='Stopped ✓ — session cancelled, no email.'; }
     else if(dSess && dSess.status==='sent'){ mEl.textContent='🔒 Locked ✓ — email sent.'; mEl.classList.add('ok'); }
-    else { mEl.textContent='Tap START when you buy · STOP to cancel (no email)'; }
+    else { mEl.textContent='Tap START LOCK when you buy · END NOW & LOCK to finish early'; }
 
     // ── END NOW button state: enabled ONLY during an active session; disabled while ending / when idle ──
     const endBtn=$('endBtn');
@@ -578,7 +583,7 @@
 
   // ── Controls: write lock_control.command only (no PIN) ────────────────────
   async function sendCommand(command){
-    const btn = command==='start' ? $('startBtn') : command==='end' ? $('endBtn') : $('stopBtn');
+    const btn = command==='start' ? $('startBtn') : command==='end' ? $('endBtn') : ($('stopBtn') || $('startBtn'));
     btn.disabled = true;
     try{
       const { error } = await sb.from('lock_control').update({ command, requested_at:new Date().toISOString() }).eq('id',1);
@@ -599,7 +604,7 @@
     setTimeout(poll, 700); setTimeout(poll, 2500); setTimeout(poll, 5000); setTimeout(poll, 9000);
   }
   $('startBtn').onclick = ()=>sendCommand('start');
-  $('stopBtn').onclick  = ()=>sendCommand('stop');
+  if($('stopBtn')) $('stopBtn').onclick = ()=>sendCommand('stop');   // button removed 2026-09-04; path kept
 
   // ── END NOW · mandatory two-tap confirm (an accidental single tap must NEVER send an email) ─────────
   // First tap ARMS the button (turns red "Tap again to LOCK + email") and auto-cancels after ~4s.
