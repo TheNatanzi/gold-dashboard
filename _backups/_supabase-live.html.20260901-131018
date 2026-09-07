@@ -50,6 +50,7 @@
   // ---- pulse-on-change: flash every displayed number the update actually moved ----
   var WATCH = ["spotStamp","junePriceV","juneTimeV","onlinePriceV","onlineTimeV","inStockV",
                "deltaV","deltaStamp","gaugeVal","verdict","heroStamp","mBuy","mSell","mLoss",
+               "gbcBuy","gbcSell","gbcSpread","gbcReward","gbcProfit","gbeSpot","gbeNet","gdxDv",
                "bpCredit","bpBars","bpDeployed","bpProfit","bpUnused","matrixStamp","chartLast"];
   var firstPaint = true;                       // first fill after PIN: no flash-fest
   function snapNums(){
@@ -116,7 +117,8 @@
   // June's register price or the online listing minus the $10 in-store premium — there is no
   // third possibility. In the bug BUY silently became online − $2.90 and nothing objected.
   function checkBuyPrice(online, june){
-    var e = el("mBuy"); if(!e || !online || online.price == null) return null;
+    var e = el("mBuy") || el("gbcBuy");   // gauge band removed 8/27; the math card shows the same BUY
+    if(!e || !online || online.price == null) return null;
     var shown = Number(String(e.textContent).replace(/[^\d.]/g, ""));
     if(!isFinite(shown) || shown === 0) return null;
     var legal = [];
@@ -362,12 +364,26 @@
   //   job (every 5 min, deduped on t = gold_prices.fetched_at, so one row per genuine
   //   refresh), and only while the bar is in stock — a gap means nothing was buyable.
   function gfhRefLines(){
-    var out = [], g = el("gaugeVal"), sp = el("spot");
-    if(g && sp && /\//.test(g.textContent)){
-      var parts = g.textContent.split("/");
-      var hero = pMoney(parts[0]), floor = pMoney(parts[1]), s = parseFloat(sp.value);
-      if(isFinite(hero) && isFinite(floor) && isFinite(s)){
-        var bz = { key: "buy", v: s + (floor - hero), live: hero >= floor };   // live = already in the zone
+    var out = [], sp = el("spot");
+    /* The alert-gauge band was REMOVED from the dashboard 2026-08-27, so there is no
+       "hero / floor" text to parse any more — doing so silently dropped the buy-zone
+       line, the buy trigger AND stopped recordBuyZone() writing history. Read the
+       engine's published constants instead: __gfhZone.trigger IS spot + (floor − hero),
+       computed by compute() itself — same single source of truth, one hop earlier.
+       The gauge parse stays only as a fallback for a stale build that still renders it. */
+    var zz = (typeof window !== "undefined") && window.__gfhZone;
+    var s0 = sp ? parseFloat(sp.value) : NaN;
+    var trig = (zz && isFinite(zz.trigger)) ? Number(zz.trigger) : NaN;
+    if(!isFinite(trig)){
+      var g = el("gaugeVal");
+      if(g && /\//.test(g.textContent)){
+        var parts = g.textContent.split("/");
+        var hero = pMoney(parts[0]), floor = pMoney(parts[1]);
+        if(isFinite(hero) && isFinite(floor) && isFinite(s0)) trig = s0 + (floor - hero);
+      }
+    }
+    if(isFinite(trig)){
+        var bz = { key: "buy", v: trig, live: isFinite(s0) && s0 >= trig - 1e-9 };   // live = already in the zone
         // RECORDED history first (buyzone_history, written by whichever dashboard is open —
         // one row per minute at most, plus one per real trigger move). The recorded curve is
         // the truth: it survives basis switches (June <-> online), discount edits and floor
@@ -377,16 +393,21 @@
         if(rec.length >= 2){
           // Append the live value so the curve reaches "now" instead of dying at the last save.
           rec.push({ t: new Date().toISOString(), price: bz.v });
-          // DESPIKE: a browser tab still running an OLD build writes the old trigger between
-          // everyone else's rows, and the line saw-tooths $10 hundreds of times — the "green
-          // static" of 2026-07-30. An isolated row that jumps away from BOTH agreeing
-          // neighbours is a stale writer, not a market move (a real trigger change persists
-          // across rows, so it survives this). Then collapse equal runs — a flat hour is two
-          // points, not sixty dash segments.
+          // DESPIKE: a browser tab still running an OLD build (or a different buy input)
+          // writes a rival trigger between everyone else's rows, and the line saw-tooths —
+          // the "green static" of 2026-07-30 ($10 apart) and the A,B,A,B jitter of
+          // 2026-08-20 (only $4.54 apart). The tell is the same for BOTH: a point whose two
+          // neighbours AGREE with each other but which itself sits off them. A real trigger
+          // move persists across >=2 rows, so its transition point has DISagreeing neighbours
+          // (old value vs new) and survives; a smooth spot-driven drift has neighbours that
+          // differ by more than the gate, so it survives too. Only a lone/alternating writer
+          // — neighbours nearly equal, middle clearly off — gets dropped. The old $5
+          // magnitude gate let the $4.54 alternation through; the neighbours-agree test is
+          // the real guard, so we gate on that (tight) plus a small "middle is off" epsilon.
           var sp = [rec[0]], dropped = 0;
           for(var ri = 1; ri < rec.length - 1; ri++){
             var a = rec[ri - 1].price, b = rec[ri].price, c = rec[ri + 1].price;
-            if(Math.abs(b - a) > 5 && Math.abs(b - c) > 5 && Math.abs(a - c) < 1){ dropped++; continue; }
+            if(Math.abs(a - c) < 0.5 && Math.abs(b - a) > 1 && Math.abs(b - c) > 1){ dropped++; continue; }
             sp.push(rec[ri]);
           }
           sp.push(rec[rec.length - 1]);
@@ -431,7 +452,6 @@
         }
         out.push(bz);
         recordBuyZone(bz);
-      }
     }
     if(_gfhOnline && isFinite(Number(_gfhOnline.price))){
       // Once online_history has two or more points in the window the Costco line becomes a
@@ -479,7 +499,7 @@
     var cw = W - padL - padR, ch = H - padT - padB;
     var tok = getComputedStyle(document.documentElement);
     function T(n, fb){ var v = tok.getPropertyValue(n).trim(); return v || fb; }
-    var good = T("--good", "#4bd6a0"), bad = T("--bad", "#f2686f"),
+    var good = T("--good", "#4bd6a0"), bad = T("--bad", "#f2686f"), costRed = "#c92e3a",
         grid = T("--line", "#262c3a"), mute = T("--ink-mute", "#767d90"), gold = T("--gold", "#e8c46a"),
         panel = T("--panel", "#141824");                // backing plate for the reference-line labels
 
@@ -634,8 +654,8 @@
     }
     refDraw.slice().sort(function(a, b){ return a.y - b.y; }).forEach(function(o){
       var isBuy = o.r.key === "buy";
-      var col = isBuy ? good : mute;
-      var op  = isBuy ? 0.95 : (o.r.stale ? 0.25 : 0.45);
+      var col = isBuy ? good : costRed;   // costco line in DEEP red (Medi 2026-08-27) — "what it costs" vs green "where you win"
+      var op  = isBuy ? 0.95 : (o.r.stale ? 0.3 : 0.9);
       if(o.r.series){
         // Real recorded history. Clamp each point into the plot rather than dropping it, so a
         // stretch that runs off the top still reads as "up there" instead of vanishing.
@@ -652,7 +672,7 @@
         if(o.r.key === "costco"){
           // Base pass: the WHOLE series extra faint (sold-out stretches included).
           if(n >= 2) s += '<path d="' + dd + '" fill="none" stroke="' + col +
-                          '" stroke-width="1.4" stroke-dasharray="2 5" opacity="0.16"/>';
+                          '" stroke-width="2" stroke-dasharray="6 3" opacity="0.22"/>';
           // Overlay pass: only the in-stock runs at full reference opacity.
           var sdd = "", run = 0;
           o.r.series.forEach(function(p){
@@ -663,7 +683,7 @@
             sdd += (run++ ? "L" : "M") + xx2.toFixed(1) + "," + yy2.toFixed(1);
           });
           if(/L/.test(sdd)) s += '<path d="' + sdd + '" fill="none" stroke="' + col +
-                          '" stroke-width="1.4" stroke-dasharray="2 5" opacity="' + op + '"/>';
+                          '" stroke-width="2" stroke-dasharray="6 3" opacity="' + op + '"/>';
           dd = "";                                      // handled here; skip the generic draw below
         }
         // The buy-zone line is a forward-looking level ("spot here = buy"), so it carries on
@@ -699,8 +719,8 @@
         }
       } else {
         s += '<line x1="' + padL + '" y1="' + o.y.toFixed(1) + '" x2="' + (padL + cw) + '" y2="' + o.y.toFixed(1) +
-             '" stroke="' + col + '" stroke-width="' + (isBuy ? 1.5 : 1) + '" stroke-dasharray="' +
-             (isBuy ? "7 4" : "2 5") + '" opacity="' + op + '"/>';
+             '" stroke="' + col + '" stroke-width="' + (isBuy ? 1.5 : 2) + '" stroke-dasharray="' +
+             (isBuy ? "7 4" : "6 3") + '" opacity="' + op + '"/>';
       }
       var ty = o.y - 5; if(ty < padT + 11) ty = o.y + 13;
       for(var q = 0; q < labY.length; q++) if(Math.abs(ty - labY[q]) < 13) ty = labY[q] + 13;
@@ -721,14 +741,17 @@
         // spot tag. Muted fill = reference, gold fill = the live line - hierarchy by colour.
         var cty = placeTag(o.y);
         s += '<rect x="' + (padL + cw) + '" y="' + (cty - 9).toFixed(1) + '" width="' + padR +
-             '" height="18" rx="3" fill="' + mute + '"/>' +
+             '" height="18" rx="3" fill="' + costRed + '"/>' +
              '<text x="' + (padL + cw + padR / 2) + '" y="' + (cty + 4).toFixed(1) +
-             '" text-anchor="middle" fill="' + panel + '" font-family="monospace" font-size="11" font-weight="700">' +
+             '" text-anchor="middle" fill="#fff" font-family="monospace" font-size="11" font-weight="700">' +
              Math.round(o.r.v) + '</text>';
       }
       var arrow = o.off === 1 ? " ↑" : o.off === -1 ? " ↓" : "";
+      // Option D: when the buy zone is pinned off-frame its band is gone, so the tag carries
+      // the exact gap ("$NN away" = how far spot must move) — you lose position, never distance.
+      var offDist = (isBuy && o.off !== 0) ? "  $" + Math.abs(o.r.v - last).toFixed(0) + " away" : "";
       var txt = isBuy
-        ? "BUY ZONE ≥ $" + o.r.v.toFixed(2) + (o.r.live ? "  ✓ IN ZONE" : "") + arrow
+        ? "BUY ZONE ≥ $" + o.r.v.toFixed(2) + (o.r.live ? "  ✓ IN ZONE" : "") + arrow + offDist
         : "COSTCO $" + o.r.v.toFixed(2) +
           (o.r.stale ? " (" + o.r.days + "d old · engine ignoring)" : o.r.stock ? "" : " (out of stock)") + arrow;
       // Backing pill. The price line wanders straight through where these labels sit and was
