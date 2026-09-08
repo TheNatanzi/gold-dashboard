@@ -2662,7 +2662,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 6d806f5 · built 2026-09-08 00:25 UTC</span>
+    <span id="verStamp" class="tnum">version: f672f86 · built 2026-09-08 01:39 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -5252,7 +5252,7 @@
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-09-07T17:25:08-07:00",
+    at: "2026-09-07T18:39:46-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
     price: 4479.99,
@@ -5261,13 +5261,13 @@
     inStock: [],
     // 42 of the 45. Stores whose rail rows were truncated were opened and
     // read from their own page this run, not carried forward.
-    soldOut: {antioch:"3d", brentwood:"17d", concord:"17d", danville:"2d",
+    soldOut: {antioch:"3d", brentwood:"17d", concord:"17d", danville:"3d",
               fairfield:"1d", fostercity:"1d", fremont:"2d", gilroy:"1m", hayward:"3d",
-              livermore:"2d", lodi:"19d", manteca:"17d", modesto:"today",
+              livermore:"2d", lodi:"19d", manteca:"17d", modesto:"1d",
               mountainview:"19d", newark:"2d", novato:"3d", pleasanton:"4d",
-              ranchocordova:"18d", redwoodcity:"17d", richmond:"4d", riverbank:"16d",
+              ranchocordova:"18d", redwoodcity:"17d", richmond:"4d", riverbank:"17d",
               rohnertpark:"1m", saccalexpo:"1m", sacnatomas:"2m", sacstockton:"3d",
-              sanleandro:"17d", santaclara:"2d", santacruz:"17d", santarosa:"17d",
+              sanleandro:"17d", santaclara:"3d", santacruz:"17d", santarosa:"17d",
               sf:"2d", sjalmaden:"2d", sjgreatoaks:"1d", sjne:"4d", sjsenter:"3d",
               ssf:"3d", ssfairport:"2d", stockton:"1m", sunnyvale:"1d", tracy:"3d",
               vacaville:"2m", vallejo:"3d", woodland:"1m"}
@@ -6741,7 +6741,7 @@
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "6d806f5 2026-09-08 00:25 UTC".indexOf("STAMP") >= 0 ? "dev" : "6d806f5 2026-09-08 00:25 UTC";
+  var GFH_BUILD = "f672f86 2026-09-08 01:39 UTC".indexOf("STAMP") >= 0 ? "dev" : "f672f86 2026-09-08 01:39 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
