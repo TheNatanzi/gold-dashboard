@@ -62,6 +62,22 @@
 <!-- Restore the saved theme BEFORE first paint, so a reload can't flash the default
      theme and then snap. themeBtn writes alchemy_theme; this reads it back. -->
 <script>try{var _t=localStorage.getItem("alchemy_theme");if(_t==="light"||_t==="dark")document.documentElement.setAttribute("data-theme",_t);}catch(e){}</script>
+<script>
+/* =========================================================================
+   ELEMETAL SHEET DATE - SINGLE SOURCE OF TRUTH
+   This used to be hand-typed in three places (the age badge, and BUYERS[].t for
+   pamp and generic). On 2026-09-08 the badge still read 9/4 and glowed red
+   "4 days old - check" while the sheet it described had been re-confirmed that
+   morning: the numbers were right and the page said not to trust them.
+   Now there is ONE line. The morning capture task
+   (~/.claude/scheduled-tasks/gold-call-sheet-morning-pull) rewrites it after all
+   six format checks pass on a real Elemetal sheet, then rebuilds and pushes.
+   Keep the GFH_SHEET_DATE marker on the line - the task matches on it.
+   NOTE: this is the date the sheet was last CONFIRMED, not a price. No money
+   number lives here, which is why the task is allowed to write it unattended.
+   ========================================================================= */
+var ELEM_SHEET_DATE = "2026-09-08";   /* GFH_SHEET_DATE */
+</script>
 <style>
   /* ============ TOKENS ============ */
   :root{
@@ -1650,15 +1666,16 @@
       <div class="gbf-head">◎ Gold-buy math · Chase Ink 2.5% (worst case) · <span id="gbfWhen">Elemetal sheet</span></div>
 
       <!-- ELEMETAL SHEET BREAKDOWN — what Elemetal actually pays, spelled out.
-           Hand-stamped from _inbox/call-sheet-2026-09-04.txt (row GB1PAMPF).
-           The bid has now held at −$35 for SEVEN straight sheets: 8/27, 8/28,
-           8/29-30, 8/31, 9/2, 9/3, 9/4. Re-stamp this date every time a fresh
-           capture lands, even when no number moves — the age badge below is what
-           tells Medi whether to trust the figures, and a stale stamp reads as
-           "check this" even when the numbers are perfectly current. -->
+           The bid has held at −$35 for NINE straight priced sheets: 8/27, 8/28,
+           8/29-30, 8/31, 9/2, 9/3, 9/4, 9/5, 9/8 (9/7 was a Labor Day closure
+           notice with no numbers in it at all).
+           THE DATE BELOW IS NO LONGER HAND-TYPED. It is a no-JS fallback only:
+           stampSheetDate() overwrites it from ELEM_SHEET_DATE at the top of this
+           file, which the morning capture task rewrites on every confirmed sheet.
+           If you are about to edit the date here, edit ELEM_SHEET_DATE instead. -->
       <div class="gbf-elem">
-        <div class="gbf-date" data-sheet="2026-09-04">
-          <span class="dnum">9/4</span>
+        <div class="gbf-date" id="gbfDate" data-sheet="2026-09-08">
+          <span class="dnum">9/8</span>
           <span class="dyr">2026</span>
           <span class="dlab">Elemetal sheet</span>
         </div>
@@ -1675,7 +1692,7 @@
         </div>
       </div>
       <div class="gbf-agekey"><i class="k-g"></i>green = today's sheet · <i class="k-y"></i>yellow = 1–2 days old · <i class="k-r"></i>red = 3+ days old, the numbers below may have moved.</div>
-      <div class="gbf-delta">Elemetal widened the Pamp bid on the <b>8/27</b> sheet: <b>−$30 → −$35</b>, so net went −$20 → −$25 — <b>$5 less per bar</b>. It has not moved since: <b>−$35 on seven straight sheets</b> (8/27, 8/28, 8/29-30, 8/31, 9/2, 9/3, 9/4). Any-brand bar (GB1C) held at −$40 throughout.</div>
+      <div class="gbf-delta">Elemetal widened the Pamp bid on the <b>8/27</b> sheet: <b>−$30 → −$35</b>, so net went −$20 → −$25 — <b>$5 less per bar</b>. It has not moved since: <b>−$35 on nine straight priced sheets</b> (8/27, 8/28, 8/29-30, 8/31, 9/2, 9/3, 9/4, 9/5, 9/8). Any-brand bar (GB1C) held at −$40 throughout.</div>
 
       <div class="gbf-flow">
         <div class="gbf-chip"><span class="gl">Buy · same as cards</span><span class="gv" id="gbcBuy">$4,649.99</span><span class="gs" id="gbcBuySub">active BUY basis</span></div>
@@ -2662,7 +2679,7 @@
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 9ab0df6 · built 2026-09-08 16:40 UTC</span>
+    <span id="verStamp" class="tnum">version: c021a88 · built 2026-09-08 16:59 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -2705,8 +2722,8 @@
 
   // Buyers (sell price = spot + offset). Elemetal is the default/preferred buyer.
   const BUYERS = [
-    {key:"elemetal_pamp",    name:"Elemetal · Pamp",    offset:-35,  note:"Verified 9/4 price sheet (GB1PAMPF Bid = spot −$35) + $10 call-in (working relationship) → net spot −$25. Must be Veriscan + green foot, else any-brand. Bid widened −$20 → −$30 on 8/25, then −$30 −> −$35 on 8/27, and has held at −$35 for seven straight sheets since.", t:"2026-09-04"},
-    {key:"elemetal_generic", name:"Elemetal · Generic", offset:-40,  note:"Verified 9/4 price sheet (GB1C any-brand = spot −$40, unchanged since 8/25) + $10 call-in → net spot −$30.", t:"2026-09-04"},
+    {key:"elemetal_pamp",    name:"Elemetal · Pamp",    offset:-35,  note:"Verified 9/8 price sheet (GB1PAMPF Bid = spot −$35) + $10 call-in (working relationship) → net spot −$25. Must be Veriscan + green foot, else any-brand. Bid widened −$20 → −$30 on 8/25, then −$30 −> −$35 on 8/27, and has held at −$35 for nine straight priced sheets since.", t:ELEM_SHEET_DATE},
+    {key:"elemetal_generic", name:"Elemetal · Generic", offset:-40,  note:"Verified 9/8 price sheet (GB1C any-brand = spot −$40, unchanged since 8/25) + $10 call-in → net spot −$30.", t:ELEM_SHEET_DATE},
     {key:"upstate",          name:"Upstate",            offset:7,    note:"Pays over spot; ship-in or drive.", t:"2026-07-24"},
     {key:"amark",            name:"AMARK",              offset:null, note:"Las Vegas; no price-pull yet.", t:null},
     {key:"collectpure",      name:"CollectPure",        offset:null, note:"Online marketplace; ship-in.", t:null},
@@ -3037,7 +3054,9 @@
        card was frozen at 12:39 PM's spot and the matrix priced off the live inputs).
        Every figure below now comes from the SAME variables the matrix just used —
        spot, buy, discP, h.barP — so the two surfaces cannot diverge again. The only
-       hand-stamped survivors: the sheet-date badge (data-sheet, aged by colour) and
+       hand-stamped survivor: PREV_SHEET, frozen history. (The sheet-date badge used to
+       be hand-stamped too; it now reads ELEM_SHEET_DATE, rewritten by the capture task.)
+       Formerly also listed here: the sheet-date badge and
        PREV_SHEET, which is frozen history. */
     const rwPct = hero.card + hero.tk;                    // hero = Chase Ink: 2.5 + 0
     const gbReward = (rwPct/100)*buy;
@@ -6368,7 +6387,22 @@
     return Math.round((today - sheet) / 864e5);
   }
 
+  /* The sheet date has ONE home: ELEM_SHEET_DATE at the top of this file. Stamp it
+     onto the badge BEFORE ageing it, so the hardcoded markup is a no-JS fallback and
+     can never disagree with the constant the capture task rewrites. */
+  function stampSheetDate(){
+    var d = String(window.ELEM_SHEET_DATE || "");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;      // garbage in -> leave the fallback alone
+    var box = document.getElementById("gbfDate");
+    if (!box) return;
+    box.setAttribute("data-sheet", d);
+    var p = d.split("-");
+    var num = box.querySelector(".dnum"); if (num) num.textContent = (+p[1]) + "/" + (+p[2]);
+    var yr  = box.querySelector(".dyr");  if (yr)  yr.textContent  = p[0];
+  }
+
   function paint(){
+    stampSheetDate();
     var els = document.querySelectorAll("[data-sheet]");
     for (var i = 0; i < els.length; i++){
       var el = els[i];
@@ -6741,7 +6775,7 @@
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "9ab0df6 2026-09-08 16:40 UTC".indexOf("STAMP") >= 0 ? "dev" : "9ab0df6 2026-09-08 16:40 UTC";
+  var GFH_BUILD = "c021a88 2026-09-08 16:59 UTC".indexOf("STAMP") >= 0 ? "dev" : "c021a88 2026-09-08 16:59 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
