@@ -2679,7 +2679,7 @@ var ELEM_SHEET_DATE = "2026-09-12";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 72b8f97 · built 2026-09-11 22:54 UTC</span>
+    <span id="verStamp" class="tnum">version: a1db773 · built 2026-09-11 23:18 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -2910,7 +2910,13 @@ var ELEM_SHEET_DATE = "2026-09-12";   /* GFH_SHEET_DATE */
     // OUT OF STOCK no longer disqualifies the listing (Medi, 2026-08-01): the last listed
     // price is assumed to STAND until a newer data point — June's phone or a fresh lookup —
     // replaces it. Only the 2-day expiry retires it (the standing staleness backstop).
-    const onlineUsable = !onlineOld && isFinite(impliedInStore);
+    /* HOLD THE LAST PRICE (Medi, 2026-09-11). The 2-day expiry used to retire the online
+       price unconditionally, and BUY then fell back to the built-in July seed — a number
+       OLDER than the one just thrown away (9/11: $4,449.99 dropped for $4,159.99, a fake
+       buy zone $283 lower). A stale online price now keeps its seat unless a FRESHER June
+       price exists to replace it; the seed is never the answer while a real price is known. */
+    const juneStale = (()=>{ const d=new Date(CFG.juneTime); return isNaN(d) || (Date.now()-d.getTime())/864e5>=2; })();
+    const onlineUsable = isFinite(impliedInStore) && (!onlineOld || juneStale);
     const overridden = onlineUsable && (
         onlineT > juneT + 60000 ? true
       : juneT > onlineT + 60000 ? false
@@ -4672,7 +4678,7 @@ var ELEM_SHEET_DATE = "2026-09-12";   /* GFH_SHEET_DATE */
          " the old one just keeps its seat).";
     if(onlineAgeDays()>=2)
       s+=" The online lookup is <b>over 2 days old</b> ("+fmtDT(CFG.onlineTime)+
-         "), so it is locked out of driving BUY until someone refreshes it.";
+         ") — held as the <b>last known price</b> until a fresher June price or lookup replaces it.";
     return s;
   }
 
@@ -4795,7 +4801,8 @@ var ELEM_SHEET_DATE = "2026-09-12";   /* GFH_SHEET_DATE */
       // off the online figure — the panel naming a number compute() had not used.
       msg.innerHTML = _juneOverridden
         ? ("The Costco price on file is <b>over 2 days old</b>, so the online lookup has taken "+
-           "over: BUY is <b>"+money(_juneBuy)+"</b>. "+priceWhoName()+" should re-check today's shelf price.")
+           "over: BUY is <b>"+money(_juneBuy)+"</b>"+(onlineAgeDays()>=2?" (last known price, also stale — held, never the seed)":"")+
+           ". "+priceWhoName()+" should re-check today's shelf price.")
         : ("The Costco price on file is <b>over 2 days old</b> and has been dropped, so BUY has "+
            "fallen back to the built-in starting figure of <b>"+money(CFG.junePrice)+"</b>. "+
            priceWhoName()+" should re-check today's shelf price.");
@@ -6775,7 +6782,7 @@ var ELEM_SHEET_DATE = "2026-09-12";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "72b8f97 2026-09-11 22:54 UTC".indexOf("STAMP") >= 0 ? "dev" : "72b8f97 2026-09-11 22:54 UTC";
+  var GFH_BUILD = "a1db773 2026-09-11 23:18 UTC".indexOf("STAMP") >= 0 ? "dev" : "a1db773 2026-09-11 23:18 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
