@@ -474,6 +474,44 @@ var ELEM_SHEET_DATE = "2026-09-15";   /* GFH_SHEET_DATE */
   .wi-dow .b{width:100%;background:var(--gold-deep);border-radius:3px 3px 0 0;min-height:2px}
   .wi-dow .l{font-size:8.5px;color:var(--ink-mute)}
 
+  /* Restock & sell-out history (migration 012) — one accordion per branch */
+  .wi-evsum{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:12px}
+  .wi-evsum > div{background:var(--panel);border:1px solid var(--line2);border-radius:10px;padding:9px 11px}
+  .wi-evsum .k{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-mute)}
+  .wi-evsum .v{font-family:var(--mono);font-size:15px;font-weight:660;color:var(--ink);margin-top:2px}
+  .wi-evsum .s{font-size:11px;color:var(--ink-mute);margin-top:2px}
+  .wi-waves{font-family:var(--mono);font-size:11.5px;width:100%;border-collapse:collapse;margin-bottom:12px}
+  .wi-waves th,.wi-waves td{text-align:left;padding:4px 6px;border-bottom:1px solid var(--line2)}
+  .wi-waves th{font-size:10px;color:var(--ink-mute);font-weight:500;text-transform:uppercase;letter-spacing:.05em}
+  #wiEvBox .cs-toggle-txt::after{content:"Show"}
+  #wiEvBox[open] .cs-toggle-txt::after{content:"Hide"}
+  details.wi-br{border:1px solid var(--line2);border-radius:10px;margin:6px 0;background:var(--panel)}
+  details.wi-br > summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;
+    flex-wrap:wrap;padding:9px 12px;font-size:13px}
+  details.wi-br > summary::-webkit-details-marker{display:none}
+  details.wi-br > summary:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+  details.wi-br .nm{font-weight:640;color:var(--ink);min-width:140px}
+  details.wi-br .st{font-family:var(--mono);font-size:11px;border-radius:999px;padding:2px 8px;
+    border:1px solid var(--line2);color:var(--ink-mute)}
+  details.wi-br .st.in{color:var(--gold);border-color:var(--gold-deep);background:var(--gold-glow)}
+  details.wi-br .meta{font-family:var(--mono);font-size:11px;color:var(--ink-mute);margin-left:auto}
+  details.wi-br .chev{color:var(--gold);transition:transform .2s}
+  details.wi-br[open] .chev{transform:rotate(180deg)}
+  .wi-evlist{list-style:none;margin:0;padding:0 12px 10px}
+  .wi-evlist li{display:grid;grid-template-columns:110px 1fr;gap:8px;padding:6px 0;
+    border-top:1px solid var(--line2);font-size:12px}
+  .wi-evlist .ek{font-weight:640}
+  .wi-evlist .ek.restock{color:var(--gold)}
+  .wi-evlist .ek.sold{color:var(--ink-mute)}
+  .wi-evlist .ek.seen{color:var(--ink)}
+  .wi-evlist .ed{font-family:var(--mono);font-size:11px;color:var(--ink)}
+  .wi-evlist .ex{font-size:11px;color:var(--ink-mute);margin-top:2px}
+  details.wi-br.quiet{opacity:.75}
+  @media (max-width:560px){
+    .wi-evlist li{grid-template-columns:1fr;gap:2px}
+    details.wi-br .meta{margin-left:0;width:100%}
+  }
+
   @media (max-width:560px){
     .wi-acts{flex-direction:column}
     .wi-health{font-size:12px}
@@ -2677,13 +2715,29 @@ var ELEM_SHEET_DATE = "2026-09-15";   /* GFH_SHEET_DATE */
       </div>
     </details>
 
+    <details class="chartbox" id="wiEvBox">
+      <summary class="chart-sum">
+        <span class="cs-title">Restock &amp; sell-out history · every branch</span>
+        <span class="cs-toggle-txt"></span>
+        <span class="cs-chev">▾</span>
+      </summary>
+      <div style="padding:12px 12px 6px">
+        <div class="wi-evsum" id="wiEvSum"><div><div class="k">Reading</div><div class="v">…</div></div></div>
+        <div class="cb-title" style="margin:4px 0 6px">Restock waves — branches restocked the same day</div>
+        <div id="wiWaves" class="jb-msg">—</div>
+        <div class="cb-title" style="margin:12px 0 6px">Each branch · last 10 events</div>
+        <div id="wiBranches"><span class="jb-msg">reading…</span></div>
+        <div class="jb-msg" id="wiEvNote" style="margin-top:10px">—</div>
+      </div>
+    </details>
+
   </div><!-- /tab-inv -->
 
   <div class="foot">
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 8c94115 · built 2026-09-16 07:43 UTC</span>
+    <span id="verStamp" class="tnum">version: 1be5473 · built 2026-09-16 07:47 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -5090,7 +5144,7 @@ var ELEM_SHEET_DATE = "2026-09-15";   /* GFH_SHEET_DATE */
        no availability field at all. Every unknown path below resolves to
        "we don't know", never to zero.
      ================================================================== */
-  const WI = { warehouses:[], tiers:{}, stock:[], calls:{}, health:null, patterns:[], loaded:false, err:null };
+  const WI = { warehouses:[], tiers:{}, stock:[], calls:{}, health:null, patterns:[], episodes:null, episodesErr:null, loaded:false, err:null };
 
   /* ---- June's call, read the way her own sheet reads it ---- */
   // Returns {txt, cls, ageH, hasBars} or null when she has never called.
@@ -5383,6 +5437,13 @@ var ELEM_SHEET_DATE = "2026-09-15";   /* GFH_SHEET_DATE */
     // as a GET with query-string arguments, and sbFetch discards non-GET bodies.
     sbFetch(SB_URL+"/rest/v1/rpc/restock_patterns?since_days=90",{headers:sbH()})
       .then(function(r){ if(r.kind==="ok"){ WI.patterns=r.data||[]; wiRenderHist(); } });
+    // Restock / sell-out spells, derived from the append-only reads (migration 012).
+    sbFetch(SB_URL+"/rest/v1/rpc/stock_episodes",{headers:sbH()})
+      .then(function(r){
+        WI.episodes = r.kind==="ok" ? (r.data||[]) : null;
+        WI.episodesErr = r.kind==="ok" ? null : r.kind;
+        wiRenderEvents();
+      });
   }
 
   /* ---- write ---- */
@@ -5931,6 +5992,203 @@ var ELEM_SHEET_DATE = "2026-09-15";   /* GFH_SHEET_DATE */
     note.textContent="Over the stored window · "+Object.keys(byStore).length+
       " warehouses, "+days+" warehouse-days with bars. Only what has been captured counts — "+
       "the upstream Slack keeps 90 days.";
+  }
+
+  /* ---- render: restock & sell-out history (migration 012) ----
+     Every time is a WINDOW between two robot reads, never a guessed moment:
+     "restocked between 10:02am and 11:01am". Durations are min–max for the
+     same reason. Only reads that actually happened count. */
+  const WI_PT = "America/Los_Angeles";
+  function wiWhen(t){
+    if(!t) return "—";
+    return new Date(t).toLocaleString("en-US",{timeZone:WI_PT,weekday:"short",month:"numeric",
+      day:"numeric",hour:"numeric",minute:"2-digit"});
+  }
+  function wiPtDate(t){ return new Date(t).toLocaleDateString("en-CA",{timeZone:WI_PT}); }
+  // Same Pacific day as `ref` -> just the clock time, else the full stamp.
+  function wiWhenShort(t, ref){
+    if(!t) return "—";
+    if(ref && wiPtDate(ref)===wiPtDate(t))
+      return new Date(t).toLocaleTimeString("en-US",{timeZone:WI_PT,hour:"numeric",minute:"2-digit"});
+    return wiWhen(t);
+  }
+  function wiDayTxt(d){   // 'YYYY-MM-DD' -> 'Tue, 9/2' (noon, so no timezone can shift the day)
+    return new Date(d+"T12:00:00").toLocaleDateString("en-US",{weekday:"short",month:"numeric",day:"numeric"});
+  }
+  function wiDur(h){
+    if(h==null) return "?";
+    const n=Number(h);
+    if(n < 1) return Math.round(n*60)+"m";
+    if(n < 48) return (Math.round(n*10)/10)+"h";
+    return (Math.round(n/24*10)/10)+"d";
+  }
+  function wiRange(lo, hi){
+    if(lo==null && hi==null) return "unknown";
+    if(hi==null) return "at least "+wiDur(lo);
+    if(wiDur(lo)===wiDur(hi)) return wiDur(lo);
+    return wiDur(lo)+"–"+wiDur(hi);
+  }
+  function wiMedian(a){
+    const v=a.filter(function(x){ return x!=null && !isNaN(x); }).map(Number).sort(function(x,y){ return x-y; });
+    if(!v.length) return null;
+    const m=Math.floor(v.length/2);
+    return v.length%2 ? v[m] : (v[m-1]+v[m])/2;
+  }
+  // median min–max pair for a list of spells
+  function wiMedRange(list, lo, hi){
+    const a=wiMedian(list.map(function(e){ return e[lo]; }));
+    const withHi=list.filter(function(e){ return e[hi]!=null; });
+    const b=withHi.length ? wiMedian(withHi.map(function(e){ return e[hi]; })) : null;
+    return a==null ? null : wiRange(a,b);
+  }
+
+  function wiEventsFor(eps){
+    const ev=[];
+    eps.forEach(function(e){
+      if(e.source==="slack"){
+        ev.push({t:e.restock_seen, k:"seen", lab:"Seen in stock",
+          d:wiWhen(e.restock_seen)+(e.reads_in_stock>1?" → "+wiWhenShort(e.last_in_seen,e.restock_seen):""),
+          x:"Slack bot sighting ("+e.reads_in_stock+" message"+(e.reads_in_stock===1?"":"s")+"). The bot never says when bars run out."});
+        return;
+      }
+      if(e.restock_after){
+        ev.push({t:e.restock_seen, k:"restock", lab:"Restocked",
+          d:"between "+wiWhen(e.restock_after)+" and "+wiWhenShort(e.restock_seen,e.restock_after),
+          x:e.dry_before_min_h!=null ? "Was sold out for "+wiRange(e.dry_before_min_h,e.dry_before_max_h)+" before this."
+                                     : "First restock on record for this branch."});
+      } else {
+        ev.push({t:e.restock_seen, k:"restock", lab:"In stock",
+          d:"already in stock at "+wiWhen(e.restock_seen),
+          x:"Tracking started here — the restock itself was earlier."});
+      }
+      if(e.sold_out_seen){
+        ev.push({t:e.sold_out_seen, k:"sold", lab:"Sold out",
+          d:"between "+wiWhen(e.last_in_seen)+" and "+wiWhenShort(e.sold_out_seen,e.last_in_seen),
+          x:"Lasted "+wiRange(e.lasted_min_h,e.lasted_max_h)+" on the shelf"+
+            (e.sold_out_hint?" · vendor says last had it "+wiDayTxt(e.sold_out_hint):"")+"."});
+      }
+    });
+    ev.sort(function(a,b){ return String(b.t).localeCompare(String(a.t)); });
+    return ev.slice(0,10);
+  }
+
+  function wiRenderEvents(){
+    const sum=$("wiEvSum"), wv=$("wiWaves"), br=$("wiBranches"), note=$("wiEvNote");
+    if(!sum) return;
+    if(WI.episodes==null){
+      sum.innerHTML="";
+      wv.textContent="—";
+      br.innerHTML="<span class='jb-msg'>Could not read the history ("+esc(WI.episodesErr||"no answer")+
+        "). Nothing is lost — every read stays in the database.</span>";
+      note.textContent="—";
+      return;
+    }
+    // Timestamps from PostgREST are ISO strings; normalise so string compares sort by time.
+    const iso=function(t){ return t ? new Date(t).toISOString() : t; };
+    const eps=WI.episodes.map(function(e){
+      return Object.assign({}, e, {restock_after:iso(e.restock_after), restock_seen:iso(e.restock_seen),
+        last_in_seen:iso(e.last_in_seen), sold_out_seen:iso(e.sold_out_seen)});
+    });
+    const site=eps.filter(function(e){ return e.source==="site"; });
+    const byStore={};
+    eps.forEach(function(e){ (byStore[e.store_id]=byStore[e.store_id]||[]).push(e); });
+
+    // --- network summary ---
+    const restocks=site.filter(function(e){ return e.restock_after; });
+    const done=site.filter(function(e){ return e.sold_out_seen; });
+    const dry=site.filter(function(e){ return e.dry_before_min_h!=null; });
+    const hours={}; let tight=0;
+    restocks.forEach(function(e){
+      // only a window of 3h or less says anything about the hour of day
+      if((new Date(e.restock_seen)-new Date(e.restock_after))/36e5 > 3) return;
+      const h=new Date(e.restock_seen).toLocaleString("en-US",{timeZone:WI_PT,hour:"numeric"});
+      hours[h]=(hours[h]||0)+1; tight++;
+    });
+    const topHour=Object.keys(hours).sort(function(a,b){ return hours[b]-hours[a]; })[0];
+    const firstRead=site.reduce(function(m,e){ const t=e.restock_after||e.restock_seen; return !m||t<m?t:m; },null);
+    const nowIn=site.filter(function(e){ return !e.sold_out_seen; }).length;
+    const box=function(k,v,s2){ return "<div><div class='k'>"+k+"</div><div class='v'>"+v+"</div><div class='s'>"+s2+"</div></div>"; };
+    sum.innerHTML=
+      box("Restocks seen", restocks.length, "across "+Object.keys(restocks.reduce(function(m,e){ m[e.store_id]=1; return m; },{})).length+" branches")+
+      box("Shelf time", wiMedRange(done,"lasted_min_h","lasted_max_h")||"—", "typical, restock → sold out · "+done.length+" spells")+
+      box("Dry spell", wiMedRange(dry,"dry_before_min_h","dry_before_max_h")||"—", "typical, sold out → restocked · "+dry.length+" gaps")+
+      box("Restock spotted by", topHour||"—", topHour ? hours[topHour]+" of "+tight+" tight windows" : "no tight windows yet")+
+      box("In stock now", nowIn, "branches, per the latest read");
+
+    // --- waves: restocks grouped by Pacific day ---
+    const waves={};
+    restocks.forEach(function(e){ const d=wiPtDate(e.restock_seen); (waves[d]=waves[d]||[]).push(e); });
+    const wl=Object.keys(waves).sort().reverse();
+    if(!wl.length){ wv.textContent="No restocks recorded yet."; }
+    else {
+      wv.innerHTML="<table class='wi-waves'><thead><tr><th>Day</th><th>Branches</th><th>Sold out after (median)</th><th>Still in</th></tr></thead><tbody>"+
+        wl.map(function(d){
+          const g=waves[d], gd=g.filter(function(e){ return e.sold_out_seen; });
+          return "<tr><td>"+wiDayTxt(d)+"</td><td>"+g.length+"</td>"+
+            "<td>"+(gd.length ? wiMedRange(gd,"lasted_min_h","lasted_max_h") : "—")+"</td>"+
+            "<td>"+(g.length-gd.length)+"</td></tr>";
+        }).join("")+"</tbody></table>";
+    }
+
+    // --- one accordion per branch (retired branches left out) ---
+    const ids=JSTORES.map(function(s){ return s.id; }).filter(function(id){ return !WI_GONE[id]; });
+    Object.keys(byStore).forEach(function(id){ if(ids.indexOf(id)<0 && !WI_GONE[id]) ids.push(id); });
+    const rows=ids.map(function(id){
+      const all=byStore[id]||[];
+      const st=all.filter(function(e){ return e.source==="site"; });
+      const lastT=all.reduce(function(m,e){ const t=e.sold_out_seen||e.last_in_seen; return !m||t>m?t:m; },null);
+      return {id:id, all:all,
+              rs:st.filter(function(e){ return e.restock_after; }),
+              dn:st.filter(function(e){ return e.sold_out_seen; }),
+              open:st.find(function(e){ return !e.sold_out_seen; }),
+              lastT:lastT,
+              name:(SMAP[id]&&SMAP[id].n)||(all[0]&&all[0].raw_name)||id};
+    }).sort(function(a,b){
+      return (b.open?1:0)-(a.open?1:0) || b.rs.length-a.rs.length ||
+             String(b.lastT||"").localeCompare(String(a.lastT||"")) ||
+             ((SMAP[a.id]||{}).r||99)-((SMAP[b.id]||{}).r||99);
+    });
+    br.innerHTML=rows.map(function(x){
+      const ev=wiEventsFor(x.all);
+      const shelf=wiMedRange(x.dn,"lasted_min_h","lasted_max_h");
+      const stTxt = x.open ? "In stock since "+wiWhen(x.open.restock_seen) : x.lastT ? "Sold out" : "No bars seen";
+      const meta = x.rs.length+" restock"+(x.rs.length===1?"":"s")+(shelf?" · usually lasts "+shelf:"");
+      return "<details class='wi-br"+(ev.length?"":" quiet")+"'><summary>"+
+        "<span class='nm'>"+esc(x.name)+"</span>"+
+        "<span class='st"+(x.open?" in":"")+"'>"+esc(stTxt)+"</span>"+
+        "<span class='meta'>"+esc(meta)+"</span><span class='chev'>▾</span></summary>"+
+        (ev.length ? "<ul class='wi-evlist'>"+ev.map(function(e){
+          return "<li><span class='ek "+e.k+"'>"+e.lab+"</span><span><div class='ed'>"+esc(e.d)+"</div>"+
+                 "<div class='ex'>"+esc(e.x)+"</div></span></li>";
+        }).join("")+"</ul>"
+        : "<div class='jb-msg' style='padding:0 12px 10px'>No bars seen here since tracking began"+
+          (firstRead?" ("+esc(wiWhen(firstRead))+")":"")+".</div>")+
+        "</details>";
+    }).join("");
+
+    // --- association: does a longer dry spell change how fast bars sell out? ---
+    // Only cycles whose windows are both 24h wide or less: a middle of a 9-day
+    // window (the 9/9 -> 9/15 pause) is a guess, and a guess must not drive a score.
+    const pairs=site.filter(function(e){
+      return e.sold_out_seen && e.dry_before_max_h!=null && e.lasted_max_h!=null &&
+             (e.dry_before_max_h-e.dry_before_min_h) <= 24 && (e.lasted_max_h-e.lasted_min_h) <= 24;
+    });
+    const NEED=8;
+    let assoc;
+    if(pairs.length < NEED){
+      assoc="Sell-out ↔ restock link: "+pairs.length+" of "+NEED+" cleanly-timed full cycles (sold out → restocked → sold out, windows ≤24h) — too few to call yet.";
+    } else {
+      const xs=pairs.map(function(e){ return (Number(e.dry_before_min_h)+Number(e.dry_before_max_h))/2; });
+      const ys=pairs.map(function(e){ return (Number(e.lasted_min_h)+Number(e.lasted_max_h))/2; });
+      const mx=xs.reduce(function(a,b){return a+b;},0)/xs.length, my=ys.reduce(function(a,b){return a+b;},0)/ys.length;
+      let sxy=0,sxx=0,syy=0;
+      xs.forEach(function(x,i){ sxy+=(x-mx)*(ys[i]-my); sxx+=(x-mx)*(x-mx); syy+=(ys[i]-my)*(ys[i]-my); });
+      const rr = sxx&&syy ? sxy/Math.sqrt(sxx*syy) : 0;
+      assoc="Sell-out ↔ restock link ("+pairs.length+" full cycles, window middles): r = "+rr.toFixed(2)+" — "+
+        (Math.abs(rr)<0.3 ? "no real link yet" : rr>0 ? "longer dry spells → bars last longer" : "longer dry spells → bars sell out faster")+".";
+    }
+    note.textContent=assoc+" Times are windows between robot reads (10am, 11am and price-rung pulls), so a window can "+
+      "span a pause (9/9 → 9/15 the pulls were off). Every read is kept in the database for good.";
   }
 
   function wiRender(){
@@ -6786,7 +7044,7 @@ var ELEM_SHEET_DATE = "2026-09-15";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "8c94115 2026-09-16 07:43 UTC".indexOf("STAMP") >= 0 ? "dev" : "8c94115 2026-09-16 07:43 UTC";
+  var GFH_BUILD = "1be5473 2026-09-16 07:47 UTC".indexOf("STAMP") >= 0 ? "dev" : "1be5473 2026-09-16 07:47 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
