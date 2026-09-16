@@ -80,7 +80,7 @@
    NOTE: this is the date the sheet was last CONFIRMED, not a price. No money
    number lives here, which is why the task is allowed to write it unattended.
    ========================================================================= */
-var ELEM_SHEET_DATE = "2026-09-15";   /* GFH_SHEET_DATE */
+var ELEM_SHEET_DATE = "2026-09-16";   /* GFH_SHEET_DATE */
 </script>
 <style>
   /* ============ TOKENS ============ */
@@ -2737,7 +2737,7 @@ var ELEM_SHEET_DATE = "2026-09-15";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: a0783e6 · built 2026-09-16 11:10 UTC</span>
+    <span id="verStamp" class="tnum">version: 3723c3e · built 2026-09-16 14:44 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7043,7 +7043,7 @@ var ELEM_SHEET_DATE = "2026-09-15";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "a0783e6 2026-09-16 11:10 UTC".indexOf("STAMP") >= 0 ? "dev" : "a0783e6 2026-09-16 11:10 UTC";
+  var GFH_BUILD = "3723c3e 2026-09-16 14:44 UTC".indexOf("STAMP") >= 0 ? "dev" : "3723c3e 2026-09-16 14:44 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
