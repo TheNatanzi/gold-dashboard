@@ -1463,7 +1463,7 @@ var ELEM_SHEET_DATE = "2026-09-18";   /* GFH_SHEET_DATE */
     </div>
   </div>
 
-  <!-- LOCK TAB — the 15-Minute Machine phone control, embedded from the standalone lock.html
+  <!-- LOCK TAB — the 12-Minute Machine phone control, embedded from the standalone lock.html
        (its own Supabase client + anon key), so it stays byte-independent from this dashboard. -->
 
   <!-- ======================= MEMBERSHIPS TAB =======================
@@ -1550,7 +1550,7 @@ var ELEM_SHEET_DATE = "2026-09-18";   /* GFH_SHEET_DATE */
   </div>
 
   <div class="tabpanel" id="tab-lock" role="tabpanel" aria-labelledby="tabBtnLock" hidden>
-    <iframe src="lock.html?v=0" id="lockFrame" data-cache-bust="1" title="Alchemy Lock — 15-Minute Machine" scrolling="no"
+    <iframe src="lock.html?v=0" id="lockFrame" data-cache-bust="1" title="Alchemy Lock — 12-Minute Machine" scrolling="no"
       style="display:block;width:100%;height:720px;border:0;border-radius:14px;background:transparent;overflow:hidden"
       loading="lazy" referrerpolicy="no-referrer"></iframe>
     <!-- Cache-bust (2026-09-04): GitHub Pages caches lock.html for 10 min and the phone showed a stale
@@ -2232,8 +2232,8 @@ var ELEM_SHEET_DATE = "2026-09-18";   /* GFH_SHEET_DATE */
           </div>
 
           <div class="rx-grp">
-            <h6>4 · 15-Minute Machine (lock) — this PC</h6>
-            <div class="rx-srow"><span class="st ok">LOCK</span><span class="tx"><b>TEST TRANSACTION — Gold lock $…</b> — a sellable Elemetal price locked. Screenshots attached; you forward one, the machine never does. <span style="color:var(--ink-mute)">· both</span></span></div>
+            <h6>4 · 12-Minute Machine (lock) — this PC</h6>
+            <div class="rx-srow"><span class="st ok">LOCK</span><span class="tx"><b>🔒 Alchemy LOCK $… — lock now (quote fresh until …)</b> — the Kitco price to lock your buy at. Screenshots attached as reference. <span style="color:var(--ink-mute)">· both</span></span></div>
             <div class="rx-srow"><span class="st deny">FAIL</span><span class="tx"><b>ALCHEMY ALERT — crash / unreadable feed</b> — the lock watcher hit a problem it cannot fix. <span style="color:var(--ink-mute)">· both</span></span></div>
             <div class="rx-srow"><span class="st chk">WEEKLY</span><span class="tx"><b>Weekly open report</b> — Sunday-open recap: chart (6h before open, ▲ PEAK + red ▼ WOULD-LOCK), the What-happened timeline, and the tick log attached. <span style="color:var(--ink-mute)">· both · full lock-email parity</span></span></div>
             <div class="rx-srow"><span class="st chk">PING</span><span class="tx"><b>Heartbeat</b> — periodic “still watching” note. <span style="color:var(--ink-mute)">· both</span></span></div>
@@ -2257,7 +2257,7 @@ var ELEM_SHEET_DATE = "2026-09-18";   /* GFH_SHEET_DATE */
             <span class="em">🔒</span>
             <div class="tt">
               <h4>The Lock</h4>
-              <p class="md">The "15-Minute Machine." Rides the price up, catches the best screenshot to forward to Elemetal.</p>
+              <p class="md">The "12-Minute Machine." Watches Kitco live gold (the lower of Bid/Ask), rides the price up, and tells you the moment to lock.</p>
               <span class="rx-badge live"><span class="d"></span>LIVE</span>
             </div>
           </div>
@@ -2266,15 +2266,15 @@ var ELEM_SHEET_DATE = "2026-09-18";   /* GFH_SHEET_DATE */
             <h6>How it plays out</h6>
             <div class="rx-flow">
               <div class="rx-node go"><div class="rx-cond"><span class="ic">▶</span>You tap START on your phone</div>
-                <div class="rx-act">It snaps the current price as <b>the HIGH</b> and starts a <b>15-minute clock.</b></div></div>
-              <span class="rx-lab">Phase 1 · Grace (first 15 min)</span>
+                <div class="rx-act">It snaps the current price as <b>the HIGH</b> and starts a <b>12-minute clock.</b></div></div>
+              <span class="rx-lab">Phase 1 · Grace (first 12 min)</span>
               <div class="rx-branch">
                 <div class="rx-node go"><div class="rx-cond"><span class="ic">✓</span>A new higher price</div>
-                  <div class="rx-act">Restarts the 15-min clock. Still grace.</div></div>
+                  <div class="rx-act">Restarts the 12-min clock. Still grace.</div></div>
                 <div class="rx-node stop"><div class="rx-cond"><span class="ic">✕</span>Any dip — even big</div>
                   <div class="rx-act">Ignored. <b>Nothing sends</b> during grace.</div></div>
               </div>
-              <div class="rx-node check"><div class="rx-cond"><span class="ic">?</span>15 min pass with no new high</div>
+              <div class="rx-node check"><div class="rx-cond"><span class="ic">?</span>12 min pass with no new high</div>
                 <div class="rx-act">→ Enters <b>Phase 2 · Sudden Death.</b></div></div>
               <span class="rx-lab">Phase 2 · Sudden Death (no timer)</span>
               <div class="rx-branch">
@@ -2292,11 +2292,11 @@ var ELEM_SHEET_DATE = "2026-09-18";   /* GFH_SHEET_DATE */
             <h6>What the email does</h6>
             <div class="rx-flow">
               <div class="rx-node go"><div class="rx-cond"><span class="ic">✉</span>When it locks</div>
-                <div class="rx-act">You get <b>"🔒 Alchemy LOCK $X — forward before [time]"</b> with 1–4 screenshots.</div></div>
+                <div class="rx-act">You get <b>"🔒 Alchemy LOCK $X — lock now (quote fresh until [time])"</b> with 1–4 screenshots.</div></div>
               <div class="rx-node check"><div class="rx-cond"><span class="ic">?</span>Which screenshot to send</div>
-                <div class="rx-act">Forward the <b>highest-priced one whose "forward before" time hasn't passed.</b> You send it to Elemetal yourself.</div>
-                <div class="rx-why">Elemetal only accepts a shot under 15 min old; the machine only sends ones under 14 min (a 1-minute cushion). The machine never emails Elemetal.</div></div>
-              <div class="rx-node why-only nl"><div class="rx-cond"><b>Recipients:</b> you only. Hamed is added only if you switch him on.</div></div>
+                <div class="rx-act">Lock at the <b>highest-priced one whose "fresh until" time hasn't passed.</b> The screenshots are your reference.</div>
+                <div class="rx-why">A Kitco quote older than ~15 min is stale; the machine only sends shots under 14 min old (a 1-minute cushion).</div></div>
+              <div class="rx-node why-only nl"><div class="rx-cond"><b>Recipients:</b> the lock email goes to you and Hamed. Machine problems go to you only.</div></div>
             </div>
           </div>
 
@@ -2737,7 +2737,7 @@ var ELEM_SHEET_DATE = "2026-09-18";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 5b6cb14 · built 2026-09-18 17:02 UTC</span>
+    <span id="verStamp" class="tnum">version: 866f010 · built 2026-09-18 17:21 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -5336,7 +5336,7 @@ var ELEM_SHEET_DATE = "2026-09-18";   /* GFH_SHEET_DATE */
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-09-18T10:01:52-07:00",
+    at: "2026-09-18T10:21:47-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
     price: 4409.99,
@@ -7043,7 +7043,7 @@ var ELEM_SHEET_DATE = "2026-09-18";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "5b6cb14 2026-09-18 17:02 UTC".indexOf("STAMP") >= 0 ? "dev" : "5b6cb14 2026-09-18 17:02 UTC";
+  var GFH_BUILD = "866f010 2026-09-18 17:21 UTC".indexOf("STAMP") >= 0 ? "dev" : "866f010 2026-09-18 17:21 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
