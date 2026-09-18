@@ -880,13 +880,13 @@ var ELEM_SHEET_DATE = "2026-09-18";   /* GFH_SHEET_DATE */
   .sec-head span{font-size:11.5px;color:var(--ink-mute);font-family:var(--mono)}
   .rail{flex:1;height:1px;background:var(--line);min-width:20px}
   .matrix{display:flex;flex-direction:column;gap:9px}
-  .card{display:grid;grid-template-columns:22px 1.55fr .78fr .95fr .95fr 1.15fr;gap:13px;
+  .card{display:grid;grid-template-columns:22px 1.55fr .78fr .95fr .95fr;gap:13px;
     align-items:center;background:var(--panel);border:1px solid var(--line);
     border-radius:12px;padding:12px 15px;transition:border-color .15s,transform .1s}
   .card:hover{border-color:var(--line2);transform:translateX(2px)}
   .card.pinned{border-color:var(--gold-deep);background:linear-gradient(180deg,var(--panel2),var(--panel))}
   .card.win{border-color:rgba(75,214,160,.32)}
-  .colhead{display:grid;grid-template-columns:22px 1.55fr .78fr .95fr .95fr 1.15fr;gap:13px;
+  .colhead{display:grid;grid-template-columns:22px 1.55fr .78fr .95fr .95fr;gap:13px;
     padding:0 15px 2px;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;
     text-transform:uppercase;color:var(--ink-mute)}
   .colhead .r{text-align:right}
@@ -932,7 +932,7 @@ var ELEM_SHEET_DATE = "2026-09-18";   /* GFH_SHEET_DATE */
   .tier.t2 .v{font-size:14px;font-weight:640;line-height:1.25}
   .col-eff .tier.t2 .v{color:var(--ink)}
   .tier.t2.good .v{color:var(--good)} .tier.t2.bad .v{color:var(--bad)}
-  .col-catch{font-size:11px;color:var(--ink-mute);line-height:1.35}
+  /* Notes column (.col-catch) removed 2026-09-18 (Medi). The per-card `catch` text stays in OWNED. */
 
   .divider{display:flex;align-items:center;gap:12px;margin:6px 2px 2px;
     font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#f2a05a}
@@ -1708,7 +1708,7 @@ var ELEM_SHEET_DATE = "2026-09-18";   /* GFH_SHEET_DATE */
     <div class="rail"></div>
   </div>
   <div class="colhead">
-    <div></div><div>Card</div><div class="r">Eff %</div><div class="r">Pamp $/bar</div><div class="r">Generic $/bar</div><div>Notes</div>
+    <div></div><div>Card</div><div class="r">Eff %</div><div class="r">Pamp $/bar</div><div class="r">Generic $/bar</div>
   </div>
   <div class="matrix" id="matrix"></div>
 
@@ -2747,7 +2747,7 @@ var ELEM_SHEET_DATE = "2026-09-18";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 1e5e055 · built 2026-09-18 19:34 UTC</span>
+    <span id="verStamp" class="tnum">version: cf5b6d1 · built 2026-09-18 19:39 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -2932,8 +2932,7 @@ var ELEM_SHEET_DATE = "2026-09-18";   /* GFH_SHEET_DATE */
         ${availHTML}</div>
       ${effCol}
       ${barCol(barP, alt && alt.barP, 'PAMP')}
-      ${barCol(barG, alt && alt.barG, 'GENERIC')}
-      <div class="col-catch">${c.catch}</div>`;
+      ${barCol(barG, alt && alt.barG, 'GENERIC')}`;
   }
   /* ONLINE COSTS $10 MORE, AND THE MASTERCARD PAYS IT (Medi, 2026-08-05).
      `buy` is ALWAYS an in-store basis — either June's register price, or the online
@@ -7072,7 +7071,7 @@ var ELEM_SHEET_DATE = "2026-09-18";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "1e5e055 2026-09-18 19:34 UTC".indexOf("STAMP") >= 0 ? "dev" : "1e5e055 2026-09-18 19:34 UTC";
+  var GFH_BUILD = "cf5b6d1 2026-09-18 19:39 UTC".indexOf("STAMP") >= 0 ? "dev" : "cf5b6d1 2026-09-18 19:39 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
