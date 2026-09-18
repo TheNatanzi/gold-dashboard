@@ -2737,7 +2737,7 @@ var ELEM_SHEET_DATE = "2026-09-17";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 81be1a6 · built 2026-09-18 03:40 UTC</span>
+    <span id="verStamp" class="tnum">version: f559723 · built 2026-09-18 04:09 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -5336,7 +5336,7 @@ var ELEM_SHEET_DATE = "2026-09-17";   /* GFH_SHEET_DATE */
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-09-17T20:39:51-07:00",
+    at: "2026-09-17T21:09:46-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
     price: 4409.99,
@@ -5350,10 +5350,10 @@ var ELEM_SHEET_DATE = "2026-09-17";   /* GFH_SHEET_DATE */
     // read from their own page this run, not carried forward.
     soldOut: {antioch:"3d", concord:"today", danville:"today", fairfield:"1d",
               fostercity:"today", fremont:"today", gilroy:"1m", hayward:"today",
-              livermore:"3d", lodi:"today", newark:"today", novato:"1d",
-              pleasanton:"1d", redwoodcity:"1d", richmond:"today", rohnertpark:"1m",
-              sacnatomas:"2m", sf:"today", sjne:"3d", sjsenter:"1d", ssf:"today",
-              ssfairport:"2d", tracy:"today", vacaville:"today", vallejo:"3d"}
+              livermore:"3d", lodi:"today", newark:"1d", novato:"1d", pleasanton:"1d",
+              redwoodcity:"1d", richmond:"today", rohnertpark:"1m", sacnatomas:"2m",
+              sf:"today", sjne:"3d", sjsenter:"1d", ssf:"today", ssfairport:"2d",
+              tracy:"today", vacaville:"today", vallejo:"3d"}
   };
 
   // Turn the snapshot into the same row shape wiRenderNow/wiRenderTable already
@@ -7043,7 +7043,7 @@ var ELEM_SHEET_DATE = "2026-09-17";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "81be1a6 2026-09-18 03:40 UTC".indexOf("STAMP") >= 0 ? "dev" : "81be1a6 2026-09-18 03:40 UTC";
+  var GFH_BUILD = "f559723 2026-09-18 04:09 UTC".indexOf("STAMP") >= 0 ? "dev" : "f559723 2026-09-18 04:09 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
