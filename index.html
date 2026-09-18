@@ -922,6 +922,10 @@ var ELEM_SHEET_DATE = "2026-09-18";   /* GFH_SHEET_DATE */
   .col-bar{font-family:var(--mono);text-align:right;font-size:17px;font-weight:660}
   .col-bar.good{color:var(--good)} .col-bar.bad{color:var(--bad)}
   .col-bar .u{display:block;font-size:9px;color:var(--ink-mute);font-weight:500;letter-spacing:.08em}
+  /* Second reward tier inside the same card box (Smartly 4% / 2%). */
+  .col-eff .alt,.col-bar .alt{margin-top:6px;padding-top:5px;border-top:1px dashed var(--line);font-size:13px;font-weight:620}
+  .col-bar .alt.good{color:var(--good)} .col-bar .alt.bad{color:var(--bad)}
+  .col-bar .alt span{font-size:9px;color:var(--ink-mute);font-weight:500;letter-spacing:.04em}
   .col-catch{font-size:11px;color:var(--ink-mute);line-height:1.35}
 
   .divider{display:flex;align-items:center;gap:12px;margin:6px 2px 2px;
@@ -2737,7 +2741,7 @@ var ELEM_SHEET_DATE = "2026-09-18";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 7a72106 · built 2026-09-18 18:01 UTC</span>
+    <span id="verStamp" class="tnum">version: 781b5d2 · built 2026-09-18 19:32 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -2796,8 +2800,11 @@ var ELEM_SHEET_DATE = "2026-09-18";   /* GFH_SHEET_DATE */
      catch:"Your Costco Citi Business card. Reward paid once/yr as a Feb certificate. In-store OK."},
     {name:"Venmo Credit Card", biller:"Synchrony", net:"visa", card:3.0, tk:2.13, type:"Personal", order:3, limit:20000,
      catch:"Verified 3% at Costco + Synchrony Taekus — your best per-bar card. In-store OK."},
-    {name:"U.S. Bank Smartly (4%)", biller:"U.S. Bank", net:"visa", card:4.0, tk:0, type:"Personal", order:4, limit:10000,
-     catch:"Needs ~$100k parked at U.S. Bancorp; $10k/mo cap. In-store OK."},
+    // alt = the SAME card's second tier, shown inside its box (Medi 2026-09-18): 4% on the first $10k
+    // of posted spend each cycle, 2% after that (CC5). The headline + buying power stay at 4%.
+    {name:"U.S. Bank Smartly (4% / 2%)", biller:"U.S. Bank", net:"visa", card:4.0, tk:0, type:"Personal", order:4, limit:10000,
+     alt:{card:2.0, label:"after $10k"},
+     catch:"Needs ~$100k parked at U.S. Bancorp. 4% on the first $10k each cycle, then 2%. In-store OK."},
     {name:"Citi Double Cash", biller:"Citi", net:"mc", card:2.0, tk:0, type:"Personal", order:5, limit:8300,
      catch:"Personal MC → no Taekus (2% only). Mastercard = Costco.com online only."},
   ];
@@ -2884,7 +2891,10 @@ var ELEM_SHEET_DATE = "2026-09-18";   /* GFH_SHEET_DATE */
     $("bpUnused").textContent=money(unused);
   }
 
-  function rowHTML(c, rankTxt, eff, barP, barG, buy, up){
+  function rowHTML(c, rankTxt, eff, barP, barG, buy, up, alt){
+    // alt (optional) = the card's second reward tier, drawn as a smaller line under each figure.
+    const altLine = (v, isMoney) => !alt ? "" :
+      `<div class="alt ${isMoney ? (v>=0?'good':'bad') : ''}">${isMoney ? money(v) : pct(v)} <span>@ ${pct(alt.eff)}</span></div>`;
     // Say the surcharge out loud on the chip. A per-bar figure that is $9.80 worse than
     // the card above it, with nothing on screen explaining why, reads as a bug.
     const netChip = c.net==="visa"
@@ -2905,9 +2915,9 @@ var ELEM_SHEET_DATE = "2026-09-18";   /* GFH_SHEET_DATE */
       <div class="cname">${c.name}${c.hero?' <small>★ floor</small>':''}
         <div class="chips">${typeChip}${netChip}${tkChip}</div>
         ${availHTML}</div>
-      <div class="col-eff"><div class="big">${pct(eff)}</div><div class="sm">${pct(c.card)}${c.tk?` + ${pct(c.tk)}`:''}</div></div>
-      <div class="col-bar ${barP>=0?'good':'bad'}">${money(barP)}<span class="u">PAMP</span></div>
-      <div class="col-bar ${barG>=0?'good':'bad'}">${money(barG)}<span class="u">GENERIC</span></div>
+      <div class="col-eff"><div class="big">${pct(eff)}</div><div class="sm">${alt ? 'first $10k' : pct(c.card)+(c.tk?` + ${pct(c.tk)}`:'')}</div>${alt ? `<div class="alt">${pct(alt.eff)}</div><div class="sm">${alt.label}</div>` : ''}</div>
+      <div class="col-bar ${barP>=0?'good':'bad'}">${money(barP)}<span class="u">PAMP${alt?' @ '+pct(eff):''}</span>${altLine(alt && alt.barP, true)}</div>
+      <div class="col-bar ${barG>=0?'good':'bad'}">${money(barG)}<span class="u">GENERIC${alt?' @ '+pct(eff):''}</span>${altLine(alt && alt.barG, true)}</div>
       <div class="col-catch">${c.catch}</div>`;
   }
   /* ONLINE COSTS $10 MORE, AND THE MASTERCARD PAYS IT (Medi, 2026-08-05).
@@ -2930,7 +2940,11 @@ var ELEM_SHEET_DATE = "2026-09-18";   /* GFH_SHEET_DATE */
     const b   = buy + up;
     // loss is buy − sell, so a costlier bar loses exactly `up` more. Recomputing from the
     // passed-in losses keeps ONE definition of the sell side.
-    return {c, eff, buy:b, up:up,
+    // Second tier on the same card (Smartly 2%): same buy + sell math, only the reward rate changes.
+    const altEff = c.alt ? c.alt.card + c.tk : null;
+    const alt = c.alt ? {eff:altEff, label:c.alt.label,
+                         barP:(altEff/100)*b-(lossP+up), barG:(altEff/100)*b-(lossG+up)} : null;
+    return {c, eff, buy:b, up:up, alt:alt,
             barP:(eff/100)*b-(lossP+up), barG:(eff/100)*b-(lossG+up)};
   }
 
@@ -3083,7 +3097,7 @@ var ELEM_SHEET_DATE = "2026-09-18";   /* GFH_SHEET_DATE */
       el.className="card "+(x.c.hero?"pinned ":"")+(win?"win":"");
       const rankTxt=x.c.hero?"★":String(x.c.order);
       // x.buy, not buy: the Mastercard's row must quote the price IT pays.
-      el.innerHTML=rowHTML(x.c, rankTxt, x.eff, x.barP, x.barG, x.buy, x.up);
+      el.innerHTML=rowHTML(x.c, rankTxt, x.eff, x.barP, x.barG, x.buy, x.up, x.alt);
       mx.appendChild(el);
     });
 
@@ -7043,7 +7057,7 @@ var ELEM_SHEET_DATE = "2026-09-18";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "7a72106 2026-09-18 18:01 UTC".indexOf("STAMP") >= 0 ? "dev" : "7a72106 2026-09-18 18:01 UTC";
+  var GFH_BUILD = "781b5d2 2026-09-18 19:32 UTC".indexOf("STAMP") >= 0 ? "dev" : "781b5d2 2026-09-18 19:32 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
