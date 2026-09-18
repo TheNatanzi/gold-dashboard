@@ -56,7 +56,7 @@
 
   .price{font-size:54px;font-weight:800;letter-spacing:-.02em;margin:8px 0 0;line-height:1;font-variant-numeric:tabular-nums}
 
-  /* Prominent 15-minute grace countdown (the headline timer). */
+  /* Prominent 12-minute grace countdown (the headline timer). */
   .gracebar{margin-top:12px;display:none}
   .gracebar.on{display:block}
   .gracebar .grow{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px}
@@ -106,7 +106,7 @@
 </style>
 </head>
 <body>
-  <h1>Alchemy · 15-Minute Machine</h1>
+  <h1>Alchemy · 12-Minute Machine</h1>
 
   <!-- 5 · Red health banner (independent scream channel) -->
   <div class="health" id="health">
@@ -126,9 +126,9 @@
     <span id="badge" class="badge idle">IDLE</span>
     <div class="price" id="price">$—<span class="arrow" id="arrow"></span></div>
     <div class="sub"><span class="dot" id="statusDot"></span><span id="updated">no active session</span></div>
-    <!-- Prominent 15-minute grace countdown (headline timer). -->
+    <!-- Prominent 12-minute grace countdown (headline timer). -->
     <div class="gracebar" id="graceBar">
-      <div class="grow"><span class="glabel">Grace ends in</span><span class="gbig" id="graceBig">15:00</span></div>
+      <div class="grow"><span class="glabel">Grace ends in</span><span class="gbig" id="graceBig">12:00</span></div>
       <div class="gtrack"><div class="gfill" id="graceFill"></div></div>
     </div>
   </div>
@@ -190,7 +190,10 @@
   const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   // Domain constants (locked).
-  const STOP_USD = 10, GRACE_MS = 15*60*1000, SEND_AGE_CAP_MS = 14*60*1000;
+  // Mirrors alchemy-lock/config.js. GRACE was 15 until the Kitco switch (Medi 2026-09-15 -> 12);
+  // this page kept counting 15 for three days after the machine moved to 12, so the headline timer
+  // read 3 minutes long. Change the two together.
+  const STOP_USD = 10, GRACE_MS = 12*60*1000, SEND_AGE_CAP_MS = 14*60*1000;
 
   // ── Watcher-liveness thresholds (the whole point of the honesty fix) ──────
   // The watcher writes lock_control.health_at on a heartbeat. If that timestamp is fresh the PC is
