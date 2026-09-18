@@ -922,10 +922,16 @@ var ELEM_SHEET_DATE = "2026-09-18";   /* GFH_SHEET_DATE */
   .col-bar{font-family:var(--mono);text-align:right;font-size:17px;font-weight:660}
   .col-bar.good{color:var(--good)} .col-bar.bad{color:var(--bad)}
   .col-bar .u{display:block;font-size:9px;color:var(--ink-mute);font-weight:500;letter-spacing:.08em}
-  /* Second reward tier inside the same card box (Smartly 4% / 2%). */
-  .col-eff .alt,.col-bar .alt{margin-top:6px;padding-top:5px;border-top:1px dashed var(--line);font-size:13px;font-weight:620}
-  .col-bar .alt.good{color:var(--good)} .col-bar .alt.bad{color:var(--bad)}
-  .col-bar .alt span{font-size:9px;color:var(--ink-mute);font-weight:500;letter-spacing:.04em}
+  /* Two reward tiers inside one card box (Smartly 4% / 2%). Every column gets the same two
+     fixed-height rows, so the tiers line up straight across; the dashed rule is one line. */
+  .tier{height:40px;display:flex;flex-direction:column;justify-content:center;align-items:flex-end}
+  .tier.t2{border-top:1px dashed var(--line);margin-top:6px}
+  .tier .u{display:block;font-size:9px;color:var(--ink-mute);font-weight:500;letter-spacing:.08em;line-height:1.3}
+  .col-eff .tier .big{font-size:16px;font-weight:640;line-height:1.25}
+  .col-eff .tier .u{letter-spacing:.02em}
+  .tier.t2 .v{font-size:14px;font-weight:640;line-height:1.25}
+  .col-eff .tier.t2 .v{color:var(--ink)}
+  .tier.t2.good .v{color:var(--good)} .tier.t2.bad .v{color:var(--bad)}
   .col-catch{font-size:11px;color:var(--ink-mute);line-height:1.35}
 
   .divider{display:flex;align-items:center;gap:12px;margin:6px 2px 2px;
@@ -2741,7 +2747,7 @@ var ELEM_SHEET_DATE = "2026-09-18";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 781b5d2 · built 2026-09-18 19:32 UTC</span>
+    <span id="verStamp" class="tnum">version: 1e5e055 · built 2026-09-18 19:34 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -2892,9 +2898,18 @@ var ELEM_SHEET_DATE = "2026-09-18";   /* GFH_SHEET_DATE */
   }
 
   function rowHTML(c, rankTxt, eff, barP, barG, buy, up, alt){
-    // alt (optional) = the card's second reward tier, drawn as a smaller line under each figure.
-    const altLine = (v, isMoney) => !alt ? "" :
-      `<div class="alt ${isMoney ? (v>=0?'good':'bad') : ''}">${isMoney ? money(v) : pct(v)} <span>@ ${pct(alt.eff)}</span></div>`;
+    // alt (optional) = the card's second reward tier. Drawn as two FIXED-HEIGHT rows in every column
+    // (.tier), so the 4% line and the 2% line sit level across rate / PAMP / GENERIC. The rate lives
+    // only in the rate column; the money columns never repeat it (Medi 2026-09-18).
+    const tiers = (top, topSub, low, lowSub, lowCls) =>
+      `<div class="tier">${top}<span class="u">${topSub}</span></div>` +
+      `<div class="tier t2 ${lowCls}"><span class="v">${low}</span><span class="u">${lowSub}</span></div>`;
+    const barCol = (v, v2, label) => alt
+      ? `<div class="col-bar ${v>=0?'good':'bad'}">${tiers(money(v), label, money(v2), '&nbsp;', v2>=0?'good':'bad')}</div>`
+      : `<div class="col-bar ${v>=0?'good':'bad'}">${money(v)}<span class="u">${label}</span></div>`;
+    const effCol = alt
+      ? `<div class="col-eff">${tiers(`<span class="big">${pct(eff)}</span>`, 'first $10k', pct(alt.eff), alt.label, '')}</div>`
+      : `<div class="col-eff"><div class="big">${pct(eff)}</div><div class="sm">${pct(c.card)}${c.tk?` + ${pct(c.tk)}`:''}</div></div>`;
     // Say the surcharge out loud on the chip. A per-bar figure that is $9.80 worse than
     // the card above it, with nothing on screen explaining why, reads as a bug.
     const netChip = c.net==="visa"
@@ -2915,9 +2930,9 @@ var ELEM_SHEET_DATE = "2026-09-18";   /* GFH_SHEET_DATE */
       <div class="cname">${c.name}${c.hero?' <small>★ floor</small>':''}
         <div class="chips">${typeChip}${netChip}${tkChip}</div>
         ${availHTML}</div>
-      <div class="col-eff"><div class="big">${pct(eff)}</div><div class="sm">${alt ? 'first $10k' : pct(c.card)+(c.tk?` + ${pct(c.tk)}`:'')}</div>${alt ? `<div class="alt">${pct(alt.eff)}</div><div class="sm">${alt.label}</div>` : ''}</div>
-      <div class="col-bar ${barP>=0?'good':'bad'}">${money(barP)}<span class="u">PAMP${alt?' @ '+pct(eff):''}</span>${altLine(alt && alt.barP, true)}</div>
-      <div class="col-bar ${barG>=0?'good':'bad'}">${money(barG)}<span class="u">GENERIC${alt?' @ '+pct(eff):''}</span>${altLine(alt && alt.barG, true)}</div>
+      ${effCol}
+      ${barCol(barP, alt && alt.barP, 'PAMP')}
+      ${barCol(barG, alt && alt.barG, 'GENERIC')}
       <div class="col-catch">${c.catch}</div>`;
   }
   /* ONLINE COSTS $10 MORE, AND THE MASTERCARD PAYS IT (Medi, 2026-08-05).
@@ -7057,7 +7072,7 @@ var ELEM_SHEET_DATE = "2026-09-18";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "781b5d2 2026-09-18 19:32 UTC".indexOf("STAMP") >= 0 ? "dev" : "781b5d2 2026-09-18 19:32 UTC";
+  var GFH_BUILD = "1e5e055 2026-09-18 19:34 UTC".indexOf("STAMP") >= 0 ? "dev" : "1e5e055 2026-09-18 19:34 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
