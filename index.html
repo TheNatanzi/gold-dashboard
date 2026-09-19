@@ -912,6 +912,12 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   .lcs .nt{color:var(--ink-mute);font-size:11.5px;overflow-wrap:anywhere}
   .lcs .when{font-family:var(--mono);font-size:10px;color:var(--ink-mute);text-align:right;white-space:nowrap}
   .lcs .full{grid-column:1/-1}
+  .lcs .lc-flow{margin-top:4px}
+  .lcs .lc-flow[data-flow="charge_processing"]{color:#e8b84a}
+  .lcs .lc-flow[data-flow="payment_pending"]{color:#f2a05a}
+  .lcs .lc-flow[data-flow="payment_due"]{color:var(--bad)}
+  .lcs .lc-avail{color:var(--ink-soft)}
+  .lcs .lc-avail b{color:var(--ink);font-family:var(--mono)}
   .lcs[data-st="available"] .st,.lcs[data-st="available"] .amt{color:var(--good)}
   .lcs[data-st="payment_due"] .st{color:var(--bad)}
   .lcs[data-st="charge_processing"] .st{color:#e8b84a}
@@ -2778,7 +2784,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 8b7a85e · built 2026-09-19 02:11 UTC</span>
+    <span id="verStamp" class="tnum">version: 0601e9c · built 2026-09-19 02:45 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -2869,7 +2875,17 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   const lcMoney = v => v==null ? "—" : money(Number(v));
   const lcRow = mask => _lc && _lc.cards.find(x=>x.mask===mask);
   const lcStatusOf = mask => { const r=lcRow(mask); return r ? r.status : ""; };
+  function lcFlowNote(k, r){
+    switch(k){
+      case "charge_processing": return lcMoney(r.pending_charge_sum)+" pending";
+      case "payment_pending":   return "Payment "+lcMoney(r.pending_payment_sum)+" sent, not posted yet";
+      case "payment_due":       return "Pay "+lcMoney(r.flow_pay_amount!=null ? r.flow_pay_amount : r.pay_amount);
+      case "available":         return "Paid off — nothing pending";
+    }
+    return "";
+  }
   function lcNote(r){
+    if(["charge_processing","payment_pending","payment_due"].includes(r.status)) return lcFlowNote(r.status, r);
     switch(r.status){
       case "unavailable": return r.unavailable_reason==="venmo_used"
         ? `Used this period · ${lcDay(r.period_start)} → ${lcDay(r.period_end)} · opens ${lcDay(r.reopen_date)}`
@@ -2895,10 +2911,16 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
        <span class="nt full">Period ${lcDay(r.period_start)} → ${lcDay(r.period_end)} · X Money loads ${lcMoney(r.x_loads)} earn 2%, outside the $10k</span>`;
     if(r.kind==="debit") extra =
       `<div class="mini3"><span><small>SPENT · 30 DAYS</small>${lcMoney(r.spend_30d)}</span><span><small>VENMO+PAYPAL+COSTCO</small>${lcMoney(r.spend_vpc_30d)}</span><span></span></div>`;
+    // Venmo used this period: ⚫ Unavailable AND its money flow (Medi 2026-09-18, hub 045).
+    const f = (r.status==="unavailable" && r.flow_status) ? LC_META[r.flow_status] : null;
+    const flow = f ? `<span class="st full lc-flow" data-flow="${r.flow_status}">${f[0]} ${esc(f[1])}</span>
+      <span class="nt full">${esc(lcFlowNote(r.flow_status, r))}</span>` : "";
+    const availLine = r.kind==="credit"
+      ? `<span class="nt full lc-avail">Available credit <b>${lcMoney(r.available)}</b> of ${lcMoney(r.credit_limit)}</span>` : "";
     return `<span class="st">${m[0]} ${esc(r.kind==="debit" ? r.label+" ••"+r.mask+" · "+m[1] : m[1])}</span>
       <span class="amt">${lcMoney(r.big_amount)}</span>
       <span class="nt">${esc(lcNote(r))}</span>
-      <span class="when">${stale?"⚠️ ":""}checked ${lcAgo(r.balance_checked_at)}</span>${extra}`;
+      <span class="when">${stale?"⚠️ ":""}checked ${lcAgo(r.balance_checked_at)}</span>${flow}${availLine}${extra}`;
   }
   function paintLC(){
     document.querySelectorAll(".lcs[data-lc]").forEach(el=>{
@@ -7194,7 +7216,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "8b7a85e 2026-09-19 02:11 UTC".indexOf("STAMP") >= 0 ? "dev" : "8b7a85e 2026-09-19 02:11 UTC";
+  var GFH_BUILD = "0601e9c 2026-09-19 02:45 UTC".indexOf("STAMP") >= 0 ? "dev" : "0601e9c 2026-09-19 02:45 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
