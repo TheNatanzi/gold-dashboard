@@ -948,6 +948,10 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   #matrix .card .thead small{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-mute)}
   #matrix .card .trow .l{display:flex;flex-direction:column}
   #matrix .card .trow.dim{opacity:.5}
+  /* rate + its note on ONE line (Medi 2026-09-18: "shrink the table") */
+  #matrix .card .trow.inl .l{flex-direction:row;align-items:baseline;gap:6px;min-width:0}
+  #matrix .card .trow.inl .l small{font-size:11px;color:var(--ink-soft);white-space:nowrap}
+  #matrix .card .trow.inl .pct{font-size:18px}
   #matrix .card .cline1 .pct{font-size:20px;font-weight:700;color:var(--ink)}
   #matrix .card .cline1 .bar{font-size:20px;font-weight:700}
   #matrix .card .cline1 .sm{font-size:15px}
@@ -2836,7 +2840,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: cb5af4d · built 2026-09-19 04:29 UTC</span>
+    <span id="verStamp" class="tnum">version: fb564b8 · built 2026-09-19 04:32 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3173,12 +3177,12 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
       : `<label class="avail off" title="No profit"><input type="checkbox" disabled></label>`;
     const gc = v => v>=0 ? 'good' : 'bad';
     const tierRow = (rate, sub, p, g, cls) =>
-      `<div class="trow ${cls||''}"><span class="l"><span class="pct">${pct(rate)}</span>${sub?`<small>${sub}</small>`:''}</span>
+      `<div class="trow inl ${cls||''}"><span class="l"><span class="pct">${pct(rate)}</span>${sub?`<small>${sub}</small>`:''}</span>
         <span class="r"><span class="bar ${gc(p)}">${money(p)}</span><span class="bar ${gc(g)}">${money(g)}</span></span></div>`;
     const tierTxt = `<div class="thead"><span></span><span class="r"><small>PAMP / bar</small><small>Generic / bar</small></span></div>` +
       (alt
-        ? tierRow(eff, r4037 && r4037.bonus_room!=null ? `${money(Number(r4037.bonus_room))} room left` : 'first $10k', barP, barG, tierLow?'dim':'')
-          + tierRow(alt.eff, r4037 && r4037.period_end ? `after $10k until ${lcDay(r4037.period_end)}` : 'after $10k', alt.barP, alt.barG, tierLow?'':'dim')
+        ? tierRow(eff, r4037 && r4037.bonus_room!=null ? `${money(Number(r4037.bonus_room))} left` : 'first $10k', barP, barG, (tierLow?'dim ':'')+'inl')
+          + tierRow(alt.eff, r4037 && r4037.period_end ? `til ${lcDay(r4037.period_end)}` : 'after $10k', alt.barP, alt.barG, tierLow?'':'dim')
         : tierRow(eff, '', barP, barG, ''));
     const spTxt = sp.live
       ? (c.debit
@@ -7341,7 +7345,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "cb5af4d 2026-09-19 04:29 UTC".indexOf("STAMP") >= 0 ? "dev" : "cb5af4d 2026-09-19 04:29 UTC";
+  var GFH_BUILD = "fb564b8 2026-09-19 04:32 UTC".indexOf("STAMP") >= 0 ? "dev" : "fb564b8 2026-09-19 04:32 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
