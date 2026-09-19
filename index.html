@@ -912,6 +912,8 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   .lcs .nt{color:var(--ink-mute);font-size:11.5px;overflow-wrap:anywhere}
   .lcs .when{font-family:var(--mono);font-size:10px;color:var(--ink-mute);text-align:right;white-space:nowrap}
   .lcs .full{grid-column:1/-1}
+  .col-bar.off{color:var(--ink-mute)}
+  .noroom{grid-column:1/-1;font-size:12px;color:#e8b84a;font-family:var(--mono)}
   .lcs .lc-flow{margin-top:4px}
   .lcs .lc-flow[data-flow="charge_processing"]{color:#e8b84a}
   .lcs .lc-flow[data-flow="payment_pending"]{color:#f2a05a}
@@ -2782,7 +2784,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 622ce98 · built 2026-09-19 04:01 UTC</span>
+    <span id="verStamp" class="tnum">version: d6ae4b7 · built 2026-09-19 04:04 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3059,7 +3061,11 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
     const tiers = (top, topSub, low, lowSub, lowCls) =>
       `<div class="tier">${top}<span class="u">${topSub}</span></div>` +
       `<div class="tier t2 ${lowCls}"><span class="v">${low}</span><span class="u">${lowSub}</span></div>`;
-    const barCol = (v, v2, label) => alt
+    // Live credit can't cover one bar -> the per-bar profit is theory, not money (Medi 2026-09-18).
+    const spNow = lcSpendable(c), noRoom = spNow.live && spNow.amt < buy;
+    const barCol = (v, v2, label) => noRoom
+      ? `<div class="col-bar off">—<span class="u">${label}</span></div>`
+      : alt
       ? `<div class="col-bar ${v>=0?'good':'bad'}">${tiers(money(v), label, money(v2), '&nbsp;', v2>=0?'good':'bad')}</div>`
       : `<div class="col-bar ${v>=0?'good':'bad'}">${money(v)}<span class="u">${label}</span></div>`;
     const effCol = alt
@@ -3091,7 +3097,8 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
         ${availHTML}</div>
       ${effCol}
       ${barCol(barP, alt && alt.barP, 'PAMP')}
-      ${barCol(barG, alt && alt.barG, 'GENERIC')}${c.lc ? `
+      ${barCol(barG, alt && alt.barG, 'GENERIC')}${noRoom ? `
+      <div class="noroom">Can't buy a bar: ${money(spNow.amt)} available, one bar costs ${money(buy)}</div>` : ''}${c.lc ? `
       <div class="lcs" data-lc="${c.lc}" data-st="${lcStatusOf(c.lc)}">${lcStripHTML(c.lc)}</div>` : ''}`;
   }
   /* ONLINE COSTS $10 MORE, AND THE MASTERCARD PAYS IT (Medi, 2026-08-05).
@@ -3270,7 +3277,8 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
         mx.appendChild(d); mcDone=true;
       }
       const el=document.createElement("div");
-      const win=(barType==="pamp"?x.barP:x.barG)>=0;
+      const spW=lcSpendable(x.c);
+      const win=(barType==="pamp"?x.barP:x.barG)>=0 && !(spW.live && spW.amt < x.buy);
       el.className="card "+(x.c.hero?"pinned ":"")+(win?"win":"");
       const rankTxt=x.c.hero?"★":String(x.c.order);
       // x.buy, not buy: the Mastercard's row must quote the price IT pays.
@@ -7237,7 +7245,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "622ce98 2026-09-19 04:01 UTC".indexOf("STAMP") >= 0 ? "dev" : "622ce98 2026-09-19 04:01 UTC";
+  var GFH_BUILD = "d6ae4b7 2026-09-19 04:04 UTC".indexOf("STAMP") >= 0 ? "dev" : "d6ae4b7 2026-09-19 04:04 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
