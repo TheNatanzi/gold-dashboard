@@ -2845,7 +2845,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 98b2b3e · built 2026-09-19 04:49 UTC</span>
+    <span id="verStamp" class="tnum">version: 226f37a · built 2026-09-19 04:51 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -2975,7 +2975,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
       `<div class="mini3"><span><small>USED</small>${lcMoney(r.period_used)}</span><span><small>4% ROOM LEFT</small>${lcMoney(r.bonus_room)}</span><span></span></div>
        <span class="nt full">Period ${lcDay(r.period_start)} → ${lcDay(r.period_end)} · X Money loads ${lcMoney(r.x_loads)} earn 2%, outside the $10k</span>`;
     if(r.kind==="debit") extra =
-      `<div class="mini3"><span><small>SPENT · 30 DAYS</small>${lcMoney(r.spend_30d)}</span><span><small>VENMO+PAYPAL+COSTCO</small>${lcMoney(r.spend_vpc_30d)}</span><span></span></div>`;
+      `<div class="mini3"><span><small>SPENT · 30 DAYS</small>${lcMoney(r.spend_30d)}</span><span><small>VENMO+PAYPAL+COSTCO · 30 DAYS</small>${lcMoney(r.spend_vpc_30d)}</span><span></span></div>`;
     // Venmo used this period: ⚫ Unavailable AND its money flow (Medi 2026-09-18, hub 045).
     const f = (r.status==="unavailable" && r.flow_status) ? LC_META[r.flow_status] : null;
     const flow = f ? `<span class="st full lc-flow" data-flow="${r.flow_status}">${f[0]} ${esc(f[1])}</span>
@@ -3034,7 +3034,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   function lcExtraHTML(mask){
     const r = lcRow(mask);
     if(!r) return "";
-    if(r.kind==="debit") return `<div class="mini3"><span><small>SPENT · 30 DAYS</small>${lcMoney(r.spend_30d)}</span><span><small>VENMO+PAYPAL+COSTCO</small>${lcMoney(r.spend_vpc_30d)}</span><span></span></div>`;
+    if(r.kind==="debit") return `<div class="mini3"><span><small>SPENT · 30 DAYS</small>${lcMoney(r.spend_30d)}</span><span><small>VENMO+PAYPAL+COSTCO · 30 DAYS</small>${lcMoney(r.spend_vpc_30d)}</span><span></span></div>`;
     return "";
   }
   function paintLC(){
@@ -7352,7 +7352,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "98b2b3e 2026-09-19 04:49 UTC".indexOf("STAMP") >= 0 ? "dev" : "98b2b3e 2026-09-19 04:49 UTC";
+  var GFH_BUILD = "226f37a 2026-09-19 04:51 UTC".indexOf("STAMP") >= 0 ? "dev" : "226f37a 2026-09-19 04:51 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
