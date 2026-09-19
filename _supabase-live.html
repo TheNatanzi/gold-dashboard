@@ -726,6 +726,14 @@
           // line's job is the price; availability lives in the label ("out of stock"),
           // the change-dot tooltips, and the bars accordion. Nothing is dropped — it
           // is just no longer encoded in the stroke.
+          // Carry the newest listed price on to the right edge (Medi 2026-09-18: "it stops half way").
+          // The price holds until it changes, so the line holds too — same as the buy-zone line.
+          if(n >= 1){
+            var lastC = Number(o.r.series[o.r.series.length - 1].price);
+            if(isFinite(lastC)) dd += (n ? "L" : "M") + (padL + cw).toFixed(1) + "," +
+              Math.max(padT, Math.min(padT + ch, Y(lastC))).toFixed(1);
+            if(n === 1) n = 2;
+          }
           if(n >= 2) s += '<path d="' + dd + '" fill="none" stroke="' + col +
                           '" stroke-width="2" stroke-dasharray="6 3" opacity="' + op + '"/>';
           dd = "";                                      // handled here; skip the generic draw below
