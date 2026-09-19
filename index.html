@@ -921,8 +921,10 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   #matrix .card .cl{display:inline-flex;flex:0 0 auto}
   #matrix .card .clogo.citi{background:#fff;border-radius:5px;padding:3px 4px;display:inline-flex}
   #matrix .card .cn{font-weight:640;font-size:14px;display:flex;flex-direction:column;min-width:0;flex:1}
-  #matrix .card .chs{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;text-align:right;gap:1px;max-width:48%}
-  #matrix .card .chs .hs{display:flex;flex-direction:column;align-items:flex-end}
+  #matrix .card .chs{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:flex-end;gap:2px 8px;text-align:right;margin-top:-2px}
+  #matrix .card .chs:empty{display:none}
+  #matrix .card .chs .hs{display:flex;flex-direction:row;align-items:baseline;gap:6px}
+  #matrix .card .chs .hs.row{flex-direction:row;align-items:baseline;gap:6px;flex-wrap:wrap;justify-content:flex-end}
   #matrix .card .chs .st{font-weight:680;font-size:13px}
   #matrix .card .chs .nt{font-size:11.5px;color:var(--ink-soft);font-family:var(--mono)}
   #matrix .card .chs .unav{color:var(--ink)}
@@ -2840,7 +2842,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: fb564b8 · built 2026-09-19 04:32 UTC</span>
+    <span id="verStamp" class="tnum">version: a194432 · built 2026-09-19 04:33 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3016,13 +3018,14 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
     const m = LC_META[r.status] || ["","?"];
     const stale = r.feed_broken || r.refresh_state==="failed" || (Date.now()-Date.parse(r.balance_checked_at||0))>4*3600e3;
     const f = (r.status==="unavailable" && r.flow_status) ? LC_META[r.flow_status] : null;
-    const one = (k, mm, note) => `<div class="hs" data-st="${k}"><span class="st">${mm[0]} ${esc(mm[1])}</span>${note?`<span class="nt">${esc(note)}</span>`:""}</div>`;
+    // Medi 2026-09-18: "$2,000.00 pending 🟡 Charge Processing" — amount then status, ONE line.
+    const one = (k, mm, note) => `<div class="hs row" data-st="${k}">${note?`<span class="nt">${esc(note)}</span>`:""}<span class="st">${mm[0]} ${esc(mm[1])}</span></div>`;
     // Venmo used this period: both statuses on ONE line (Medi 2026-09-18), notes on the line under.
-    if(f) return `<div class="hs" data-st="${r.flow_status}"><span class="st"><span class="unav">${m[0]} ${esc(m[1])}</span> · ${f[0]} ${esc(f[1])}</span>`
-      + `<span class="nt">${esc(lcFlowNote(r.flow_status, r))} · opens ${lcDay(r.reopen_date)}</span></div>`
-      + `<span class="when">${stale?"⚠️ ":""}checked ${lcAgo(r.balance_checked_at)}</span>`;
+    if(f) return `<div class="hs" data-st="${r.flow_status}"><span class="nt">${esc(lcFlowNote(r.flow_status, r))}</span>`
+      + `<span class="st"><span class="unav">${m[0]} ${esc(m[1])}</span> · ${f[0]} ${esc(f[1])}</span></div>`
+      + `<span class="when">· opens ${lcDay(r.reopen_date)} · ${stale?"⚠️ ":""}${lcAgo(r.balance_checked_at)}</span>`;
     return one(r.status, m, r.kind==="debit" ? (r.feed_broken ? "link broken" : "") : lcNote(r))
-      + `<span class="when">${stale?"⚠️ ":""}checked ${lcAgo(r.balance_checked_at)}</span>`;
+      + `<span class="when">· ${stale?"⚠️ ":""}${lcAgo(r.balance_checked_at)}</span>`;
   }
   // What stays at the bottom: only the extras (Smartly period numbers, X Money spend).
   function lcExtraHTML(mask){
@@ -3198,8 +3201,8 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
           ? `<span class="eq">${(sp.amt/buy*100).toFixed(1)}% of a bar × ${money(perBar)}</span><span class="big ${gc(perBar)}">${money(sp.amt/buy*perBar)}</span>`
           : `<span class="eq">0% of a bar · one costs ${money(buy)}</span><span class="big off">$0</span>`);
     return `<div class="ch">${check}<span class="cl">${cardLogo(c)}</span>
-        <div class="cn">${c.name}${c.hero?' <em class="floor">★ floor</em>':''}<small>${typeTag} · ${netTag}${tkTag}</small></div>${c.lc ? `
-        <div class="chs" data-lc="${c.lc}">${lcHeadHTML(c.lc)}</div>` : ''}</div>
+        <div class="cn">${c.name}${c.hero?' <em class="floor">★ floor</em>':''}<small>${typeTag} · ${netTag}${tkTag}</small></div></div>${c.lc ? `
+      <div class="chs" data-lc="${c.lc}">${lcHeadHTML(c.lc)}</div>` : ''}
       <div class="cline1">${tierTxt}</div>
       <div class="cline2"><span class="l"><span class="spend">${spTxt}</span></span><span class="r math">${mathTxt}</span></div>${c.lc ? `
       <div class="lcx" data-lc="${c.lc}">${lcExtraHTML(c.lc)}</div>` : ''}`;
@@ -7345,7 +7348,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "fb564b8 2026-09-19 04:32 UTC".indexOf("STAMP") >= 0 ? "dev" : "fb564b8 2026-09-19 04:32 UTC";
+  var GFH_BUILD = "a194432 2026-09-19 04:33 UTC".indexOf("STAMP") >= 0 ? "dev" : "a194432 2026-09-19 04:33 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
