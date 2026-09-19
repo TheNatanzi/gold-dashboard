@@ -921,7 +921,8 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   #matrix .card .cl{display:inline-flex;flex:0 0 auto}
   #matrix .card .clogo.citi{background:#fff;border-radius:5px;padding:3px 4px;display:inline-flex}
   #matrix .card .cn{font-weight:640;font-size:14px;display:flex;flex-direction:column;min-width:150px;flex:1}
-  #matrix .card .chs{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;text-align:right;gap:1px;flex:0 0 auto}
+  #matrix .card .chs{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;text-align:right;gap:1px;flex:0 1 auto;max-width:100%}
+  #matrix .card .chs .hs .st.unav{color:var(--ink)}
   #matrix .card .chs:empty{display:none}
   #matrix .card .chs .hs{display:flex;flex-direction:row;align-items:baseline;gap:6px;flex-wrap:wrap;justify-content:flex-end}
   #matrix .card .chs .hs > *{white-space:nowrap}
@@ -929,6 +930,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   #matrix .card .chs .st{font-weight:680;font-size:13px}
   #matrix .card .chs .nt{font-size:11.5px;color:var(--ink-soft);font-family:var(--mono)}
   #matrix .card .chs .unav{color:var(--ink)}
+  #matrix .card .chs .opens{font-weight:500;font-size:11.5px;color:var(--ink-soft);font-family:var(--mono)}
   #matrix .card .chs .when{font-size:10px;color:var(--ink-mute);font-family:var(--mono)}
   #matrix .card .chs [data-st="charge_processing"] .st{color:#e8b84a}
   #matrix .card .chs [data-st="payment_pending"] .st{color:#f2a05a}
@@ -2843,7 +2845,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 9f0df14 · built 2026-09-19 04:35 UTC</span>
+    <span id="verStamp" class="tnum">version: a94888e · built 2026-09-19 04:46 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3021,9 +3023,9 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
     const f = (r.status==="unavailable" && r.flow_status) ? LC_META[r.flow_status] : null;
     // Medi 2026-09-18: "checked 2 h ago 🟡 Charge Processing" on ONE line; the amount under it.
     const when = `<span class="when">${stale?"⚠️ ":""}checked ${lcAgo(r.balance_checked_at)}</span>`;
-    const st = f ? `<span class="st"><span class="unav">${m[0]} ${esc(m[1])}</span> · ${f[0]} ${esc(f[1])}</span>`
+    const st = f ? `<span class="st unav">${m[0]} ${esc(m[1])} <span class="opens">· opens ${lcDay(r.reopen_date)}</span></span><span class="st">${f[0]} ${esc(f[1])}</span>`
                  : `<span class="st">${m[0]} ${esc(m[1])}</span>`;
-    const note = f ? `${lcFlowNote(r.flow_status, r)} · opens ${lcDay(r.reopen_date)}`
+    const note = f ? lcFlowNote(r.flow_status, r)
                : r.kind==="debit" ? (r.feed_broken ? "link broken" : "") : lcNote(r);
     return `<div class="hs line1" data-st="${f ? r.flow_status : r.status}">${when}${st}</div>`
       + (note ? `<span class="nt">${esc(note)}</span>` : "");
@@ -7349,7 +7351,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "9f0df14 2026-09-19 04:35 UTC".indexOf("STAMP") >= 0 ? "dev" : "9f0df14 2026-09-19 04:35 UTC";
+  var GFH_BUILD = "a94888e 2026-09-19 04:46 UTC".indexOf("STAMP") >= 0 ? "dev" : "a94888e 2026-09-19 04:46 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
