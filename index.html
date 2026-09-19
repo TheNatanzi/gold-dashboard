@@ -903,6 +903,29 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
     .card>*{min-width:0}
     .cname,.col-catch,.col-bar{overflow-wrap:anywhere}
   }
+  /* Live credit status (round 2) — strip across the bottom of a card row + the bar above the matrix */
+  .lcs{grid-column:1/-1;display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:center;
+    border-top:1px dashed var(--line2);padding-top:8px;margin-top:-2px;font-size:12.5px}
+  .lcs:empty{display:none}
+  .lcs .st{font-weight:680}
+  .lcs .amt{font-family:var(--mono);font-size:15px;font-weight:680;text-align:right}
+  .lcs .nt{color:var(--ink-mute);font-size:11.5px;overflow-wrap:anywhere}
+  .lcs .when{font-family:var(--mono);font-size:10px;color:var(--ink-mute);text-align:right;white-space:nowrap}
+  .lcs .full{grid-column:1/-1}
+  .lcs[data-st="available"] .st,.lcs[data-st="available"] .amt{color:var(--good)}
+  .lcs[data-st="payment_due"] .st{color:var(--bad)}
+  .lcs[data-st="charge_processing"] .st{color:#e8b84a}
+  .lcs[data-st="payment_pending"] .st{color:#f2a05a}
+  .lcs:not([data-st="available"]):not([data-st="debit"]) .amt{color:var(--ink-mute)}
+  .lcs .mini3{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-family:var(--mono);font-size:12.5px}
+  .lcs .mini3 small{display:block;font-family:inherit;font-size:9.5px;color:var(--ink-mute);letter-spacing:.04em}
+  .lcbar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin:0 4px 12px}
+  .lc-btn{font:600 13px/1 var(--mono);padding:9px 14px;border-radius:999px;border:1px solid var(--gold-deep);
+    background:var(--panel2);color:var(--ink);cursor:pointer;min-height:36px}
+  .lc-btn:disabled{opacity:.6;cursor:progress}
+  .lc-msg{font-size:11.5px;color:var(--ink-mute);font-family:var(--mono);flex:1;min-width:0}
+  .lc-x{flex-basis:100%}
+  .lc-x .lcs{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 15px;margin:0}
   .rank{font-family:var(--mono);font-size:13px;color:var(--ink-mute);text-align:center}
   .rank.medal{font-size:15px}
   .cname{font-weight:620;font-size:14px;display:flex;flex-direction:column;gap:3px}
@@ -1706,6 +1729,14 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
     <h3>Your cards — profit per Elemetal bar</h3>
     <span id="matrixStamp">—</span>
     <div class="rail"></div>
+  </div>
+  <!-- LIVE CREDIT STATUS BAR (Live Credit round 2, Medi 2026-09-18 — ganjsta-ui docs/LIVE-CREDIT-BUILD-SPEC.md).
+       Data: Sabz hub edge function card-status (public; GET = status, POST = the same 60 s doorbell Sabz uses).
+       Exactly one status per card; only green shows real dollars. Chase Ink: no status (dad's account). -->
+  <div class="lcbar" id="lcBar">
+    <button type="button" class="lc-btn" id="lcBtn">↻ Refresh now</button>
+    <span class="lc-msg" id="lcMsg">Live credit — loading…</span>
+    <div class="lc-x" id="lcX"></div>
   </div>
   <div class="colhead">
     <div></div><div>Card</div><div class="r">Eff %</div><div class="r">Pamp $/bar</div><div class="r">Generic $/bar</div>
@@ -2747,7 +2778,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: cc8b5d1 · built 2026-09-18 22:52 UTC</span>
+    <span id="verStamp" class="tnum">version: 8b7a85e · built 2026-09-19 02:11 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -2802,13 +2833,13 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   const OWNED = [
     {name:"Chase Ink Business", biller:"Chase", net:"visa", card:2.5, tk:0, type:"Business", hero:true, order:1, limit:20000,
      catch:"Alert-floor card. Best as a sign-up-bonus min-spend, not steady flips."},
-    {name:"Costco Anywhere Visa Business", biller:"Citi", net:"visa", card:2.0, tk:1.8, type:"Business", order:2, limit:15000,
+    {name:"Costco Anywhere Visa Business", biller:"Citi", net:"visa", card:2.0, tk:1.8, type:"Business", order:2, limit:15000, lc:"6848",
      catch:"Your Costco Citi Business card. Reward paid once/yr as a Feb certificate. In-store OK."},
-    {name:"Venmo Credit Card", biller:"Synchrony", net:"visa", card:3.0, tk:2.13, type:"Personal", order:3, limit:20000,
+    {name:"Venmo Credit Card", biller:"Synchrony", net:"visa", card:3.0, tk:2.13, type:"Personal", order:3, limit:20000, lc:"4334",
      catch:"Verified 3% at Costco + Synchrony Taekus — your best per-bar card. In-store OK."},
     // alt = the SAME card's second tier, shown inside its box (Medi 2026-09-18): 4% on the first $10k
     // of posted spend each cycle, 2% after that (CC5). The headline + buying power stay at 4%.
-    {name:"U.S. Bank Smartly (4% / 2%)", biller:"U.S. Bank", net:"visa", card:4.0, tk:0, type:"Personal", order:4, limit:10000,
+    {name:"U.S. Bank Smartly (4% / 2%)", biller:"U.S. Bank", net:"visa", card:4.0, tk:0, type:"Personal", order:4, limit:10000, lc:"4037",
      alt:{card:2.0, label:"after $10k"},
      catch:"Needs ~$100k parked at U.S. Bancorp. 4% on the first $10k each cycle, then 2%. In-store OK."},
     {name:"Citi Double Cash", biller:"Citi", net:"mc", card:2.0, tk:0, type:"Personal", order:5, limit:8300,
@@ -2816,6 +2847,95 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   ];
   // credit-limit availability — default every card ON (balance available)
   const avail={}; OWNED.forEach(c=>avail[c.name]=true);
+
+  /* ---- LIVE CREDIT status (round 2, 2026-09-18) ----
+     The status rule lives in the Sabz database (view v_card_status, hub 044) so this page and Sabz
+     can never disagree; this page only draws it. Only 🟢 shows real available credit; every other
+     status shows $0 — that is what can safely go on the card right now. Chase Ink: no status. */
+  const LC_URL = "https://fnqhiozovmhpbnilkwrd.supabase.co/functions/v1/card-status";
+  const LC_META = {
+    unavailable:       ["⚫","Unavailable"],
+    charge_processing: ["🟡","Charge Processing"],
+    payment_pending:   ["🟠","Payment Pending"],
+    payment_due:       ["🔴","Charge Posted & PAYMENT DUE"],
+    available:         ["🟢","Payment Posted & Available Credit"],
+    debit:             ["🏦","Debit balance"],
+  };
+  let _lc = null;          // last good answer {readAt, cards:[...]}
+  let _lcTap = 0;          // when Refresh now was tapped (ms); 0 = not waiting
+  const lcDay = d => d ? new Date(d+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"}) : "—";
+  const lcAgo = t => { if(!t) return "never"; const m=Math.round((Date.now()-Date.parse(t))/60000);
+    return m<1?"just now":m<60?m+" min ago":m<2880?Math.round(m/60)+" h ago":Math.round(m/1440)+" d ago"; };
+  const lcMoney = v => v==null ? "—" : money(Number(v));
+  const lcRow = mask => _lc && _lc.cards.find(x=>x.mask===mask);
+  const lcStatusOf = mask => { const r=lcRow(mask); return r ? r.status : ""; };
+  function lcNote(r){
+    switch(r.status){
+      case "unavailable": return r.unavailable_reason==="venmo_used"
+        ? `Used this period · ${lcDay(r.period_start)} → ${lcDay(r.period_end)} · opens ${lcDay(r.reopen_date)}`
+        : `Bank is holding ${lcMoney(r.held_amount)} after your payment`;
+      case "charge_processing": return "A charge is still pending — don't pay yet";
+      case "payment_pending":   return "Payment sent, not posted yet";
+      case "payment_due":       return "Pay "+lcMoney(r.pay_amount);
+      case "available":         return "Safe to use";
+      case "debit":             return r.feed_broken
+        ? `Through ${new Date(r.balance_checked_at).toLocaleDateString("en-US",{month:"short",day:"numeric"})} — X Money link broken, needs a relink`
+        : "Spending power = balance";
+    }
+    return "";
+  }
+  function lcStripHTML(mask){
+    const r = lcRow(mask);
+    if(!r) return "";
+    const m = LC_META[r.status] || ["","?"];
+    const stale = r.feed_broken || r.refresh_state==="failed" || (Date.now()-Date.parse(r.balance_checked_at||0))>4*3600e3;
+    let extra = "";
+    if(mask==="4037" && r.rewards!=null) extra =
+      `<div class="mini3"><span><small>USED</small>${lcMoney(r.period_used)}</span><span><small>4% ROOM LEFT</small>${lcMoney(r.bonus_room)}</span><span><small>REWARDS SO FAR</small><b>${lcMoney(r.rewards)}</b></span></div>
+       <span class="nt full">Period ${lcDay(r.period_start)} → ${lcDay(r.period_end)} · X Money loads ${lcMoney(r.x_loads)} earn 2%, outside the $10k</span>`;
+    if(r.kind==="debit") extra =
+      `<div class="mini3"><span><small>SPENT · 30 DAYS</small>${lcMoney(r.spend_30d)}</span><span><small>VENMO+PAYPAL+COSTCO</small>${lcMoney(r.spend_vpc_30d)}</span><span></span></div>`;
+    return `<span class="st">${m[0]} ${esc(r.kind==="debit" ? r.label+" ••"+r.mask+" · "+m[1] : m[1])}</span>
+      <span class="amt">${lcMoney(r.big_amount)}</span>
+      <span class="nt">${esc(lcNote(r))}</span>
+      <span class="when">${stale?"⚠️ ":""}checked ${lcAgo(r.balance_checked_at)}</span>${extra}`;
+  }
+  function paintLC(){
+    document.querySelectorAll(".lcs[data-lc]").forEach(el=>{
+      el.dataset.st = lcStatusOf(el.dataset.lc);
+      el.innerHTML = lcStripHTML(el.dataset.lc);
+    });
+    const x=$("lcX");
+    if(x){ const r=_lc && _lc.cards.find(c=>c.kind==="debit");
+      x.innerHTML = r ? `<div class="lcs" data-st="debit">${lcStripHTML(r.mask)}</div>` : ""; }
+  }
+  // Returns true when there is nothing more to wait for.
+  async function loadLC(){
+    try{
+      const res = await fetch(LC_URL, {cache:"no-store"});
+      const j = await res.json();
+      if(!j.ok) throw new Error(j.error||("HTTP "+res.status));
+      _lc = j; paintLC();
+      const credit = j.cards.filter(c=>c.kind==="credit");
+      const done = credit.every(c=>c.refresh_finished_at && Date.parse(c.refresh_finished_at)>=_lcTap-5000);
+      if(_lcTap && !done && Date.now()-_lcTap<120000){ setTxt("lcMsg","Asking the banks… usually 15–60 seconds."); return false; }
+      if(_lcTap){ _lcTap=0; const b=$("lcBtn"); if(b){ b.disabled=false; b.textContent="↻ Refresh now"; } }
+      const newest = credit.map(c=>c.balance_checked_at).filter(Boolean).sort().pop();
+      setTxt("lcMsg", "Banks checked "+lcAgo(newest)+" · never pay while a charge is pending");
+      return true;
+    }catch(e){ setTxt("lcMsg","⚠️ Live credit unavailable ("+(e.message||e)+")"); return true; }
+  }
+  async function tapLC(){
+    const b=$("lcBtn"); if(b){ b.disabled=true; b.textContent="⏳ Updating…"; }
+    try{
+      const r = await (await fetch(LC_URL,{method:"POST"})).json();
+      if(r.ok){ _lcTap=Date.now(); setTxt("lcMsg","Asking the banks… usually 15–60 seconds.");
+        const poll=async()=>{ const fin=await loadLC(); if(!fin) setTimeout(poll,3000); };
+        setTimeout(poll,2000); return; }
+      setTxt("lcMsg", r.cooldown ? `Just refreshed — try again in ${r.retryAfterS||60} s (bank limit).` : "⚠️ "+(r.error||"Refresh did not start."));
+    }catch(e){ setTxt("lcMsg","⚠️ Refresh failed ("+(e.message||e)+")"); }
+    if(b){ b.disabled=false; b.textContent="↻ Refresh now"; }
+  }
 
   const $ = id => document.getElementById(id);
   // Write only if the element still exists. Bands get retired from this page fairly often
@@ -2932,7 +3052,8 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
         ${availHTML}</div>
       ${effCol}
       ${barCol(barP, alt && alt.barP, 'PAMP')}
-      ${barCol(barG, alt && alt.barG, 'GENERIC')}`;
+      ${barCol(barG, alt && alt.barG, 'GENERIC')}${c.lc ? `
+      <div class="lcs" data-lc="${c.lc}" data-st="${lcStatusOf(c.lc)}">${lcStripHTML(c.lc)}</div>` : ''}`;
   }
   /* ONLINE COSTS $10 MORE, AND THE MASTERCARD PAYS IT (Medi, 2026-08-05).
      `buy` is ALWAYS an in-store basis — either June's register price, or the online
@@ -3476,6 +3597,8 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
     // quote a pull time next to a number Medi had just changed.
     markSpotManual(); compute();
   });
+  { const b=$("lcBtn"); if(b) b.addEventListener("click", tapLC); }
+  loadLC(); setInterval(()=>{ if(!_lcTap) loadLC(); }, 60000);
   $("matrix").addEventListener("change",e=>{
     const cb=e.target.closest('input[type=checkbox][data-card]'); if(!cb)return;
     avail[cb.dataset.card]=cb.checked;
@@ -7071,7 +7194,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "cc8b5d1 2026-09-18 22:52 UTC".indexOf("STAMP") >= 0 ? "dev" : "cc8b5d1 2026-09-18 22:52 UTC";
+  var GFH_BUILD = "8b7a85e 2026-09-19 02:11 UTC".indexOf("STAMP") >= 0 ? "dev" : "8b7a85e 2026-09-19 02:11 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
