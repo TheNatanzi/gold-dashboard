@@ -930,8 +930,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
     background:var(--panel2);color:var(--ink);cursor:pointer;min-height:36px}
   .lc-btn:disabled{opacity:.6;cursor:progress}
   .lc-msg{font-size:11.5px;color:var(--ink-mute);font-family:var(--mono);flex:1;min-width:0}
-  .lc-x{flex-basis:100%}
-  .lc-x .lcs{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 15px;margin:0}
+  .card.xmoney .col-bar,.card.xmoney .col-eff .big{color:var(--ink-mute)}
   .rank{font-family:var(--mono);font-size:13px;color:var(--ink-mute);text-align:center}
   .rank.medal{font-size:15px}
   .cname{font-weight:620;font-size:14px;display:flex;flex-direction:column;gap:3px}
@@ -1742,7 +1741,6 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   <div class="lcbar" id="lcBar">
     <button type="button" class="lc-btn" id="lcBtn">↻ Refresh now</button>
     <span class="lc-msg" id="lcMsg">Live credit — loading…</span>
-    <div class="lc-x" id="lcX"></div>
   </div>
   <div class="colhead">
     <div></div><div>Card</div><div class="r">Eff %</div><div class="r">Pamp $/bar</div><div class="r">Generic $/bar</div>
@@ -2784,7 +2782,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 0601e9c · built 2026-09-19 02:45 UTC</span>
+    <span id="verStamp" class="tnum">version: 5e7998a · built 2026-09-19 02:47 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -2917,19 +2915,25 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
       <span class="nt full">${esc(lcFlowNote(r.flow_status, r))}</span>` : "";
     const availLine = r.kind==="credit"
       ? `<span class="nt full lc-avail">Available credit <b>${lcMoney(r.available)}</b> of ${lcMoney(r.credit_limit)}</span>` : "";
-    return `<span class="st">${m[0]} ${esc(r.kind==="debit" ? r.label+" ••"+r.mask+" · "+m[1] : m[1])}</span>
+    return `<span class="st">${m[0]} ${esc(r.kind==="debit" ? m[1]+" ••"+r.mask : m[1])}</span>
       <span class="amt">${lcMoney(r.big_amount)}</span>
       <span class="nt">${esc(lcNote(r))}</span>
       <span class="when">${stale?"⚠️ ":""}checked ${lcAgo(r.balance_checked_at)}</span>${flow}${availLine}${extra}`;
+  }
+  function xMoneyRowHTML(){
+    return `<div class="rank">·</div>
+      <div class="cname">X Money Debit
+        <div class="chips"><span class="chip pers">● PERSONAL</span><span class="chip visa">VISA · in-store+online</span><span class="chip notk">DEBIT · not in buying power</span></div></div>
+      <div class="col-eff"><div class="big">—</div><div class="sm">debit</div></div>
+      <div class="col-bar">—<span class="u">PAMP</span></div>
+      <div class="col-bar">—<span class="u">GENERIC</span></div>
+      <div class="lcs" data-lc="8783" data-st="${lcStatusOf('8783')}">${lcStripHTML('8783')}</div>`;
   }
   function paintLC(){
     document.querySelectorAll(".lcs[data-lc]").forEach(el=>{
       el.dataset.st = lcStatusOf(el.dataset.lc);
       el.innerHTML = lcStripHTML(el.dataset.lc);
     });
-    const x=$("lcX");
-    if(x){ const r=_lc && _lc.cards.find(c=>c.kind==="debit");
-      x.innerHTML = r ? `<div class="lcs" data-st="debit">${lcStripHTML(r.mask)}</div>` : ""; }
   }
   // Returns true when there is nothing more to wait for.
   async function loadLC(){
@@ -3240,7 +3244,10 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
     // matrix: fixed order, Visa group then MC divider then MC group
     const rows=OWNED.slice().sort((a,b)=>a.order-b.order).map(c=>computeCard(c,buy,lossP,lossG,prem));
     const mx=$("matrix"); mx.innerHTML=""; let mcDone=false;
+    const addX = () => { const d=document.createElement("div"); d.className="card xmoney"; d.innerHTML=xMoneyRowHTML(); mx.appendChild(d); };
+    let xDone=false;
     rows.forEach(x=>{
+      if(x.c.net==="mc" && !xDone){ addX(); xDone=true; }   // X Money sits with the Visa cards
       if(x.c.net==="mc" && !mcDone){
         const d=document.createElement("div"); d.className="divider";
         d.innerHTML=`<span class="lbl">🌐 Online only · Mastercard <b>— works on Costco.com, not the register</b>${
@@ -3257,6 +3264,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
       el.innerHTML=rowHTML(x.c, rankTxt, x.eff, x.barP, x.barG, x.buy, x.up, x.alt);
       mx.appendChild(el);
     });
+    if(!xDone) addX();
 
     // BUYING POWER band — split into its own fn so an availability toggle recomputes
     // ONLY the band (avail is its only input) and never rebuilds the matrix / drops focus.
@@ -7216,7 +7224,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "0601e9c 2026-09-19 02:45 UTC".indexOf("STAMP") >= 0 ? "dev" : "0601e9c 2026-09-19 02:45 UTC";
+  var GFH_BUILD = "5e7998a 2026-09-19 02:47 UTC".indexOf("STAMP") >= 0 ? "dev" : "5e7998a 2026-09-19 02:47 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
