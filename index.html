@@ -2845,7 +2845,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: a94888e · built 2026-09-19 04:46 UTC</span>
+    <span id="verStamp" class="tnum">version: 7d559f9 · built 2026-09-19 04:47 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3196,13 +3196,12 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
           : `<span>${money(sp.amt)} <span class="lim">/ ${money(c.limit)}</span></span><small class="lab">${
               r4037 && r4037.period_used!=null ? `USED THIS PERIOD ${lcMoney(r4037.period_used)}` : `available${sp.why?` · ${sp.why}`:""} · live`}</small>`)
       : `${money(sp.amt)}<small class="lab">limit · no bank link</small>`;
-    const mathTxt = bars>0
-      ? `<span class="eq">${bars} bar${bars===1?"":"s"} × ${money(perBar)}</span><span class="big ${cycle>=0?'good':'bad'}">${money(cycle)}</span>`
-      // Under one bar: show the share of a bar this credit covers (split-tender makes it real money,
-      // Medi 2026-09-18) — e.g. $100 / $4,409.99 = 2.3% of a bar × $582.29.
-      : (sp.amt > 0
-          ? `<span class="eq">${(sp.amt/buy*100).toFixed(1)}% of a bar × ${money(perBar)}</span><span class="big ${gc(perBar)}">${money(sp.amt/buy*perBar)}</span>`
-          : `<span class="eq">0% of a bar · one costs ${money(buy)}</span><span class="big off">$0</span>`);
+    // Medi 2026-09-18: "I want the % for all of them" — share of a bar (split-tender makes partial bars real),
+    // never floored to whole bars: e.g. $7,808 / $4,159.99 = 187.7% of a bar × per-bar profit.
+    const share = buy>0 ? sp.amt/buy : 0;
+    const mathTxt = share > 0
+      ? `<span class="eq">${(share*100).toFixed(1)}% of a bar × ${money(perBar)}</span><span class="big ${gc(perBar)}">${money(share*perBar)}</span>`
+      : `<span class="eq">0% of a bar · one costs ${money(buy)}</span><span class="big off">$0</span>`;
     return `<div class="ch">${check}<span class="cl">${cardLogo(c)}</span>
         <div class="cn">${c.name}${c.hero?' <em class="floor">★ floor</em>':''}<small>${typeTag} · ${netTag}${tkTag}</small></div>${c.lc ? `
         <div class="chs" data-lc="${c.lc}">${lcHeadHTML(c.lc)}</div>` : ''}</div>
@@ -7351,7 +7350,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "a94888e 2026-09-19 04:46 UTC".indexOf("STAMP") >= 0 ? "dev" : "a94888e 2026-09-19 04:46 UTC";
+  var GFH_BUILD = "7d559f9 2026-09-19 04:47 UTC".indexOf("STAMP") >= 0 ? "dev" : "7d559f9 2026-09-19 04:47 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
