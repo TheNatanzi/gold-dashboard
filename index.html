@@ -913,6 +913,34 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   .lcs .when{font-family:var(--mono);font-size:10px;color:var(--ink-mute);text-align:right;white-space:nowrap}
   .lcs .full{grid-column:1/-1}
   .col-bar.off{color:var(--ink-mute)}
+  /* compact card box (2026-09-18) */
+  #matrix .card{display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:12px 14px}
+  #matrix .card .lcs .amt,#matrix .card .lcs .lc-avail{display:none}
+  #matrix .card .lcs{grid-template-columns:1fr auto}
+  #matrix .card .ch{display:flex;align-items:center;gap:10px;min-width:0}
+  #matrix .card .cl{display:inline-flex;flex:0 0 auto}
+  #matrix .card .clogo.citi{background:#fff;border-radius:5px;padding:3px 4px;display:inline-flex}
+  #matrix .card .cn{font-weight:640;font-size:14px;display:flex;flex-direction:column;min-width:0}
+  #matrix .card .cn small{font-weight:500;font-size:11px;color:var(--ink-mute);font-family:var(--mono)}
+  #matrix .card .cn .floor{font-style:normal;font-size:11px;color:var(--gold);font-family:var(--mono)}
+  #matrix .card .avail{margin:0}
+  #matrix .card .cline1{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;font-family:var(--mono)}
+  #matrix .card .cline1 .pct{font-size:20px;font-weight:700;color:var(--ink)}
+  #matrix .card .cline1 .bar{font-size:20px;font-weight:700}
+  #matrix .card .cline1 .sm{font-size:15px}
+  #matrix .card .cline1 small{font-size:11px;color:var(--ink-mute);font-weight:500;margin-left:2px}
+  #matrix .card .cline1 .gen,#matrix .card .cline1 .sep{font-size:12px;color:var(--ink-mute)}
+  #matrix .card .good{color:var(--good)} #matrix .card .bad{color:var(--bad)}
+  #matrix .card .cline2{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;font-family:var(--mono);
+    background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:8px 10px}
+  #matrix .card .cline2 .spend{font-size:18px;font-weight:700;color:var(--ink)}
+  #matrix .card .cline2 .big{font-size:20px;font-weight:720}
+  #matrix .card .cline2 .big.off{color:var(--ink-mute)}
+  #matrix .card .cline2 .eq{font-size:13px;color:var(--ink-soft)}
+  #matrix .card .lab{font-size:11px;font-weight:500;color:var(--ink-mute)}
+  #matrix .card .muted{color:var(--ink-mute);font-size:12px}
+  #matrix .card .lcs{border-top:1px dashed var(--line2);padding-top:6px;margin-top:0}
+  #matrix .card .lcs .mini3{font-size:11.5px}
   .noroom{grid-column:1/-1;font-size:12px;color:#e8b84a;font-family:var(--mono)}
   .lcs .lc-flow{margin-top:4px}
   .lcs .lc-flow[data-flow="charge_processing"]{color:#e8b84a}
@@ -1744,7 +1772,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
     <button type="button" class="lc-btn" id="lcBtn">↻ Refresh now</button>
     <span class="lc-msg" id="lcMsg">Live credit — loading…</span>
   </div>
-  <div class="colhead">
+  <div class="colhead" style="display:none">
     <div></div><div>Card</div><div class="r">Eff %</div><div class="r">Pamp $/bar</div><div class="r">Generic $/bar</div>
   </div>
   <div class="matrix" id="matrix"></div>
@@ -2784,7 +2812,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: d6ae4b7 · built 2026-09-19 04:04 UTC</span>
+    <span id="verStamp" class="tnum">version: 0a22d14 · built 2026-09-19 04:08 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -2922,13 +2950,24 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
       <span class="nt">${esc(lcNote(r))}</span>
       <span class="when">${stale?"⚠️ ":""}checked ${lcAgo(r.balance_checked_at)}</span>${flow}${availLine}${extra}`;
   }
+  /* Card logos — the SAME vector lockups Sabz draws (ganjsta-ui apps/ganjsta-next/src/Marks.tsx, CardRowMark):
+     Costco tile, U.S. Bank shield, Venmo tile, citi wordmark, X tile. Chase has no Sabz mark (never in Sabz,
+     dad's account) — a plain Chase-blue tile here. Nothing fetched. Medi 2026-09-18: "same logo system". */
+  function cardLogo(c){
+    const n = (c.name + " " + (c.lc||"")).toLowerCase(), h = 30;
+    if (n.includes("costco")) return `<svg class="clogo" viewBox="0 0 24 24" width="${h}" height="${h}" aria-label="Costco"><rect width="24" height="24" rx="5" fill="#E31837"/><text x="12" y="16.5" text-anchor="middle" font-size="15" font-weight="900" font-style="italic" fill="#fff" font-family="'Arial Black',Arial,Helvetica,sans-serif">C</text><rect x="5" y="19" width="14" height="2.2" rx="1" fill="#005DAA"/></svg>`;
+    if (n.includes("smartly") || n.includes("u.s. bank")) return `<svg class="clogo" viewBox="0 0 24 26" width="${h*24/26}" height="${h}" aria-label="U.S. Bank"><path d="M2.5 1.5 H21.5 V13 C21.5 19.6 16.8 22.8 12 24.8 C7.2 22.8 2.5 19.6 2.5 13 Z" fill="#E01A13"/><text x="12" y="15.8" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="Arial,Helvetica,sans-serif">us</text></svg>`;
+    if (n.includes("venmo")) return `<svg class="clogo" viewBox="0 0 24 24" width="${h}" height="${h}" aria-label="Venmo"><rect width="24" height="24" rx="5" fill="#008CFF"/><path d="M16.6 4.5c.6 1 .9 2 .9 3.3 0 4-3.4 9.2-6.2 12.9H5.1L2.6 5.6l5.5-.5 1.3 10.7c1.2-2 2.8-5.2 2.8-7.4 0-1.2-.2-2-.5-2.7l5-1.2z" fill="#fff"/></svg>`;
+    if (n.includes("citi")) return `<span class="clogo citi"><svg viewBox="0 0 60 20" width="${h*1.6}" height="${h*0.54}" aria-label="Citi"><text x="1" y="17" font-family="Arial,Helvetica,sans-serif" font-size="19" font-weight="700" fill="#03497E">citi</text><path d="M28 7.4 Q41 -2.4 54 7.4" fill="none" stroke="#E4002B" stroke-width="2.6" stroke-linecap="round"/></svg></span>`;
+    if (n.includes("x money")) return `<svg class="clogo" viewBox="0 0 24 24" width="${h}" height="${h}" aria-label="X Money"><rect width="24" height="24" rx="5" fill="#000"/><path d="M6 5.5h3.4l3 4.1 3.4-4.1H18l-4.7 5.6L18.4 18.5h-3.4l-3.2-4.4-3.6 4.4H6l5-6z" fill="#fff"/></svg>`;
+    if (n.includes("chase")) return `<svg class="clogo" viewBox="0 0 24 24" width="${h}" height="${h}" aria-label="Chase"><rect width="24" height="24" rx="5" fill="#117ACA"/><path d="M9 5h7l3 3H9zM19 9v7l-3 3V9zM15 19H8l-3-3h10zM5 15V8l3-3v10z" fill="#fff"/></svg>`;
+    return "";
+  }
   function xMoneyRowHTML(){
-    return `<div class="rank">·</div>
-      <div class="cname">X Money Debit
-        <div class="chips"><span class="chip pers">● PERSONAL</span><span class="chip visa">VISA · in-store+online</span><span class="chip notk">DEBIT · not in buying power</span></div></div>
-      <div class="col-eff"><div class="big">—</div><div class="sm">debit</div></div>
-      <div class="col-bar">—<span class="u">PAMP</span></div>
-      <div class="col-bar">—<span class="u">GENERIC</span></div>
+    const r = lcRow("8783");
+    return `<div class="ch"><span class="cl">${cardLogo({name:"X Money"})}</span><div class="cn">X Money Debit<small>debit · not in buying power</small></div></div>
+      <div class="cline1 muted"><span>Debit card — no reward model on this page</span></div>
+      <div class="cline2"><span class="big">${r ? lcMoney(r.big_amount) : "—"}</span><span class="lab">balance${r && r.feed_broken ? " · ⚠️ link broken" : " · live"}</span></div>
       <div class="lcs" data-lc="8783" data-st="${lcStatusOf('8783')}">${lcStripHTML('8783')}</div>`;
   }
   // Spendable credit for Buying power. Live cards: the bank's available credit, except a used Venmo
@@ -3061,44 +3100,39 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
     const tiers = (top, topSub, low, lowSub, lowCls) =>
       `<div class="tier">${top}<span class="u">${topSub}</span></div>` +
       `<div class="tier t2 ${lowCls}"><span class="v">${low}</span><span class="u">${lowSub}</span></div>`;
-    // Live credit can't cover one bar -> the per-bar profit is theory, not money (Medi 2026-09-18).
-    const spNow = lcSpendable(c), noRoom = spNow.live && spNow.amt < buy;
-    const barCol = (v, v2, label) => noRoom
-      ? `<div class="col-bar off">—<span class="u">${label}</span></div>`
-      : alt
-      ? `<div class="col-bar ${v>=0?'good':'bad'}">${tiers(money(v), label, money(v2), '&nbsp;', v2>=0?'good':'bad')}</div>`
-      : `<div class="col-bar ${v>=0?'good':'bad'}">${money(v)}<span class="u">${label}</span></div>`;
-    const effCol = alt
-      ? `<div class="col-eff">${tiers(`<span class="big">${pct(eff)}</span>`, 'first $10k', pct(alt.eff), alt.label, '')}</div>`
-      : `<div class="col-eff"><div class="big">${pct(eff)}</div><div class="sm">${pct(c.card)}${c.tk?` + ${pct(c.tk)}`:''}</div></div>`;
-    // Say the surcharge out loud on the chip. A per-bar figure that is $9.80 worse than
-    // the card above it, with nothing on screen explaining why, reads as a bug.
-    const netChip = c.net==="visa"
-      ? `<span class="chip visa">VISA · in-store+online</span>`
-      : `<span class="chip mc">MC · online only${up>0?` · +${money(up)}/bar`:``}</span>`;
-    const tkChip = c.tk>0 ? `<span class="chip tk">+Taekus ${c.biller} ${c.tk}%</span>` : `<span class="chip notk">no Taekus</span>`;
-    const typeChip = c.type==="Business"
-      ? `<span class="chip biz">● BUSINESS</span>`
-      : `<span class="chip pers">● PERSONAL</span>`;
-    const profitable = barP>0;
-    const limK = "$"+(c.limit/1000)+"k";
+    /* Compact card box (Medi 2026-09-18: "shrink it", "the line with the per bar %, then the math for my
+       credit limit under it — both prominent"). LINE 1 = reward % + profit per bar. LINE 2 = what THIS
+       card's credit buys right now: spendable ÷ one bar = whole bars × profit per bar. */
+    const typeTag = c.type==="Business" ? "Business" : "Personal";
+    const netTag  = c.net==="visa" ? "Visa · in-store" : `MC · online only${up>0?` +${money(up)}/bar`:""}`;
+    const tkTag   = c.tk>0 ? ` · +Taekus ${c.tk}%` : "";
     const sp = lcSpendable(c);
-    const availTxt = sp.live
-      ? `${money(sp.amt)} available${sp.why?` <em>${sp.why}</em>`:""} <em>of ${limK} · live</em>`
-      : `${limK} limit available`;
-    const availHTML = mcLocked(c)
-      ? `<label class="avail off"><input type="checkbox" disabled> ${limK} limit <em>excluded · Costco.com sold out</em></label>`
+    // Smartly: once the $10k 4% bucket is used up this period, a new bar earns the 2% tier.
+    const r4037 = c.lc==="4037" ? lcRow("4037") : null;
+    const tierLow = !!(alt && r4037 && r4037.bonus_room!=null && Number(r4037.bonus_room) < buy);
+    const perBar = tierLow ? alt.barP : barP;
+    const bars = Math.max(0, Math.floor(sp.amt / buy));
+    const cycle = bars * perBar;
+    const limK = "$"+(c.limit/1000)+"k";
+    const profitable = barP>0;
+    const check = mcLocked(c)
+      ? `<label class="avail off" title="Costco.com sold out"><input type="checkbox" disabled></label>`
       : profitable
-      ? `<label class="avail"><input type="checkbox" data-card="${c.name}" ${avail[c.name]?"checked":""}> ${availTxt}</label>`
-      : `<label class="avail off"><input type="checkbox" disabled> ${limK} limit <em>excluded · no profit</em></label>`;
-    return `<div class="rank ${c.hero?'medal':''}">${rankTxt}</div>
-      <div class="cname">${c.name}${c.hero?' <small>★ floor</small>':''}
-        <div class="chips">${typeChip}${netChip}${tkChip}</div>
-        ${availHTML}</div>
-      ${effCol}
-      ${barCol(barP, alt && alt.barP, 'PAMP')}
-      ${barCol(barG, alt && alt.barG, 'GENERIC')}${noRoom ? `
-      <div class="noroom">Can't buy a bar: ${money(spNow.amt)} available, one bar costs ${money(buy)}</div>` : ''}${c.lc ? `
+      ? `<label class="avail" title="Count this card in Buying power"><input type="checkbox" data-card="${c.name}" ${avail[c.name]?"checked":""}></label>`
+      : `<label class="avail off" title="No profit"><input type="checkbox" disabled></label>`;
+    const tierTxt = alt
+      ? `<span class="pct">${pct(eff)}</span><span class="bar ${barP>=0?'good':'bad'}">${money(barP)}<small>/bar</small></span><span class="sep">→</span><span class="pct sm">${pct(alt.eff)}</span><span class="bar sm ${alt.barP>=0?'good':'bad'}">${money(alt.barP)}<small>/bar after $10k</small></span>`
+      : `<span class="pct">${pct(eff)}</span><span class="bar ${barP>=0?'good':'bad'}">${money(barP)}<small>/bar</small></span><span class="gen">generic ${money(barG)}</span>`;
+    const spTxt = sp.live
+      ? `${money(sp.amt)} <span class="lab">available${sp.why?` · ${sp.why}`:""} · of ${limK} · live</span>`
+      : `${money(sp.amt)} <span class="lab">limit · no bank link</span>`;
+    const mathTxt = bars>0
+      ? `<span class="eq">= ${bars} bar${bars===1?"":"s"} × ${money(perBar)}${tierLow?" (2% tier)":""} =</span> <span class="big ${cycle>=0?'good':'bad'}">${money(cycle)}</span>`
+      : `<span class="eq">= 0 bars</span> <span class="big off">$0</span> <span class="lab">one bar costs ${money(buy)}</span>`;
+    return `<div class="ch">${check}<span class="cl">${cardLogo(c)}</span>
+        <div class="cn">${c.name}${c.hero?' <em class="floor">★ floor</em>':''}<small>${typeTag} · ${netTag}${tkTag}</small></div></div>
+      <div class="cline1">${tierTxt}</div>
+      <div class="cline2"><span class="spend">${spTxt}</span><span class="math">${mathTxt}</span></div>${c.lc ? `
       <div class="lcs" data-lc="${c.lc}" data-st="${lcStatusOf(c.lc)}">${lcStripHTML(c.lc)}</div>` : ''}`;
   }
   /* ONLINE COSTS $10 MORE, AND THE MASTERCARD PAYS IT (Medi, 2026-08-05).
@@ -7245,7 +7279,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "d6ae4b7 2026-09-19 04:04 UTC".indexOf("STAMP") >= 0 ? "dev" : "d6ae4b7 2026-09-19 04:04 UTC";
+  var GFH_BUILD = "0a22d14 2026-09-19 04:08 UTC".indexOf("STAMP") >= 0 ? "dev" : "0a22d14 2026-09-19 04:08 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
