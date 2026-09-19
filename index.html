@@ -924,16 +924,22 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   #matrix .card .cn small{font-weight:500;font-size:11px;color:var(--ink-mute);font-family:var(--mono)}
   #matrix .card .cn .floor{font-style:normal;font-size:11px;color:var(--gold);font-family:var(--mono)}
   #matrix .card .avail{margin:0}
-  #matrix .card .cline1{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;font-family:var(--mono)}
+  #matrix .card .cline1{display:flex;flex-direction:column;gap:2px;font-family:var(--mono)}
+  #matrix .card .thead,#matrix .card .trow{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  #matrix .card .thead .r,#matrix .card .trow .r{display:grid;grid-template-columns:repeat(2,minmax(96px,auto));gap:12px;text-align:right}
+  #matrix .card .thead small{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-mute)}
+  #matrix .card .trow .l{display:flex;flex-direction:column}
+  #matrix .card .trow.dim{opacity:.5}
   #matrix .card .cline1 .pct{font-size:20px;font-weight:700;color:var(--ink)}
   #matrix .card .cline1 .bar{font-size:20px;font-weight:700}
   #matrix .card .cline1 .sm{font-size:15px}
   #matrix .card .cline1 small{font-size:11px;color:var(--ink-mute);font-weight:500;margin-left:2px}
   #matrix .card .cline1 .gen,#matrix .card .cline1 .sep{font-size:12px;color:var(--ink-mute)}
   #matrix .card .good{color:var(--good)} #matrix .card .bad{color:var(--bad)}
-  #matrix .card .cline2{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;font-family:var(--mono);
+  #matrix .card .cline2{display:flex;justify-content:space-between;align-items:center;gap:10px;font-family:var(--mono);
     background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:8px 10px}
-  #matrix .card .cline2 .spend{font-size:18px;font-weight:700;color:var(--ink)}
+  #matrix .card .cline2 .spend{font-size:18px;font-weight:700;color:var(--ink);display:flex;flex-direction:column}
+  #matrix .card .cline2 .math{display:flex;flex-direction:column;align-items:flex-end;text-align:right}
   #matrix .card .cline2 .big{font-size:20px;font-weight:720}
   #matrix .card .cline2 .big.off{color:var(--ink-mute)}
   #matrix .card .cline2 .eq{font-size:13px;color:var(--ink-soft)}
@@ -2812,7 +2818,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 0a22d14 · built 2026-09-19 04:08 UTC</span>
+    <span id="verStamp" class="tnum">version: 03559bb · built 2026-09-19 04:13 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -2966,8 +2972,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   function xMoneyRowHTML(){
     const r = lcRow("8783");
     return `<div class="ch"><span class="cl">${cardLogo({name:"X Money"})}</span><div class="cn">X Money Debit<small>debit · not in buying power</small></div></div>
-      <div class="cline1 muted"><span>Debit card — no reward model on this page</span></div>
-      <div class="cline2"><span class="big">${r ? lcMoney(r.big_amount) : "—"}</span><span class="lab">balance${r && r.feed_broken ? " · ⚠️ link broken" : " · live"}</span></div>
+      <div class="cline2"><span class="l"><span class="spend">${r ? lcMoney(r.big_amount) : "—"}<small class="lab">balance${r && r.feed_broken ? " · ⚠️ link broken" : " · live"}</small></span></span><span class="r math"><span class="eq">debit · not counted</span></span></div>
       <div class="lcs" data-lc="8783" data-st="${lcStatusOf('8783')}">${lcStripHTML('8783')}</div>`;
   }
   // Spendable credit for Buying power. Live cards: the bank's available credit, except a used Venmo
@@ -3120,19 +3125,24 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
       : profitable
       ? `<label class="avail" title="Count this card in Buying power"><input type="checkbox" data-card="${c.name}" ${avail[c.name]?"checked":""}></label>`
       : `<label class="avail off" title="No profit"><input type="checkbox" disabled></label>`;
-    const tierTxt = alt
-      ? `<span class="pct">${pct(eff)}</span><span class="bar ${barP>=0?'good':'bad'}">${money(barP)}<small>/bar</small></span><span class="sep">→</span><span class="pct sm">${pct(alt.eff)}</span><span class="bar sm ${alt.barP>=0?'good':'bad'}">${money(alt.barP)}<small>/bar after $10k</small></span>`
-      : `<span class="pct">${pct(eff)}</span><span class="bar ${barP>=0?'good':'bad'}">${money(barP)}<small>/bar</small></span><span class="gen">generic ${money(barG)}</span>`;
+    const gc = v => v>=0 ? 'good' : 'bad';
+    const tierRow = (rate, sub, p, g, cls) =>
+      `<div class="trow ${cls||''}"><span class="l"><span class="pct">${pct(rate)}</span>${sub?`<small>${sub}</small>`:''}</span>
+        <span class="r"><span class="bar ${gc(p)}">${money(p)}</span><span class="bar ${gc(g)}">${money(g)}</span></span></div>`;
+    const tierTxt = `<div class="thead"><span></span><span class="r"><small>PAMP / bar</small><small>Generic / bar</small></span></div>` +
+      (alt
+        ? tierRow(eff, 'first $10k', barP, barG, tierLow?'dim':'') + tierRow(alt.eff, 'after $10k', alt.barP, alt.barG, tierLow?'':'dim')
+        : tierRow(eff, '', barP, barG, ''));
     const spTxt = sp.live
-      ? `${money(sp.amt)} <span class="lab">available${sp.why?` · ${sp.why}`:""} · of ${limK} · live</span>`
-      : `${money(sp.amt)} <span class="lab">limit · no bank link</span>`;
+      ? `${money(sp.amt)}<small class="lab">available${sp.why?` · ${sp.why}`:""} · of ${limK} · live</small>`
+      : `${money(sp.amt)}<small class="lab">limit · no bank link</small>`;
     const mathTxt = bars>0
-      ? `<span class="eq">= ${bars} bar${bars===1?"":"s"} × ${money(perBar)}${tierLow?" (2% tier)":""} =</span> <span class="big ${cycle>=0?'good':'bad'}">${money(cycle)}</span>`
-      : `<span class="eq">= 0 bars</span> <span class="big off">$0</span> <span class="lab">one bar costs ${money(buy)}</span>`;
+      ? `<span class="eq">${bars} bar${bars===1?"":"s"} × ${money(perBar)}</span><span class="big ${cycle>=0?'good':'bad'}">${money(cycle)}</span>`
+      : `<span class="eq">0 bars · one costs ${money(buy)}</span><span class="big off">$0</span>`;
     return `<div class="ch">${check}<span class="cl">${cardLogo(c)}</span>
         <div class="cn">${c.name}${c.hero?' <em class="floor">★ floor</em>':''}<small>${typeTag} · ${netTag}${tkTag}</small></div></div>
       <div class="cline1">${tierTxt}</div>
-      <div class="cline2"><span class="spend">${spTxt}</span><span class="math">${mathTxt}</span></div>${c.lc ? `
+      <div class="cline2"><span class="l"><span class="spend">${spTxt}</span></span><span class="r math">${mathTxt}</span></div>${c.lc ? `
       <div class="lcs" data-lc="${c.lc}" data-st="${lcStatusOf(c.lc)}">${lcStripHTML(c.lc)}</div>` : ''}`;
   }
   /* ONLINE COSTS $10 MORE, AND THE MASTERCARD PAYS IT (Medi, 2026-08-05).
@@ -7279,7 +7289,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "0a22d14 2026-09-19 04:08 UTC".indexOf("STAMP") >= 0 ? "dev" : "0a22d14 2026-09-19 04:08 UTC";
+  var GFH_BUILD = "03559bb 2026-09-19 04:13 UTC".indexOf("STAMP") >= 0 ? "dev" : "03559bb 2026-09-19 04:13 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
