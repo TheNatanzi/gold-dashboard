@@ -2782,7 +2782,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 0585a8c · built 2026-09-19 02:54 UTC</span>
+    <span id="verStamp" class="tnum">version: 622ce98 · built 2026-09-19 04:01 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -2905,7 +2905,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
     const stale = r.feed_broken || r.refresh_state==="failed" || (Date.now()-Date.parse(r.balance_checked_at||0))>4*3600e3;
     let extra = "";
     if(mask==="4037" && r.rewards!=null) extra =
-      `<div class="mini3"><span><small>USED</small>${lcMoney(r.period_used)}</span><span><small>4% ROOM LEFT</small>${lcMoney(r.bonus_room)}</span><span><small>REWARDS SO FAR</small><b>${lcMoney(r.rewards)}</b></span></div>
+      `<div class="mini3"><span><small>USED</small>${lcMoney(r.period_used)}</span><span><small>4% ROOM LEFT</small>${lcMoney(r.bonus_room)}</span><span></span></div>
        <span class="nt full">Period ${lcDay(r.period_start)} → ${lcDay(r.period_end)} · X Money loads ${lcMoney(r.x_loads)} earn 2%, outside the $10k</span>`;
     if(r.kind==="debit") extra =
       `<div class="mini3"><span><small>SPENT · 30 DAYS</small>${lcMoney(r.spend_30d)}</span><span><small>VENMO+PAYPAL+COSTCO</small>${lcMoney(r.spend_vpc_30d)}</span><span></span></div>`;
@@ -7237,7 +7237,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "0585a8c 2026-09-19 02:54 UTC".indexOf("STAMP") >= 0 ? "dev" : "0585a8c 2026-09-19 02:54 UTC";
+  var GFH_BUILD = "622ce98 2026-09-19 04:01 UTC".indexOf("STAMP") >= 0 ? "dev" : "622ce98 2026-09-19 04:01 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
