@@ -1782,13 +1782,13 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
 
   <!-- BUYING POWER (above the cards) -->
   <div class="bpbar">
-    <div class="bp-title">💳 Buying power <span>available + profitable cards only · cost split across cards · fills best rate first</span></div>
+    <div class="bp-title">💳 Buying power <span>sum of the cards below · live available credit · ticked + profitable cards</span></div>
     <div class="bp-stats">
       <div><div class="l">Credit available</div><div class="n tnum" id="bpCredit">—</div></div>
-      <div><div class="l">Whole bars</div><div class="n tnum" id="bpBars">—</div></div>
-      <div><div class="l">Capital deployed</div><div class="n tnum" id="bpDeployed">—</div></div>
+      <div><div class="l">Bars (all cards)</div><div class="n tnum" id="bpBars">—</div></div>
+      <div style="display:none"><div class="l">Capital deployed</div><div class="n tnum" id="bpDeployed">—</div></div>
       <div><div class="l">Est. profit / cycle</div><div class="n good tnum" id="bpProfit">—</div></div>
-      <div><div class="l">Unused credit</div><div class="n tnum" id="bpUnused">—</div></div>
+      <div style="display:none"><div class="l">Unused credit</div><div class="n tnum" id="bpUnused">—</div></div>
     </div>
   </div>
 
@@ -2845,7 +2845,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 7d559f9 · built 2026-09-19 04:47 UTC</span>
+    <span id="verStamp" class="tnum">version: 98b2b3e · built 2026-09-19 04:49 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3129,6 +3129,17 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
 
   // Costco split-tender spreads one bar's cost across cards → POOL total credit.
   // Whole bars only: floor(pooled credit / buy). Profit fills highest-reward cards first.
+  // Line 2 of a card = its spendable credit as a share of one bar × its per-bar profit (Smartly drops to the
+  // 2% tier once this period's $10k 4% bucket is used). Buying power is the SUM of these, so the top box
+  // and the cards can never disagree (Medi 2026-09-18).
+  function lineMath(c, buy, barP, alt){
+    const sp = lcSpendable(c);
+    const r4037 = c.lc==="4037" ? lcRow("4037") : null;
+    const tierLow = !!(alt && r4037 && r4037.bonus_room!=null && Number(r4037.bonus_room) < buy);
+    const perBar = tierLow ? alt.barP : barP;
+    const share = buy>0 ? sp.amt/buy : 0;
+    return {sp, r4037, tierLow, perBar, share, profit: share*perBar};
+  }
   function computeBP(rows, buy, lossP, prem){
     const pool=rows.filter(x=>x.barP>0 && avail[x.c.name] && !mcLocked(x.c)).sort((a,b)=>b.eff-a.eff);
     // ONE BAR IS ONE TRANSACTION, so it is bought in ONE place. A Mastercard in the pool
@@ -3137,18 +3148,12 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
     // all-Visa pool is the register, and pays nothing extra.
     // Known simplification, stated rather than hidden: this treats the pool as a single
     // basket. Buying some bars in store and some online is a mix this band cannot express.
-    const online = pool.some(x=>x.c.net==="mc");
-    const up = (online && isFinite(prem)) ? Number(prem) : 0;
-    const barCost = buy + up, barLoss = lossP + up;
-    let totCredit=0; pool.forEach(x=>totCredit+=lcSpendable(x.c).amt);
-    const totBars=Math.floor(totCredit/barCost);
-    const deployed=totBars*barCost;
-    let spendLeft=deployed, reward=0;
-    for(const x of pool){ const use=Math.min(lcSpendable(x.c).amt,spendLeft); reward+=use*(x.eff/100); spendLeft-=use; if(spendLeft<=0)break; }
-    const totProfit=reward-totBars*barLoss, unused=totCredit-deployed;
+    let totCredit=0, totShare=0, totProfit=0;
+    pool.forEach(x=>{ const L=lineMath(x.c, x.buy, x.barP, x.alt); totCredit+=L.sp.amt; totShare+=L.share; totProfit+=L.profit; });
+    const totBars=Math.floor(totShare), deployed=totCredit, unused=0;
     _bpBars=totBars;   // the coverage band answers "she found N, can I afford them?"
     $("bpCredit").textContent=money(totCredit);
-    $("bpBars").textContent=totBars+(totBars===1?" bar":" bars");
+    $("bpBars").textContent=(totShare).toFixed(2)+" bars";
     $("bpDeployed").textContent=money(deployed);
     $("bpProfit").textContent=money(totProfit);
     $("bpUnused").textContent=money(unused);
@@ -3167,11 +3172,8 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
     const typeTag = c.type==="Business" ? "Business" : c.debit ? "Debit · 3% X + 2% load" : "Personal";
     const netTag  = c.net==="visa" ? "Visa · in-store" : `MC · online only${up>0?` +${money(up)}/bar`:""}`;
     const tkTag   = c.tk>0 ? ` · +Taekus ${c.tk}%` : "";
-    const sp = lcSpendable(c);
-    // Smartly: once the $10k 4% bucket is used up this period, a new bar earns the 2% tier.
-    const r4037 = c.lc==="4037" ? lcRow("4037") : null;
-    const tierLow = !!(alt && r4037 && r4037.bonus_room!=null && Number(r4037.bonus_room) < buy);
-    const perBar = tierLow ? alt.barP : barP;
+    const L = lineMath(c, buy, barP, alt);
+    const sp = L.sp, r4037 = L.r4037, tierLow = L.tierLow, perBar = L.perBar;
     const bars = Math.max(0, Math.floor(sp.amt / buy));
     const cycle = bars * perBar;
     const limK = "$"+(c.limit/1000)+"k";
@@ -7350,7 +7352,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "7d559f9 2026-09-19 04:47 UTC".indexOf("STAMP") >= 0 ? "dev" : "7d559f9 2026-09-19 04:47 UTC";
+  var GFH_BUILD = "98b2b3e 2026-09-19 04:49 UTC".indexOf("STAMP") >= 0 ? "dev" : "98b2b3e 2026-09-19 04:49 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
