@@ -920,7 +920,21 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   #matrix .card .ch{display:flex;align-items:center;gap:10px;min-width:0}
   #matrix .card .cl{display:inline-flex;flex:0 0 auto}
   #matrix .card .clogo.citi{background:#fff;border-radius:5px;padding:3px 4px;display:inline-flex}
-  #matrix .card .cn{font-weight:640;font-size:14px;display:flex;flex-direction:column;min-width:0}
+  #matrix .card .cn{font-weight:640;font-size:14px;display:flex;flex-direction:column;min-width:0;flex:1}
+  #matrix .card .chs{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;text-align:right;gap:1px;max-width:48%}
+  #matrix .card .chs .hs{display:flex;flex-direction:column;align-items:flex-end}
+  #matrix .card .chs .st{font-weight:680;font-size:13px}
+  #matrix .card .chs .nt{font-size:11.5px;color:var(--ink-soft);font-family:var(--mono)}
+  #matrix .card .chs .when{font-size:10px;color:var(--ink-mute);font-family:var(--mono)}
+  #matrix .card .chs [data-st="charge_processing"] .st{color:#e8b84a}
+  #matrix .card .chs [data-st="payment_pending"] .st{color:#f2a05a}
+  #matrix .card .chs [data-st="payment_due"] .st{color:var(--bad)}
+  #matrix .card .chs [data-st="available"] .st{color:var(--good)}
+  #matrix .card .lcx:empty{display:none}
+  #matrix .card .lcx{display:grid;gap:4px;font-size:12px}
+  #matrix .card .lcx .mini3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-family:var(--mono);font-size:12.5px}
+  #matrix .card .lcx .mini3 small{display:block;font-size:9.5px;color:var(--ink-mute);letter-spacing:.04em}
+  #matrix .card .lcx .nt{color:var(--ink-mute);font-size:11.5px}
   #matrix .card .cn small{font-weight:500;font-size:11px;color:var(--ink-mute);font-family:var(--mono)}
   #matrix .card .cn .floor{font-style:normal;font-size:11px;color:var(--gold);font-family:var(--mono)}
   #matrix .card .avail{margin:0}
@@ -2818,7 +2832,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 03559bb · built 2026-09-19 04:13 UTC</span>
+    <span id="verStamp" class="tnum">version: a635a2f · built 2026-09-19 04:16 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -2971,9 +2985,9 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   }
   function xMoneyRowHTML(){
     const r = lcRow("8783");
-    return `<div class="ch"><span class="cl">${cardLogo({name:"X Money"})}</span><div class="cn">X Money Debit<small>debit · not in buying power</small></div></div>
+    return `<div class="ch"><span class="cl">${cardLogo({name:"X Money"})}</span><div class="cn">X Money Debit<small>debit · not in buying power</small></div><div class="chs" data-lc="8783">${lcHeadHTML('8783')}</div></div>
       <div class="cline2"><span class="l"><span class="spend">${r ? lcMoney(r.big_amount) : "—"}<small class="lab">balance${r && r.feed_broken ? " · ⚠️ link broken" : " · live"}</small></span></span><span class="r math"><span class="eq">debit · not counted</span></span></div>
-      <div class="lcs" data-lc="8783" data-st="${lcStatusOf('8783')}">${lcStripHTML('8783')}</div>`;
+      <div class="lcx" data-lc="8783">${lcExtraHTML('8783')}</div>`;
   }
   // Spendable credit for Buying power. Live cards: the bank's available credit, except a used Venmo
   // (once per statement period) = $0. Cards without a live feed (Chase Ink, Double Cash) keep their limit.
@@ -2983,7 +2997,30 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
     if(r.status==="unavailable") return {amt:0, live:true, why:r.unavailable_reason==="venmo_used" ? "used this period" : "held"};
     return {amt:Math.max(0, Number(r.available)), live:true};
   }
+  // Medi 2026-09-18: the status sits on the RIGHT of the card header, across from logo + name.
+  function lcHeadHTML(mask){
+    const r = lcRow(mask);
+    if(!r) return "";
+    const m = LC_META[r.status] || ["","?"];
+    const stale = r.feed_broken || r.refresh_state==="failed" || (Date.now()-Date.parse(r.balance_checked_at||0))>4*3600e3;
+    const f = (r.status==="unavailable" && r.flow_status) ? LC_META[r.flow_status] : null;
+    const one = (k, mm, note) => `<div class="hs" data-st="${k}"><span class="st">${mm[0]} ${esc(mm[1])}</span>${note?`<span class="nt">${esc(note)}</span>`:""}</div>`;
+    return one(r.status, m, r.kind==="debit" ? (r.feed_broken ? "link broken" : "") : lcNote(r))
+      + (f ? one(r.flow_status, f, lcFlowNote(r.flow_status, r)) : "")
+      + `<span class="when">${stale?"⚠️ ":""}checked ${lcAgo(r.balance_checked_at)}</span>`;
+  }
+  // What stays at the bottom: only the extras (Smartly period numbers, X Money spend).
+  function lcExtraHTML(mask){
+    const r = lcRow(mask);
+    if(!r) return "";
+    if(mask==="4037" && r.rewards!=null) return `<div class="mini3"><span><small>USED THIS PERIOD</small>${lcMoney(r.period_used)}</span><span><small>4% ROOM LEFT</small>${lcMoney(r.bonus_room)}</span><span></span></div>
+       <span class="nt full">Period ${lcDay(r.period_start)} → ${lcDay(r.period_end)} · X Money loads ${lcMoney(r.x_loads)} earn 2%, outside the $10k</span>`;
+    if(r.kind==="debit") return `<div class="mini3"><span><small>SPENT · 30 DAYS</small>${lcMoney(r.spend_30d)}</span><span><small>VENMO+PAYPAL+COSTCO</small>${lcMoney(r.spend_vpc_30d)}</span><span></span></div>`;
+    return "";
+  }
   function paintLC(){
+    document.querySelectorAll(".chs[data-lc]").forEach(el=>{ el.innerHTML = lcHeadHTML(el.dataset.lc); });
+    document.querySelectorAll(".lcx[data-lc]").forEach(el=>{ el.innerHTML = lcExtraHTML(el.dataset.lc); });
     document.querySelectorAll(".lcs[data-lc]").forEach(el=>{
       el.dataset.st = lcStatusOf(el.dataset.lc);
       el.innerHTML = lcStripHTML(el.dataset.lc);
@@ -3140,10 +3177,11 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
       ? `<span class="eq">${bars} bar${bars===1?"":"s"} × ${money(perBar)}</span><span class="big ${cycle>=0?'good':'bad'}">${money(cycle)}</span>`
       : `<span class="eq">0 bars · one costs ${money(buy)}</span><span class="big off">$0</span>`;
     return `<div class="ch">${check}<span class="cl">${cardLogo(c)}</span>
-        <div class="cn">${c.name}${c.hero?' <em class="floor">★ floor</em>':''}<small>${typeTag} · ${netTag}${tkTag}</small></div></div>
+        <div class="cn">${c.name}${c.hero?' <em class="floor">★ floor</em>':''}<small>${typeTag} · ${netTag}${tkTag}</small></div>${c.lc ? `
+        <div class="chs" data-lc="${c.lc}">${lcHeadHTML(c.lc)}</div>` : ''}</div>
       <div class="cline1">${tierTxt}</div>
       <div class="cline2"><span class="l"><span class="spend">${spTxt}</span></span><span class="r math">${mathTxt}</span></div>${c.lc ? `
-      <div class="lcs" data-lc="${c.lc}" data-st="${lcStatusOf(c.lc)}">${lcStripHTML(c.lc)}</div>` : ''}`;
+      <div class="lcx" data-lc="${c.lc}">${lcExtraHTML(c.lc)}</div>` : ''}`;
   }
   /* ONLINE COSTS $10 MORE, AND THE MASTERCARD PAYS IT (Medi, 2026-08-05).
      `buy` is ALWAYS an in-store basis — either June's register price, or the online
@@ -7289,7 +7327,7 @@ var ELEM_SHEET_DATE = "2026-09-19";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "03559bb 2026-09-19 04:13 UTC".indexOf("STAMP") >= 0 ? "dev" : "03559bb 2026-09-19 04:13 UTC";
+  var GFH_BUILD = "a635a2f 2026-09-19 04:16 UTC".indexOf("STAMP") >= 0 ? "dev" : "a635a2f 2026-09-19 04:16 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
