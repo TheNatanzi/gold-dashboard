@@ -2860,7 +2860,7 @@ var ELEM_SHEET_DATE = "2026-09-22";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: d28c709 · built 2026-09-22 18:09 UTC</span>
+    <span id="verStamp" class="tnum">version: 3fc939d · built 2026-09-22 18:13 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -5695,6 +5695,37 @@ var ELEM_SHEET_DATE = "2026-09-22";   /* GFH_SHEET_DATE */
     WI.snapAgeH = ageH;
   }
 
+  /* ---- keep the snapshot fresh WITHOUT republishing the page (Medi, 2026-09-22) ----
+     daily_pull.py writes the same reading it bakes into this file into Supabase
+     `site_reads`. Baking it also meant a push every hour, which made the "newer
+     version — Reload" bar appear all day for a data-only change. So the page now
+     reads the newest site_reads row set itself and rewrites WI_SNAP in place; the
+     job no longer republishes the public page for a warehouse-only change. */
+  var WI_SNAP_LIVE_MS = 600000;   // every 10 minutes, and when the tab comes back
+  function wiSnapRefresh(){
+    return sbFetch(SB_URL+"/rest/v1/site_reads?select=read_at,store_id,level,availability_raw"+
+                   "&order=read_at.desc&limit=200",{headers:sbH()}).then(function(r){
+      if(r.kind!=="ok" || !Array.isArray(r.data) || !r.data.length) return false;
+      var newest = r.data[0].read_at;
+      var rows = r.data.filter(function(x){ return x.read_at === newest; });
+      if(!rows.length) return false;
+      if(Date.parse(newest) <= Date.parse(WI_SNAP.at)) return false;   // nothing newer than what we hold
+      var ins = [], out = {};
+      rows.forEach(function(x){
+        if(x.level === "in_stock") ins.push(x.store_id);
+        else {
+          // "Out of Stock · last had it 3d ago" / "... last had it today"
+          var m = /last had it ([^\s]+)( ago)?/.exec(x.availability_raw||"");
+          out[x.store_id] = m ? m[1] : "?";
+        }
+      });
+      WI_SNAP.at = newest; WI_SNAP.inStock = ins; WI_SNAP.soldOut = out;
+      wiApplySnapshot();
+      try{ wiRender(); }catch(e){}
+      return true;
+    }).catch(function(){ return false; });
+  }
+
   /* ---- read ---- */
   function wiPull(){
     return Promise.all([
@@ -5829,7 +5860,7 @@ var ELEM_SHEET_DATE = "2026-09-22";   /* GFH_SHEET_DATE */
         const nIn = WI_SNAP.inStock.length;
         const nOut = Object.keys(WI_SNAP.soldOut||{}).length;
         el.innerHTML = "<span class='ic'>📋</span><b>Hand-read — "+
-          esc(fmtDT(WI_SNAP.at))+", not live.</b>"+
+          esc(fmtDT(WI_SNAP.at))+".</b>"+
           "<span class='sub'>"+
           (WI.err
             ? "Couldn't reach the database ("+esc(WI.err)+"), so this is a manual reading from "
@@ -5837,7 +5868,7 @@ var ELEM_SHEET_DATE = "2026-09-22";   /* GFH_SHEET_DATE */
               "empty, so this is a manual reading from ")+
           esc(WI_SNAP.src)+", taken "+wiAgeTxt(WI.snapAgeH)+" — "+
           "read <b>"+nIn+" in stock, "+nOut+" sold out</b> that day. "+
-          "It does NOT update. Costco was charging $"+
+          "It refreshes itself every 10 minutes from the hourly read — no page reload. Costco was charging $"+
           WI_SNAP.price.toFixed(2)+" that day. Call before you drive.</span>";
         return "snapshot";
       }
@@ -6521,6 +6552,10 @@ var ELEM_SHEET_DATE = "2026-09-22";   /* GFH_SHEET_DATE */
     wiRenderNow(state);
     wiRenderTable(state);
   }
+
+  wiSnapRefresh();
+  setInterval(wiSnapRefresh, WI_SNAP_LIVE_MS);
+  document.addEventListener("visibilitychange", function(){ if(!document.hidden) wiSnapRefresh(); });
 
   /* ---- events ---- */
   $("wiTierBar").addEventListener("click", function(ev){
@@ -7369,7 +7404,7 @@ var ELEM_SHEET_DATE = "2026-09-22";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "d28c709 2026-09-22 18:09 UTC".indexOf("STAMP") >= 0 ? "dev" : "d28c709 2026-09-22 18:09 UTC";
+  var GFH_BUILD = "3fc939d 2026-09-22 18:13 UTC".indexOf("STAMP") >= 0 ? "dev" : "3fc939d 2026-09-22 18:13 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
