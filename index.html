@@ -2860,7 +2860,7 @@ var ELEM_SHEET_DATE = "2026-09-24";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 8b96fbb · built 2026-09-24 14:52 UTC</span>
+    <span id="verStamp" class="tnum">version: ce9f63f · built 2026-09-24 17:30 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3124,14 +3124,6 @@ var ELEM_SHEET_DATE = "2026-09-24";   /* GFH_SHEET_DATE */
   let _bp=null;   // cached {rows, buy, lossP} so avail toggles recompute the band only
   let _bpBars=0;  // whole bars the pooled credit can actually buy — read by the coverage band
   let _impliedInStore=null;   // online listing minus the in-store premium, for the price check
-  /* WAREHOUSE SHELF PRICE drives BUY (Medi, 2026-09-23: "use the shelf price"). The PC pull
-     reads the real in-store price off an in-stock warehouse page and writes it on the
-     site_reads rows (migration 013). A fresh one (< 2 days) beats the online guess
-     (online − $10) outright — it IS the in-store number; only a NEWER phoned-in price
-     (June / Medi) outranks it. _buyFromShelf tells the labels which lookup is driving. */
-  let SHELF={price:null, at:null}, _buyFromShelf=false;
-  function shelfAgeDays(){ const d=new Date(SHELF.at); return isNaN(d) ? Infinity : (Date.now()-d.getTime())/864e5; }
-  function lookupName(){ return _buyFromShelf ? "warehouse shelf price" : "online lookup"; }
   let _pulse=false;      // set true by a live update that moved the spot → compute() ripples the figures
 
   // FLASH PULSE: re-trigger a subtle pop (+ optional up/down color) by clearing & re-adding the class.
@@ -3310,21 +3302,17 @@ var ELEM_SHEET_DATE = "2026-09-24";   /* GFH_SHEET_DATE */
       : juneT > onlineT + 60000 ? false
       : impliedInStore > june + 0.001);
 
-    // Shelf price: fresh + newer than June's phone → it is BUY.
-    const shelfT = Date.parse(SHELF.at) || 0;
-    const shelfWins = SHELF.price>0 && shelfAgeDays()<2 && shelfT > juneT + 60000;
-    _buyFromShelf = shelfWins;
-    const buy = shelfWins ? Number(SHELF.price) : (overridden?impliedInStore:june);
+    const buy=overridden?impliedInStore:june;
     // Published for the units guard in the live layer: these two are the ONLY numbers BUY
     // is allowed to be. The guard reads gold_prices.june, but BUY is driven by
     // alchemy_price (June's phone) — two tables that CAN legitimately disagree, and on
     // 2026-07-28 did ($4,149.99 vs $4,139.99), making the guard cry wolf on a legal value.
-    try{ window.__gfhLegalBuys = [june, impliedInStore].concat(SHELF.price>0?[Number(SHELF.price)]:[]); }catch(e){}
+    try{ window.__gfhLegalBuys = [june, impliedInStore]; }catch(e){}
 
     // Publish the decision IMMEDIATELY. priceState() reads _juneOverridden, and the gauge and
     // matrix stamps below call it — if these were still assigned at the end of compute() the
     // stamps would describe the PREVIOUS run's decision.
-    _juneBuy=buy; _juneOverridden=overridden||shelfWins; _impliedInStore=shelfWins?Number(SHELF.price):impliedInStore;
+    _juneBuy=buy; _juneOverridden=overridden; _impliedInStore=impliedInStore;
 
     const sellP=spot-discP, sellG=spot-discG;
     const lossP=buy-sellP, lossG=buy-sellG;
@@ -3338,7 +3326,7 @@ var ELEM_SHEET_DATE = "2026-09-24";   /* GFH_SHEET_DATE */
     const apVEl=$("apV");
     if(apVEl){
       apVEl.textContent = money(buy);
-      const apLabEl=$("apLab"); if(apLabEl) apLabEl.textContent = _buyFromShelf ? "Shelf" : (_juneOverridden ? "Online" : "June");
+      const apLabEl=$("apLab"); if(apLabEl) apLabEl.textContent = _juneOverridden ? "Online" : "June";
     }
 
     // Elemetal card (took the delta's old square in the trio). Discounts come from the
@@ -3470,7 +3458,7 @@ var ELEM_SHEET_DATE = "2026-09-24";   /* GFH_SHEET_DATE */
     setTxt("gbeNet",  money(sellP));
     setTxt("gbeNetSub", "spot − $"+discP);
     setTxt("gbcBuy",  money(buy));
-    setTxt("gbcBuySub", _buyFromShelf ? "warehouse shelf price · "+fmtDT(SHELF.at) : _juneOverridden ? "online lookup − $"+((CFG.onlinePrem==null||isNaN(CFG.onlinePrem))?10:Number(CFG.onlinePrem)) : "starting figure / June");
+    setTxt("gbcBuySub", _juneOverridden ? "online lookup − $"+((CFG.onlinePrem==null||isNaN(CFG.onlinePrem))?10:Number(CFG.onlinePrem)) : "starting figure / June");
     setTxt("gbcSell", money(sellP));
     setTxt("gbcSellSub", "spot − $"+discP);
     setTxt("gbcSpread", signMoney(gbSpread));
@@ -5047,7 +5035,6 @@ var ELEM_SHEET_DATE = "2026-09-24";   /* GFH_SHEET_DATE */
   function buySourceText(){
     switch(priceState()){
       case "online":
-        if(_buyFromShelf) return "the warehouse shelf price (<b>"+money(SHELF.price)+"</b>, read "+fmtDT(SHELF.at)+")";
         return "the online listing (<b>"+money(_impliedInStore)+"</b> in store) — it is in stock, fresh and higher";
       case "fresh":
         return priceWho()+" (<b>"+money(CFG.junePrice)+"</b>)";
@@ -5119,7 +5106,7 @@ var ELEM_SHEET_DATE = "2026-09-24";   /* GFH_SHEET_DATE */
         : "is <b>over 2 days old</b> ("+fmtDT(JUNEROUND.priceAt)+")";
       vEl.innerHTML = _juneOverridden
         ? ("⚠️ "+(priceWhoIsMe()?"Your":"June's")+" price "+why+
-           ", so the "+lookupName()+" has taken over. BUY is using "+buySourceText()+
+           ", so the online listing has taken over. BUY is using "+buySourceText()+
            ". "+priceWhoName()+" should re-check today's shelf price."+stockCaveat())
         : ("⚠️ "+(priceWhoIsMe()?"Your":"June's")+" price "+why+
            ". BUY is using "+buySourceText()+
@@ -5197,22 +5184,22 @@ var ELEM_SHEET_DATE = "2026-09-24";   /* GFH_SHEET_DATE */
       // driving BUY, so asking it here reported the seed as BUY while the gauge was pricing
       // off the online figure — the panel naming a number compute() had not used.
       msg.innerHTML = _juneOverridden
-        ? ("The Costco price on file is <b>over 2 days old</b>, so the "+lookupName()+" has taken "+
+        ? ("The Costco price on file is <b>over 2 days old</b>, so the online lookup has taken "+
            "over: BUY is <b>"+money(_juneBuy)+"</b>"+(onlineAgeDays()>=2?" (last known price, also stale — held, never the seed)":"")+
            ". "+priceWhoName()+" should re-check today's shelf price.")
         : ("The Costco price on file is <b>over 2 days old</b> and has been dropped, so BUY has "+
            "fallen back to the built-in starting figure of <b>"+money(CFG.junePrice)+"</b>. "+
            priceWhoName()+" should re-check today's shelf price.");
-      if(src) src.textContent = _juneOverridden ? "price expired · "+lookupName()+" driving BUY"
+      if(src) src.textContent = _juneOverridden ? "price expired · online lookup driving BUY"
                                                 : "price expired · back to the starting figure";
       return;
     }
     const bars=_junePamp+_juneGen;
     if(_juneOverridden){
       msg.className="jb-msg";
-      msg.innerHTML=whoHas()+" <b>"+money(p)+"</b>"+kind+" at the register, but the "+lookupName()+" says <b>"+
-        money(_juneBuy)+"</b> in store and is newer or higher, so BUY is that figure.";
-      if(src) src.textContent=priceWhoName()+" "+money(p)+" · "+lookupName()+" is driving BUY";
+      msg.innerHTML=whoHas()+" <b>"+money(p)+"</b>"+kind+" at the register, but the online lookup implies <b>"+
+        money(_juneBuy)+"</b> in store — the higher number wins, so BUY is the online figure.";
+      if(src) src.textContent=priceWhoName()+" "+money(p)+" · online lookup is driving BUY";
     } else {
       msg.className="jb-msg ok";
       msg.innerHTML="BUY = <b>"+money(p)+"</b>"+kind+" · "+fmtDT(JUNEROUND.priceAt)+" — "+
@@ -5675,24 +5662,24 @@ var ELEM_SHEET_DATE = "2026-09-24";   /* GFH_SHEET_DATE */
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-09-23T12:15:46-07:00",
+    at: "2026-09-24T10:21:51-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
     price: 4359.99,
     // Written by warehouse-inventory/daily_pull.py — see DAILY-PULL.md.
-    // 15 of the 45, keyed on the row carrying the SKU, never the store badge.
-    inStock: ["antioch", "danville", "fostercity", "hayward", "livermore", "newark",
+    // 16 of the 45, keyed on the row carrying the SKU, never the store badge.
+    inStock: ["antioch", "danville", "fostercity", "fremont", "livermore",
               "pleasanton", "sacstockton", "santaclara", "sf", "sjalmaden",
-              "sjgreatoaks", "sjne", "sjsenter", "vallejo"],
-    // 27 of the 45. Stores whose rail rows were truncated were opened and
+              "sjgreatoaks", "sjne", "sjsenter", "ssf", "sunnyvale", "vallejo"],
+    // 26 of the 45. Stores whose rail rows were truncated were opened and
     // read from their own page this run, not carried forward.
-    soldOut: {brentwood:"4d", concord:"3d", fairfield:"2d", fremont:"4d", gilroy:"1m",
-              lodi:"6d", manteca:"today", modesto:"today", mountainview:"4d",
-              novato:"4d", ranchocordova:"today", redwoodcity:"7d", richmond:"5d",
-              riverbank:"today", rohnertpark:"2m", saccalexpo:"4d", sacnatomas:"2m",
-              sanleandro:"4d", santacruz:"4d", santarosa:"4d", ssf:"4d",
-              ssfairport:"2d", stockton:"2d", sunnyvale:"1d", tracy:"4d",
-              vacaville:"5d", woodland:"5d"}
+    soldOut: {brentwood:"5d", concord:"3d", fairfield:"3d", gilroy:"2m",
+              hayward:"today", lodi:"6d", manteca:"1d", modesto:"1d",
+              mountainview:"5d", newark:"today", novato:"5d", ranchocordova:"1d",
+              redwoodcity:"8d", richmond:"6d", riverbank:"1d", rohnertpark:"2m",
+              saccalexpo:"5d", sacnatomas:"2m", sanleandro:"5d", santacruz:"5d",
+              santarosa:"5d", ssfairport:"3d", stockton:"3d", tracy:"5d",
+              vacaville:"6d", woodland:"6d"}
   };
 
   // Turn the snapshot into the same row shape wiRenderNow/wiRenderTable already
@@ -6570,20 +6557,9 @@ var ELEM_SHEET_DATE = "2026-09-24";   /* GFH_SHEET_DATE */
     wiRenderTable(state);
   }
 
-  function shelfRefresh(){
-    return sbFetch(SB_URL+"/rest/v1/site_reads?select=read_at,price&price=not.is.null"+
-                   "&order=read_at.desc&limit=1",{headers:sbH()}).then(function(r){
-      if(r.kind!=="ok" || !Array.isArray(r.data) || !r.data.length) return;
-      const x=r.data[0], v=Number(x.price);
-      if(!(v>0) || (SHELF.at===x.read_at && SHELF.price===v)) return;
-      SHELF={price:v, at:x.read_at};
-      try{ compute(); renderCFG(); }catch(e){}
-    }).catch(function(){});
-  }
-  function liveRefresh(){ wiSnapRefresh(); shelfRefresh(); }
-  liveRefresh();
-  setInterval(liveRefresh, WI_SNAP_LIVE_MS);
-  document.addEventListener("visibilitychange", function(){ if(!document.hidden) liveRefresh(); });
+  wiSnapRefresh();
+  setInterval(wiSnapRefresh, WI_SNAP_LIVE_MS);
+  document.addEventListener("visibilitychange", function(){ if(!document.hidden) wiSnapRefresh(); });
 
   /* ---- events ---- */
   $("wiTierBar").addEventListener("click", function(ev){
@@ -7432,7 +7408,7 @@ var ELEM_SHEET_DATE = "2026-09-24";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "8b96fbb 2026-09-24 14:52 UTC".indexOf("STAMP") >= 0 ? "dev" : "8b96fbb 2026-09-24 14:52 UTC";
+  var GFH_BUILD = "ce9f63f 2026-09-24 17:30 UTC".indexOf("STAMP") >= 0 ? "dev" : "ce9f63f 2026-09-24 17:30 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
