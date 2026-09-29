@@ -3162,7 +3162,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 2f1a075 · built 2026-09-29 20:48 UTC</span>
+    <span id="verStamp" class="tnum">version: 7bfde02 · built 2026-09-29 21:23 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7830,7 +7830,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     st.openAch.forEach(function(e){h+=openRow(e,"ach_landed","\u2705","in Taekus");});
     var mg=S.msg[c]&&Date.now()-S.msg[c].t<12e4?S.msg[c]:null;
     h+='<div class="cbo-msg'+(mg?' '+(mg.bad?'bad':'ok'):'')+'">'+(mg?mg.text:'')+'</div>';
-    var mine=S.events.filter(function(e){return e.code===c&&e.stage!=="void";}).slice(-4).reverse();
+    var mine=S.events.filter(function(e){return e.code===c&&e.stage!=="void"&&!L.voided[e.id];}).slice(-4).reverse();   // Medi 09-29: hide undone rows
     if(mine.length)h+='<ul class="cbo-log">'+mine.map(function(e){
         var v=L.voided[e.id];
         return '<li'+(v?' class="void"':'')+'><span>'+fmt(e.at).replace(/^\w+, /,"")+' \u00b7 '+STAGE[e.stage]+(e.method&&M[e.method]?' \u00b7 '+M[e.method][0]:'')+'</span><span>'+usd(e.amount)+'</span>'+(v?'':'<button type="button" class="cbo-undo" data-undo="'+e.id+'" title="Undo">\u21b6</button>')+'</li>';
@@ -8429,7 +8429,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "2f1a075 2026-09-29 20:48 UTC".indexOf("STAMP") >= 0 ? "dev" : "2f1a075 2026-09-29 20:48 UTC";
+  var GFH_BUILD = "7bfde02 2026-09-29 21:23 UTC".indexOf("STAMP") >= 0 ? "dev" : "7bfde02 2026-09-29 21:23 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
