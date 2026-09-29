@@ -1359,8 +1359,8 @@ var ELEM_SHEET_DATE = "2026-09-29";   /* GFH_SHEET_DATE */
   #cbCalc .cbc-card{padding:10px 12px}
   #cbCalc .cbc-card h5{margin:0 0 6px}
   .cbc-big{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 8px}
-  .cbc-big div{background:var(--gold-glow);border:1px solid var(--gold-deep);border-radius:10px;padding:7px 10px;display:flex;align-items:baseline;justify-content:space-between;gap:6px}
-  .cbc-big b{display:block;font:800 clamp(22px,2.6vw,28px)/1.05 var(--mono);color:var(--gold);letter-spacing:-.02em}
+  .cbc-big div{background:var(--gold-glow);border:1px solid var(--gold-deep);border-radius:8px;padding:4px 9px;display:flex;align-items:baseline;justify-content:space-between;gap:6px}
+  .cbc-big b{display:block;font:800 19px/1.2 var(--mono);color:var(--gold);letter-spacing:-.02em}
   .cbc-big b.neg{color:var(--bad)}
   .cbc-big i{display:block;font-style:normal;font-size:10px;color:var(--ink-mute);text-transform:uppercase;letter-spacing:.08em}
   .cbc-r{display:grid;grid-template-columns:20px 84px minmax(0,1fr) 76px;column-gap:8px;align-items:center;min-height:26px;border-top:1px solid var(--line);padding:1px 0}
@@ -3156,7 +3156,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 2240443 · built 2026-09-29 16:22 UTC</span>
+    <span id="verStamp" class="tnum">version: 4862a56 · built 2026-09-29 16:23 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -8393,7 +8393,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "2240443 2026-09-29 16:22 UTC".indexOf("STAMP") >= 0 ? "dev" : "2240443 2026-09-29 16:22 UTC";
+  var GFH_BUILD = "4862a56 2026-09-29 16:23 UTC".indexOf("STAMP") >= 0 ? "dev" : "4862a56 2026-09-29 16:23 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
