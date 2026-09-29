@@ -3162,7 +3162,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 1bd0112 · built 2026-09-29 20:30 UTC</span>
+    <span id="verStamp" class="tnum">version: 40784fe · built 2026-09-29 20:33 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7833,7 +7833,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     var mine=S.events.filter(function(e){return e.code===c&&e.stage!=="void";}).slice(-4).reverse();
     if(mine.length)h+='<ul class="cbo-log">'+mine.map(function(e){
         var v=L.voided[e.id];
-        return '<li'+(v?' class="void"':'')+'><span>'+fmt(e.at).replace(/^\w+, /,"")+' \u00b7 '+(e.method&&ICON[e.method]?ICON[e.method]+' ':'')+STAGE[e.stage]+'</span><span>'+usd(e.amount)+'</span>'+(v?'':'<button type="button" class="cbo-undo" data-undo="'+e.id+'" title="Undo">\u21b6</button>')+'</li>';
+        return '<li'+(v?' class="void"':'')+'><span>'+fmt(e.at).replace(/^\w+, /,"")+' \u00b7 '+STAGE[e.stage]+(e.method&&M[e.method]?' \u00b7 '+M[e.method][0]:'')+'</span><span>'+usd(e.amount)+'</span>'+(v?'':'<button type="button" class="cbo-undo" data-undo="'+e.id+'" title="Undo">\u21b6</button>')+'</li>';
       }).join("")+'</ul>';
     return h+'</div>';
   }
@@ -8418,7 +8418,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "1bd0112 2026-09-29 20:30 UTC".indexOf("STAMP") >= 0 ? "dev" : "1bd0112 2026-09-29 20:30 UTC";
+  var GFH_BUILD = "40784fe 2026-09-29 20:33 UTC".indexOf("STAMP") >= 0 ? "dev" : "40784fe 2026-09-29 20:33 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
