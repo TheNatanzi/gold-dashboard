@@ -1406,6 +1406,8 @@ var ELEM_SHEET_DATE = "2026-09-29";   /* GFH_SHEET_DATE */
   .tkw .cbo-box{width:30px;height:30px;padding:0;justify-content:center} .tkw .cbo-box::before{width:15px;height:15px}
   .tkw input{width:100%;box-sizing:border-box;background:var(--bg2);border:1px solid var(--line2);color:var(--ink);border-radius:8px;padding:6px 7px;font:13px var(--mono);text-align:right}
   .tkw .cbr-bar{margin:0}
+  .cbo-amt.short,.cbo-amt.short:disabled{color:var(--bad)!important;border-color:var(--bad)!important;font-weight:700}
+  .cbr.wait .cbo-amt.short{opacity:1!important}
   .tkc-sec{font:700 10px var(--mono);letter-spacing:.08em;color:var(--ink-mute);text-transform:uppercase;margin:8px 0 2px}
   /* Compact (Medi 09-29): two cards side by side, slim rows. */
   .tkg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start}
@@ -3178,7 +3180,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: cd0c9f2 · built 2026-09-29 21:29 UTC</span>
+    <span id="verStamp" class="tnum">version: a42ec1f · built 2026-09-29 21:52 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7794,6 +7796,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
       (o.bar||'<i class="cbr-bar cbr-nobar"></i>')+o.amt+(o.undo||'<span class="cbr-u0"></span>')+'</div>';
   }
   var RESET=String.fromCodePoint(0x1F504);
+  function tkShort(k,amt){return (k==="gpay"||k==="applepay")&&S.tkBal!=null&&amt>0&&amt>S.tkBal+0.005;}
   function depRow(p,k){
     var lim=+p[k+"_limit"],last=p[k+"_last"]?new Date(p[k+"_last"]).getTime():0,win=M[k][1]*36e5,left=last?last+win-Date.now():0,open=left<=0;
     var e=latest(p.code,function(x){return x.stage==="deposit"&&x.method===k&&Date.now()-new Date(x.at).getTime()<win;});
@@ -7804,7 +7807,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
       t1:!last?'<b>\u2014</b>':open?'<b class="go">\u2713 open</b>':'<b>\u23f3 '+dur(left)+'</b>',
       t2:last?RESET+' '+new Intl.DateTimeFormat("en-US",{timeZone:TZ,weekday:"short",hour:"numeric",minute:"2-digit"}).format(new Date(last+win)):'',
       bar:pbar(last?(Date.now()-last)/win:0,open&&last),
-      amt:'<input type="text" inputmode="decimal" class="cb-money cbo-amt" value="'+(lim?usd(lim):'')+'" placeholder="$">',undo:e?undoBtn(e):''});
+      amt:'<input type="text" inputmode="decimal" class="cb-money cbo-amt'+(tkShort(k,lim)?' short':'')+'" value="'+(lim?usd(lim):'')+'" placeholder="$"'+(tkShort(k,lim)?' title="8010 has only '+usd(S.tkBal)+'"':'')+'>',undo:e?undoBtn(e):''});
   }
   function moveRow(stage,icon,label,amt,p,sentStage,st){
     var e=latest(p.code,function(x,L){return x.stage===sentStage&&!L.landed[x.id]&&Date.now()-new Date(x.at).getTime()<864e5;});
@@ -7858,6 +7861,8 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     var r=money(),L=r.L,agg={inCB:0,wd:0,bank:0,ach:0};
     S.people.forEach(function(p){var s=stages(p,L);agg.inCB+=s.inCB;agg.wd+=s.wd;agg.bank+=s.bank;agg.ach+=s.ach;});
     var first=S.hist.length?fmtDay(S.hist[0].swipe_at):"—";
+    // Medi 09-29: GPay/Apple Pay spend from HIS 8010 -> amounts over its balance show red.
+    S.tkBal=null;TK_CARDS.forEach(function(c){if(c.bal){var t=tkState(c).total;if(t!=null)S.tkBal=t;}});
     renderCalc(r);
     o.innerHTML='<div class="cbo-sec">Where the money is now</div><div class="cbo-tiles">'+
       tile("In Coinbase",agg.inCB,"all players")+tile("Withdrawing to banks",agg.wd,"sent, not landed")+
@@ -8082,7 +8087,9 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   }
   function say(code,text,bad){S.msg[code]={t:Date.now(),text:text,bad:!!bad};render();}
   document.addEventListener("input",function(ev){
-    var t=ev.target;if(!t.classList||!t.classList.contains("cbo-when"))return;
+    var t=ev.target,row=t.closest&&t.closest(".cbr[data-row=deposit]");
+    if(row&&t.classList.contains("cbo-amt")){var bad=tkShort(row.dataset.m,parseDollars(t.value));t.classList.toggle("short",bad);t.title=bad?"8010 has only "+usd(S.tkBal):"";return;}
+    if(!t.classList||!t.classList.contains("cbo-when"))return;
     var c=t.closest(".cbo-p");if(c&&t.value)S.when[c.dataset.p]=t.value;
   });
   document.addEventListener("click",function(ev){
@@ -8445,7 +8452,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "cd0c9f2 2026-09-29 21:29 UTC".indexOf("STAMP") >= 0 ? "dev" : "cd0c9f2 2026-09-29 21:29 UTC";
+  var GFH_BUILD = "a42ec1f 2026-09-29 21:52 UTC".indexOf("STAMP") >= 0 ? "dev" : "a42ec1f 2026-09-29 21:52 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
