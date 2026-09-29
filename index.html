@@ -3195,7 +3195,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: b50aa7d · built 2026-09-29 21:54 UTC</span>
+    <span id="verStamp" class="tnum">version: cb4b353 · built 2026-09-29 23:01 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7822,7 +7822,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
       t1:!last?'<b>\u2014</b>':open?'<b class="go">\u2713 open</b>':'<b>\u23f3 '+dur(left)+'</b>',
       t2:last?RESET+' '+new Intl.DateTimeFormat("en-US",{timeZone:TZ,weekday:"short",hour:"numeric",minute:"2-digit"}).format(new Date(last+win)):'',
       bar:pbar(last?(Date.now()-last)/win:0,open&&last),
-      amt:'<input type="text" inputmode="decimal" class="cb-money cbo-amt'+(tkShort(k,lim)?' short':'')+'" value="'+(lim?usd(lim):'')+'" placeholder="$"'+(tkShort(k,lim)?' title="8010 has only '+usd(S.tkBal)+'"':'')+'>',undo:e?undoBtn(e):''});
+      amt:'<input type="text" inputmode="decimal" class="cb-money cbo-amt'+((open&&!mute&&tkShort(k,lim))?' short':'')+'" value="'+(lim?usd(lim):'')+'" placeholder="$"'+((open&&!mute&&tkShort(k,lim))?' title="8010 has only '+usd(S.tkBal)+'"':'')+'>',undo:e?undoBtn(e):''});
   }
   function moveRow(stage,icon,label,amt,p,sentStage,st){
     var e=latest(p.code,function(x,L){return x.stage===sentStage&&!L.landed[x.id]&&Date.now()-new Date(x.at).getTime()<864e5;});
@@ -8103,7 +8103,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   function say(code,text,bad){S.msg[code]={t:Date.now(),text:text,bad:!!bad};render();}
   document.addEventListener("input",function(ev){
     var t=ev.target,row=t.closest&&t.closest(".cbr[data-row=deposit]");
-    if(row&&t.classList.contains("cbo-amt")){var bad=tkShort(row.dataset.m,parseDollars(t.value));t.classList.toggle("short",bad);t.title=bad?"8010 has only "+usd(S.tkBal):"";return;}
+    if(row&&t.classList.contains("cbo-amt")){var bad=!row.classList.contains("wait")&&!row.classList.contains("mute")&&tkShort(row.dataset.m,parseDollars(t.value));t.classList.toggle("short",bad);t.title=bad?"8010 has only "+usd(S.tkBal):"";return;}
     if(!t.classList||!t.classList.contains("cbo-when"))return;
     var c=t.closest(".cbo-p");if(c&&t.value)S.when[c.dataset.p]=t.value;
   });
@@ -8467,7 +8467,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "b50aa7d 2026-09-29 21:54 UTC".indexOf("STAMP") >= 0 ? "dev" : "b50aa7d 2026-09-29 21:54 UTC";
+  var GFH_BUILD = "cb4b353 2026-09-29 23:01 UTC".indexOf("STAMP") >= 0 ? "dev" : "cb4b353 2026-09-29 23:01 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
