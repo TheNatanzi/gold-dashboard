@@ -1322,6 +1322,8 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   .cbv-stats em{display:block;font-style:normal;font-size:9px;color:var(--ink-mute)}
   .cbr{display:grid;grid-template-columns:34px minmax(0,1fr) 96px 28px;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
   .cbr.dim{opacity:.4}
+  .cbr.mute{opacity:.4;filter:grayscale(1)}
+  .cbr.mute .cbr-top span:first-child::after{content:'F515';font-size:11px;margin-left:2px}
   #cbOv .cb-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,350px),1fr))}
   .cbr-top span:first-child{overflow:hidden;text-overflow:ellipsis}
   .cbr .cbo-box{width:34px;height:34px;padding:0;justify-content:center;border-radius:9px}
@@ -1330,6 +1332,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   .cbr-top{display:flex;justify-content:space-between;gap:6px;font-size:12.5px;color:var(--ink);white-space:nowrap}
   .cbr-top span:last-child{font:11px var(--mono);color:var(--ink-mute)}
   .cbr-top .go{color:var(--good);font-weight:700}
+  .cbr-at{font:10.5px var(--mono);color:var(--ink-mute);text-align:right;margin-top:3px}
   .cbr-bar{height:5px;border-radius:3px;background:var(--line2);margin-top:4px;overflow:hidden}
   .cbr-bar i{display:block;height:100%;background:var(--gold);border-radius:3px}
   .cbr-bar i.full{background:var(--good)}
@@ -3089,7 +3092,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: d623c54 · built 2026-09-29 08:32 UTC</span>
+    <span id="verStamp" class="tnum">version: b0ee0e2 · built 2026-09-29 08:38 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7697,9 +7700,10 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     var lim=+p[k+"_limit"],last=p[k+"_last"]?new Date(p[k+"_last"]).getTime():0,win=M[k][1]*36e5,left=last?last+win-Date.now():0;
     var open=left<=0,t=!last?'<span>\u2014</span>':open?'<span class="go">\u2713 open</span>':'<span>\u23f3 '+dur(left)+'</span>';
     var e=latest(p.code,function(x){return x.stage==="deposit"&&x.method===k&&Date.now()-new Date(x.at).getTime()<win;});
-    return '<div class="cbr'+(open?'':' wait')+'" data-row="deposit" data-m="'+k+'">'+
+    var mute=p[k+"_alarm"]===false;
+    return '<div class="cbr'+(open?'':' wait')+(mute?' mute':'')+'" data-row="deposit" data-m="'+k+'"'+(mute?' title="Alarm off — they deposit this themselves"':'')+'>'+
       '<button type="button" class="cbo-box" data-do="deposit" aria-label="Deposit '+M[k][0]+'"></button>'+
-      '<div class="cbr-l"><div class="cbr-top"><span>'+ICON[k]+' '+M[k][0]+'</span>'+t+'</div>'+pbar(last?(Date.now()-last)/win:0,open&&last)+'</div>'+
+      '<div class="cbr-l"><div class="cbr-top"><span>'+ICON[k]+' '+M[k][0]+'</span>'+t+'</div>'+pbar(last?(Date.now()-last)/win:0,open&&last)+(last?'<div class="cbr-at">'+String.fromCodePoint(0x1F504)+' '+(open?'opened ':'')+new Intl.DateTimeFormat("en-US",{timeZone:TZ,weekday:"short",hour:"numeric",minute:"2-digit"}).format(new Date(last+win))+'</div>':'')+'</div>'+
       '<input type="text" inputmode="decimal" class="cb-money cbo-amt" value="'+(lim?usd(lim):'')+'" placeholder="$">'+undoBtn(e)+'</div>';
   }
   function moveRow(stage,icon,label,amt,p,sentStage){
@@ -8196,7 +8200,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "d623c54 2026-09-29 08:32 UTC".indexOf("STAMP") >= 0 ? "dev" : "d623c54 2026-09-29 08:32 UTC";
+  var GFH_BUILD = "b0ee0e2 2026-09-29 08:38 UTC".indexOf("STAMP") >= 0 ? "dev" : "b0ee0e2 2026-09-29 08:38 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
