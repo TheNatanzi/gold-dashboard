@@ -1235,6 +1235,26 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
     font-family:var(--mono);font-size:10.5px;color:var(--ink-mute)}
   .theme-btn{cursor:pointer;background:var(--panel);border:1px solid var(--line2);color:var(--ink-soft);
     border-radius:8px;padding:5px 10px;font-family:var(--mono);font-size:11px}
+
+  /* ---- CB TRACKER tab (2026-09-28) ---- */
+  .cb-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(285px,1fr));gap:12px;margin-top:10px}
+  .cb-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px;box-shadow:var(--shadow)}
+  .cb-card h5{margin:0 0 10px;font-family:var(--mono);font-size:15px;letter-spacing:.08em;color:var(--gold);display:flex;justify-content:space-between;align-items:center}
+  .cb-card h5 small{font-size:10px;color:var(--ink-mute);letter-spacing:.02em;font-family:var(--sans);font-weight:500}
+  .cb-f{display:grid;grid-template-columns:1fr 128px;align-items:center;gap:6px 10px;margin:6px 0}
+  .cb-f label{font-size:12px;color:var(--ink-soft)}
+  .cb-f label i{font-style:normal;color:var(--ink-mute);font-size:10.5px;display:block}
+  .cb-f input{width:100%;box-sizing:border-box;background:var(--bg2);border:1px solid var(--line2);color:var(--ink);border-radius:8px;padding:7px 8px;font:13px var(--mono)}
+  .cb-f input[type=datetime-local]{font-size:11px;padding:7px 4px}
+  .cb-f input:focus{outline:2px solid var(--gold-deep);outline-offset:0}
+  .cb-nx{font-size:11.5px;color:var(--ink-mute);margin:8px 0 0;min-height:15px}
+  .cb-nx b{color:var(--ink)}
+  .cb-row{display:flex;gap:8px;align-items:center;margin-top:10px}
+  .cb-save{background:var(--gold);color:#1a1405;border:0;border-radius:9px;padding:8px 16px;font-weight:700;font-size:13px;cursor:pointer}
+  .cb-save:disabled{opacity:.45;cursor:default}
+  .cb-msg{font-size:11.5px;color:var(--ink-mute)}
+  .cb-msg.ok{color:var(--good)} .cb-msg.bad{color:var(--bad)}
+  .cb-soon{margin-top:14px;padding:12px 14px;border:1px dashed var(--line2);border-radius:var(--r-sm);font-size:12.5px;color:var(--ink-mute)}
 </style>
 
 <div class="wrap">
@@ -1292,6 +1312,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
     <button class="tabbtn" role="tab" data-tab="inv" aria-selected="false" id="tabBtnInv">🏬 Warehouses
       <span class="tb-chip" id="tabInvChip">—</span></button>
     <button class="tabbtn" role="tab" data-tab="lock" aria-selected="false" id="tabBtnLock">🔒 Lock</button>
+    <button class="tabbtn" role="tab" data-tab="cb" aria-selected="false" id="tabBtnCb">💰 CB tracker</button>
   </nav>
 
   <!-- PLANNED TAB — the backlog. Everything designed or brainstormed but not built yet.
@@ -1648,6 +1669,19 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
           <div class="rx-act">Personal + Business held by one person = <b>10 bars per person</b>. Rinad has both, so 10 for her once they reset.</div></div>
       </div>
     </div>
+  </div>
+
+  <!-- CB TRACKER TAB (Medi 2026-09-28) - Coinbase accounts GEO / RIN / RAN / MED.
+       Initials ONLY on this page (public behind the PIN). Step 1 = the settings menu:
+       per-person limits, USDC floor, Coinbase One start. Saved to Supabase cb_people
+       (+ append-only cb_people_log). All times are PACIFIC. -->
+  <div class="tabpanel" id="tab-cb" role="tabpanel" aria-labelledby="tabBtnCb" hidden>
+    <div class="rx-mhead" style="margin-top:8px"><span class="em">💰</span><div class="tt">
+      <h4>CB tracker &mdash; settings per person</h4>
+      <p class="md">Type each person's <b>max</b> per method. PayPal resets <b>24h</b> after a buy &middot; Samsung &amp; GPay reset <b>7 days</b> after. Floor = USDC always left in Coinbase. Coinbase One = <b>we pay</b> monthly. All times <b>Pacific</b>. Leave blank if you don't know yet.</p>
+    </div></div>
+    <div class="cb-grid" id="cbGrid"><div class="cb-soon">Loading&hellip;</div></div>
+    <div class="cb-soon">Coming next on this tab: our Taekus balance at the top (from Sabz) &middot; buy log with &#9744; action items &middot; withdraw / bank / Taekus steps with timers &middot; ntfy alarms (quiet 12&ndash;8 AM).</div>
   </div>
 
   <div class="tabpanel" id="tab-lock" role="tabpanel" aria-labelledby="tabBtnLock" hidden>
@@ -2860,7 +2894,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 5ef7232 · built 2026-09-28 14:53 UTC</span>
+    <span id="verStamp" class="tnum">version: 6982234 · built 2026-09-28 23:39 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -5662,24 +5696,24 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-09-27T11:02:05-07:00",
+    at: "2026-09-28T11:01:46-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
-    price: 4339.99,
+    price: 4199.99,
     // Written by warehouse-inventory/daily_pull.py — see DAILY-PULL.md.
-    // 15 of the 45, keyed on the row carrying the SKU, never the store badge.
-    inStock: ["antioch", "danville", "fairfield", "fostercity", "livermore",
-              "pleasanton", "sacstockton", "sanleandro", "santaclara", "sf",
-              "sjalmaden", "sjgreatoaks", "sjsenter", "sunnyvale", "tracy"],
-    // 27 of the 45. Stores whose rail rows were truncated were opened and
+    // 13 of the 45, keyed on the row carrying the SKU, never the store badge.
+    inStock: ["antioch", "danville", "fairfield", "pleasanton", "sacstockton",
+              "sanleandro", "santaclara", "sf", "sjalmaden", "sjgreatoaks", "sjsenter",
+              "sunnyvale", "tracy"],
+    // 29 of the 45. Stores whose rail rows were truncated were opened and
     // read from their own page this run, not carried forward.
-    soldOut: {brentwood:"8d", concord:"7d", fremont:"today", gilroy:"2m", hayward:"1d",
-              lodi:"9d", manteca:"4d", modesto:"4d", mountainview:"today", newark:"1d",
-              novato:"8d", ranchocordova:"4d", redwoodcity:"11d", richmond:"9d",
-              riverbank:"4d", rohnertpark:"2m", saccalexpo:"8d", sacnatomas:"2m",
-              santacruz:"8d", santarosa:"8d", sjne:"today", ssf:"today",
-              ssfairport:"6d", stockton:"6d", vacaville:"9d", vallejo:"today",
-              woodland:"9d"}
+    soldOut: {brentwood:"9d", concord:"8d", fostercity:"today", fremont:"1d",
+              gilroy:"2m", hayward:"2d", livermore:"today", lodi:"10d", manteca:"5d",
+              modesto:"5d", mountainview:"1d", newark:"2d", novato:"9d",
+              ranchocordova:"5d", redwoodcity:"12d", richmond:"10d", riverbank:"5d",
+              rohnertpark:"2m", saccalexpo:"9d", sacnatomas:"2m", santacruz:"9d",
+              santarosa:"9d", sjne:"1d", ssf:"1d", ssfairport:"7d", stockton:"7d",
+              vacaville:"10d", vallejo:"1d", woodland:"10d"}
   };
 
   // Turn the snapshot into the same row shape wiRenderNow/wiRenderTable already
@@ -7113,6 +7147,89 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   });
 }();
 </script>
+
+<script>
+/* ===== CB TRACKER - settings menu (2026-09-28) =====
+   Self-contained: own Supabase constants so it cannot depend on another block's scope. */
+!function(){
+  var URL_="https://cuubqcxzvyiryxcygadh.supabase.co", KEY="sb_publishable_vuJ1bfkLjpPNbrouZb_3eQ_9dSJXlep";
+  var TZ="America/Los_Angeles";
+  function H(x){var h={apikey:KEY,Authorization:"Bearer "+KEY,"Content-Type":"application/json"};for(var k in (x||{}))h[k]=x[k];return h;}
+  var FIELDS=[
+    ["paypal_limit","PayPal max","resets 24h after a buy","$"],
+    ["samsung_limit","Samsung Pay max","resets 7 days after","$"],
+    ["gpay_limit","GPay max","resets 7 days after &middot; our Taekus","$"],
+    ["usdc_floor","USDC floor","always left in Coinbase","$"],
+    ["cb1_monthly","Coinbase One / month","we pay it","$"],
+    ["cb1_start","Coinbase One started","Pacific time","dt"]
+  ];
+  /* Pacific wall-clock <-> UTC, independent of the viewer's own time zone
+     (RAN's phone runs UTC+7 - never trust a device clock). */
+  function tzParts(d){var o={};new Intl.DateTimeFormat("en-US",{timeZone:TZ,hourCycle:"h23",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}).formatToParts(d).forEach(function(p){o[p.type]=p.value;});return o;}
+  function toLocalInput(iso){if(!iso)return "";var p=tzParts(new Date(iso));return p.year+"-"+p.month+"-"+p.day+"T"+p.hour+":"+p.minute;}
+  function fromLocalInput(v){
+    if(!v)return null;var m=v.match(/^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d)/);if(!m)return null;
+    var want=Date.UTC(+m[1],m[2]-1,+m[3],+m[4],+m[5]), t=want;
+    for(var i=0;i<3;i++){var p=tzParts(new Date(t));var got=Date.UTC(+p.year,p.month-1,+p.day,+p.hour,+p.minute);t+=want-got;}
+    return new Date(t).toISOString();
+  }
+  function fmt(d){return new Intl.DateTimeFormat("en-US",{timeZone:TZ,month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}).format(d);}
+  function nextCharge(iso){
+    if(!iso)return null;var s=new Date(iso),now=Date.now();
+    for(var k=1;k<600;k++){var d=new Date(s);d.setUTCMonth(s.getUTCMonth()+k);if(d.getTime()>now)return d;}
+    return null;
+  }
+  function nxHtml(iso){var nc=nextCharge(iso);return nc?'Next Coinbase One charge &asymp; <b>'+fmt(nc)+'</b>':'Coinbase One start not entered yet';}
+  function money(n){return n==null||n===""?"":Number(n);}
+  function card(r){
+    var h='<div class="cb-card" data-code="'+r.code+'"><h5>'+r.code+'<small>'+(r.updated_at&&r.updated_by!=="seed"?"saved "+fmt(new Date(r.updated_at)):"")+'</small></h5>';
+    FIELDS.forEach(function(f){
+      var id='cb_'+r.code+'_'+f[0], v=f[3]==="dt"?toLocalInput(r[f[0]]):money(r[f[0]]);
+      h+='<div class="cb-f"><label for="'+id+'">'+f[1]+'<i>'+f[2]+'</i></label>'+
+         (f[3]==="dt"?'<input type="datetime-local" id="'+id+'" data-f="'+f[0]+'" value="'+v+'">'
+                     :'<input type="number" inputmode="decimal" min="0" step="any" placeholder="&mdash;" id="'+id+'" data-f="'+f[0]+'" value="'+v+'">')+'</div>';
+    });
+    h+='<p class="cb-nx">'+nxHtml(r.cb1_start)+'</p>';
+    h+='<div class="cb-row"><button class="cb-save" type="button">Save '+r.code+'</button><span class="cb-msg"></span></div></div>';
+    return h;
+  }
+  var loaded=false;
+  function load(){
+    var g=document.getElementById("cbGrid");if(!g)return;loaded=true;
+    fetch(URL_+"/rest/v1/cb_people?select=*&order=sort_order",{headers:H()}).then(function(r){
+      if(!r.ok)throw new Error(r.status);return r.json();
+    }).then(function(rows){g.innerHTML=rows.map(card).join("");}).catch(function(){
+      loaded=false;g.innerHTML='<div class="cb-soon">Couldn\'t reach the database. Check your connection and reload.</div>';
+    });
+  }
+  document.addEventListener("click",function(ev){
+    var b=ev.target.closest&&ev.target.closest(".cb-save");if(!b)return;
+    var c=b.closest(".cb-card"),msg=c.querySelector(".cb-msg"),rec={code:c.dataset.code},bad=false;
+    c.querySelectorAll("input[data-f]").forEach(function(i){
+      var f=i.dataset.f;
+      if(i.type==="datetime-local"){rec[f]=fromLocalInput(i.value);}
+      else{var v=i.value.trim();if(v===""){rec[f]=null;}else if(isNaN(+v)||+v<0){bad=true;}else rec[f]=+v;}
+    });
+    if(bad){msg.className="cb-msg bad";msg.textContent="Numbers only, 0 or more.";return;}
+    if(rec.usdc_floor==null)rec.usdc_floor=6000;
+    if(rec.cb1_monthly==null)rec.cb1_monthly=300;
+    rec.updated_at=new Date().toISOString();rec.updated_by="medi";
+    b.disabled=true;msg.className="cb-msg";msg.textContent="Saving\u2026";
+    fetch(URL_+"/rest/v1/cb_people?on_conflict=code",{method:"POST",headers:H({Prefer:"resolution=merge-duplicates,return=minimal"}),body:JSON.stringify(rec)})
+    .then(function(r){
+      if(!r.ok)throw new Error(r.status);
+      fetch(URL_+"/rest/v1/cb_people_log",{method:"POST",headers:H({Prefer:"return=minimal"}),body:JSON.stringify(rec)}).catch(function(){});
+      msg.className="cb-msg ok";msg.textContent="\u2713 Saved";
+      c.querySelector(".cb-nx").innerHTML=nxHtml(rec.cb1_start);
+    }).catch(function(){msg.className="cb-msg bad";msg.textContent="Not saved \u2014 try again.";})
+    .then(function(){b.disabled=false;});
+  });
+  var btn=document.getElementById("tabBtnCb");
+  if(btn)btn.addEventListener("click",function(){if(!loaded)load();});
+  function initial(){var p=document.getElementById("tab-cb");if(p&&!p.hidden&&!loaded)load();}
+  initial();setTimeout(initial,400);
+}();
+</script>
 <!-- ============================================================================
      SUPABASE LIVE LAYER — brother's public page ONLY (never in Medi's artifact).
      The artifact reads the Google Sheet via the Drive connector. This page has no
@@ -7408,7 +7525,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "5ef7232 2026-09-28 14:53 UTC".indexOf("STAMP") >= 0 ? "dev" : "5ef7232 2026-09-28 14:53 UTC";
+  var GFH_BUILD = "6982234 2026-09-28 23:39 UTC".indexOf("STAMP") >= 0 ? "dev" : "6982234 2026-09-28 23:39 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
