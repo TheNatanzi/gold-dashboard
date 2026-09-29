@@ -1353,6 +1353,21 @@ var ELEM_SHEET_DATE = "2026-09-29";   /* GFH_SHEET_DATE */
   /* Medi 09-29: window not reset yet = row grayed, but the bar + ⏳ timer stay full color. */
   .cbr.wait:not(.mute)>*:not(.cbr-t):not(.cbr-bar),.cbr.wait:not(.mute) .cbr-t>span{opacity:.4}
   .cbr.dim .cbr-n{align-self:center} .cbr.dim .cbr-nobar,.cbr-sub .cbr-nobar{display:none}
+  /* Compact player cards (Medi 09-29 "compress these a bit, keep the lining up"): same grid, smaller everything. */
+  .cbo-p .cbr{column-gap:8px;row-gap:3px;padding:5px 0;min-height:42px}
+  @media(min-width:761px){.cbo-p .cbr{grid-template-columns:28px 24px minmax(0,1fr) 104px 92px 26px}}
+  .cbo-p .cbr>.cbo-box,.cbo-p .cbr>.cbo-box0{width:28px;height:28px;border-radius:7px}
+  .cbo-p .cbr>.cbo-box::before{width:13px;height:13px}
+  .cbo-p .cbr-logo .cbl{width:24px;height:24px} .cbo-p .cbr-logo .cbl svg,.cbo-p .cbr-logo .cbl img{width:20px;height:20px}
+  .cbo-p .cbr-logo .cbl svg.wide{width:30px!important}
+  .cbo-p .cbr-n{font-size:12.5px} .cbo-p .cbr-t{font-size:10.5px;gap:1px}
+  .cbo-p .cbr-bar{height:5px}
+  .cbo-p .cbr input{padding:4px 7px;font-size:12.5px}
+  .cbo-p .cbr-u{width:26px;height:26px;font-size:13px}
+  .cbo-p .cbv-stats{gap:4px;margin:0 0 6px} .cbo-p .cbv-stats div{padding:3px 2px}
+  .cbo-p .cbv-stats i .cbl{width:20px;height:20px} .cbo-p .cbv-stats i .cbl svg{width:18px;height:18px} .cbo-p .cbv-stats i{font-size:13px}
+  .cbo-p .cbv-when{margin:0 0 2px} .cbo-p .cbv-when input{padding:3px 6px;font-size:11.5px}
+  .cbo-p .cbo-log{margin-top:4px}
   .cbr-sub{padding-left:12px;background:var(--panel2);border-radius:8px}
   @media (max-width:520px){
     .cbr{grid-template-columns:32px 28px minmax(0,1fr) 92px 28px;column-gap:8px;
@@ -3180,7 +3195,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: a42ec1f · built 2026-09-29 21:52 UTC</span>
+    <span id="verStamp" class="tnum">version: b50aa7d · built 2026-09-29 21:54 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -8452,7 +8467,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "a42ec1f 2026-09-29 21:52 UTC".indexOf("STAMP") >= 0 ? "dev" : "a42ec1f 2026-09-29 21:52 UTC";
+  var GFH_BUILD = "b50aa7d 2026-09-29 21:54 UTC".indexOf("STAMP") >= 0 ? "dev" : "b50aa7d 2026-09-29 21:54 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
