@@ -3158,7 +3158,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 2ce7aad · built 2026-09-29 19:33 UTC</span>
+    <span id="verStamp" class="tnum">version: 38fde3a · built 2026-09-29 19:53 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7724,10 +7724,11 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   }
   // Balances count ticks at/after "balance as of"; in-process boxes = every open item.
   function stages(p,L){
-    var asof=p.bal_as_of?new Date(p.bal_as_of).getTime():0,o={dep:0,inCB:+p.cb_start||0,wd:0,bank:0,ach:0,taekus:0,openWd:[],openAch:[]};
+    var asof=p.bal_as_of?new Date(p.bal_as_of).getTime():0,o={dep:0,inCB:+p.cb_start||0,wd:0,bank:0,ach:0,taekus:0,openWd:[],openAch:[],held:0,unlock:0},now=Date.now();
     L.ev.forEach(function(e){
-      if(e.code!==p.code)return;var a=+e.amount||0,after=new Date(e.at).getTime()>=asof;
-      if(e.stage==="deposit"){o.dep+=a;if(after)o.inCB+=a;}
+      if(e.code!==p.code)return;var a=+e.amount||0,t=new Date(e.at).getTime(),after=t>=asof;
+      // Spec: a deposit must sit in Coinbase 24h before it can be withdrawn (Medi 09-29 "these need to stay for 24hrs").
+      if(e.stage==="deposit"){o.dep+=a;if(after)o.inCB+=a;if(after&&t+864e5>now){o.held+=a;if(!o.unlock||t+864e5<o.unlock)o.unlock=t+864e5;}}
       else if(e.stage==="withdraw_sent"){if(after)o.inCB-=a;if(!L.landed[e.id]){o.wd+=a;o.openWd.push(e);}}
       else if(e.stage==="withdraw_landed"){if(after)o.bank+=a;}
       else if(e.stage==="ach_sent"){if(after)o.bank-=a;if(!L.landed[e.id]){o.ach+=a;o.openAch.push(e);}}
@@ -7785,12 +7786,13 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
       bar:pbar(last?(Date.now()-last)/win:0,open&&last),
       amt:'<input type="text" inputmode="decimal" class="cb-money cbo-amt" value="'+(lim?usd(lim):'')+'" placeholder="$">',undo:e?undoBtn(e):''});
   }
-  function moveRow(stage,icon,label,amt,p,sentStage){
+  function moveRow(stage,icon,label,amt,p,sentStage,st){
     var e=latest(p.code,function(x,L){return x.stage===sentStage&&!L.landed[x.id]&&Date.now()-new Date(x.at).getTime()<864e5;});
     var off=!(amt>0);
     return rowHtml({row:stage,cls:off?' dim':'',
       box:off?'<span class="cbo-box0"></span>':'<button type="button" class="cbo-box" data-do="'+stage+'" aria-label="'+label+'"></button>',
       logo:icon,name:label,t2:stage==="withdraw_sent"?'keeps '+k$(p.usdc_floor):'',
+      t1:st&&st.held>0?'<b>\ud83d\udd12 '+k$(st.held)+' \u2192 '+new Intl.DateTimeFormat("en-US",{timeZone:TZ,weekday:"short",hour:"numeric",minute:"2-digit"}).format(new Date(st.unlock))+'</b>':'',
       amt:'<input type="text" inputmode="decimal" class="cb-money cbo-amt" value="'+(off?'$0':usd(amt))+'"'+(off?' disabled':'')+'>',undo:e?undoBtn(e):''});
   }
   function openRow(e,stage,icon,label){
@@ -7811,7 +7813,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     var wv=S.when[c]||toLocalInput(new Date().toISOString());
     h+='<div class="cbv-when">\ud83d\udd52<input type="datetime-local" class="cbo-when" value="'+wv+'"'+(S.when[c]?' data-edited="1"':'')+'>'+(S.when[c]?'<button type="button" class="cbv-now">now</button>':'')+'</div>';
     onMethods(p).forEach(function(k){h+=depRow(p,k);});
-    h+=moveRow("withdraw_sent",logo("coinbase"),"Withdraw",Math.max(0,st.inCB-floor),p,"withdraw_sent");
+    h+=moveRow("withdraw_sent",logo("coinbase"),"Withdraw",Math.max(0,st.inCB-floor-st.held),p,"withdraw_sent",st);
     st.openWd.forEach(function(e){h+=openRow(e,"withdraw_landed","\ud83d\udcb0","landed "+fmtDay(e.at).replace(/^\w+ /,""));});
     h+=moveRow("ach_sent",logo("taekus"),"ACH",Math.max(0,st.bank),p,"ach_sent");
     st.openAch.forEach(function(e){h+=openRow(e,"ach_landed","\u2705","in Taekus");});
@@ -8403,7 +8405,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "2ce7aad 2026-09-29 19:33 UTC".indexOf("STAMP") >= 0 ? "dev" : "2ce7aad 2026-09-29 19:33 UTC";
+  var GFH_BUILD = "38fde3a 2026-09-29 19:53 UTC".indexOf("STAMP") >= 0 ? "dev" : "38fde3a 2026-09-29 19:53 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
