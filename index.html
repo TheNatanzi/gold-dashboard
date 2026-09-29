@@ -1298,6 +1298,16 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   .cbo-log li{display:flex;gap:6px;padding:2px 0;border-top:1px solid var(--line)} .cbo-log li span:first-child{flex:1}
   .cbo-log li.void{text-decoration:line-through;opacity:.6}
   .cbo-undo{background:none;border:0;color:var(--ink-mute);font-size:11px;cursor:pointer;text-decoration:underline}
+  .cbc-t{width:100%;border-collapse:collapse;font-size:12px;margin:4px 0 8px}
+  .cbc-t td,.cbc-t th{padding:4px 3px;border-top:1px solid var(--line);color:var(--ink-soft);vertical-align:top;text-align:left}
+  .cbc-t th{font-size:10px;color:var(--ink-mute);font-weight:600;border-top:0}
+  .cbc-t td.n,.cbc-t th.n{font-family:var(--mono);text-align:right;white-space:nowrap}
+  .cbc-t td.n{color:var(--ink)}
+  .cbc-t tr.sum td{border-top:2px solid var(--line2);font-weight:700;color:var(--ink)}
+  .cbc-t tr.off td{opacity:.5}
+  .cbc-t tr.res td{color:var(--gold);font-weight:700}
+  .cbc-t tr.res td.n{color:var(--gold)}
+  .cbc-h{font:700 10.5px var(--mono);letter-spacing:.08em;color:var(--ink-mute);text-transform:uppercase;margin:10px 0 2px}
   .cbo-msg{font-size:11.5px;color:var(--ink-mute);min-height:14px} .cbo-msg.bad{color:var(--bad)} .cbo-msg.ok{color:var(--good)}
   .cb-gen{border-top:1px solid var(--line);margin-top:6px;padding-top:6px}
   .cb-st{font-family:var(--mono);font-size:9.5px;font-weight:800;letter-spacing:.04em;padding:2px 7px;border-radius:6px}
@@ -1727,9 +1737,11 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   <div class="tabpanel" id="tab-cb" role="tabpanel" aria-labelledby="tabBtnCb" hidden>
     <nav class="rsub-bar" id="cbSubBar" role="tablist" aria-label="CB tracker sections">
       <button class="rsub-btn" role="tab" data-cbsub="ov"  aria-selected="true">📊 Overview</button>
+      <button class="rsub-btn" role="tab" data-cbsub="calc" aria-selected="false">🧮 Calculations</button>
       <button class="rsub-btn" role="tab" data-cbsub="set" aria-selected="false">⚙️ Settings</button>
     </nav>
     <div class="rsub-panel" id="cbsub-ov"><div id="cbOv"><div class="cb-soon">Loading&hellip;</div></div></div>
+    <div class="rsub-panel" id="cbsub-calc" hidden><div id="cbCalc"><div class="cb-soon">Loading&hellip;</div></div></div>
     <div class="rsub-panel" id="cbsub-set" hidden>
     <div class="rx-mhead" style="margin-top:8px"><span class="em">💰</span><div class="tt">
       <h4>CB tracker &mdash; settings per person</h4>
@@ -2945,7 +2957,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 9253fd2 · built 2026-09-29 07:37 UTC</span>
+    <span id="verStamp" class="tnum">version: 55ca527 · built 2026-09-29 07:51 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7476,12 +7488,12 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   // Every reward dollar, dated. The 8010 read is the record for GPay/Apple Pay up to its last swipe;
   // after that (and ALL PayPal/Samsung = Hamed's Taekus) it's tracker ticks x rate.
   function rewards(L){
-    var cut=histCutoff(),out=S.hist.map(function(h){return {at:h.swipe_at,amt:h.points/100,src:"taekus"};});
+    var cut=histCutoff(),out=S.hist.map(function(h){return {at:h.swipe_at,amt:h.points/100,src:"taekus",spend:+h.spend};});
     L.ev.forEach(function(e){
       if(e.stage!=="deposit"||!M[e.method])return;
       var mine=e.method==="gpay"||e.method==="applepay";
       if(mine&&new Date(e.at).getTime()<=cut)return;
-      out.push({at:e.at,amt:(+e.amount||0)*M[e.method][2],src:mine?"tick8010":"hamed"});
+      out.push({at:e.at,amt:(+e.amount||0)*M[e.method][2],src:mine?"tick8010":"hamed",code:e.code,method:e.method,spend:+e.amount||0});
     });
     return out;
   }
@@ -7519,7 +7531,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
     nowMs=nowMs||Date.now();
     var L=live(),rw=rewards(L),np=ym(nowMs),ly=np[1]===1?[np[0]-1,12]:[np[0],np[1]-1];
     var yStart=monthStart(np[0],1),lmStart=monthStart(ly[0],ly[1]),mStart=monthStart(np[0],np[1]);
-    var r={total:0,ytd:0,last:0,taekus:0,hamed:0,tick8010:0,cb1:0,cb1ytd:0,cb1last:0,L:L};
+    var r={total:0,ytd:0,last:0,taekus:0,hamed:0,tick8010:0,cb1:0,cb1ytd:0,cb1last:0,L:L,rw:rw,nowMs:nowMs};
     rw.forEach(function(x){var t=new Date(x.at).getTime();if(t>nowMs)return;r.total+=x.amt;if(t>=yStart)r.ytd+=x.amt;if(t>=lmStart&&t<mStart)r.last+=x.amt;r[x.src]+=x.amt;});
     var proj={gross:0,cost:0,net:0,missing:[]};
     S.people.forEach(function(p){
@@ -7578,6 +7590,71 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
     var r=money(),L=r.L,agg={inCB:0,wd:0,bank:0,ach:0};
     S.people.forEach(function(p){var s=stages(p,L);agg.inCB+=s.inCB;agg.wd+=s.wd;agg.bank+=s.bank;agg.ach+=s.ach;});
     var first=S.hist.length?fmtDay(S.hist[0].swipe_at):"—";
+    renderCalc(r);
+    o.innerHTML='<div class="cbo-sec">Where the money is now</div><div class="cbo-tiles">'+
+      tile("In Coinbase",agg.inCB,"all players")+tile("Withdrawing to banks",agg.wd,"sent, not landed")+
+      tile("In bank accounts",agg.bank,"landed, not sent to Taekus")+tile("ACH to Taekus",agg.ach,"sent, not landed")+'</div>'+
+      '<div class="cbo-sec">Players \u00b7 tap a box to log it (time + amount)</div><div class="cb-grid">'+S.people.map(function(p){return player(p,L);}).join("")+'</div>';
+  }
+
+  /* ---- Calculations sub-tab: money-made tiles + every player's math + month-by-month history ---- */
+  function row2(a,b,cls){return '<tr'+(cls?' class="'+cls+'"':'')+'><td>'+a+'</td><td class="n">'+b+'</td></tr>';}
+  function pct(x){return (Math.round(x*10000)/100)+"%";}
+  function cb1List(p,nowMs){
+    if(!p.cb1_start)return [];var s0=new Date(p.cb1_start),out=[];
+    for(var k=0;k<600;k++){var d=new Date(s0);d.setUTCMonth(s0.getUTCMonth()+k);if(d.getTime()>nowMs)break;out.push(d);}
+    return out;
+  }
+  function monthKey(ms){var p=tzParts(new Date(ms));return p.year+"-"+p.month;}
+  function monthName(k){var a=k.split("-");return new Intl.DateTimeFormat("en-US",{month:"short",year:"numeric",timeZone:"UTC"}).format(new Date(Date.UTC(+a[0],a[1]-1,15)));}
+  // Month-by-month: deposits ticked, rewards, Coinbase One charged, net. Newest first.
+  function historyTable(rows,charges,monthly){
+    var m={};
+    function g(k){return m[k]||(m[k]={dep:0,rw:0,cb1:0});}
+    rows.forEach(function(x){var b=g(monthKey(new Date(x.at).getTime()));b.dep+=x.spend;b.rw+=x.amt;});
+    charges.forEach(function(d){g(monthKey(d.getTime())).cb1+=monthly;});
+    var ks=Object.keys(m).sort().reverse();
+    if(!ks.length)return '<p class="cbo-note">No history yet.</p>';
+    return '<table class="cbc-t"><tr><th>Month</th><th class="n">Deposited</th><th class="n">Rewards</th><th class="n">Coinbase One</th><th class="n">Net</th></tr>'+
+      ks.map(function(k){var b=m[k];return '<tr><td>'+monthName(k)+'</td><td class="n">'+usd(b.dep)+'</td><td class="n">'+usd(b.rw)+'</td><td class="n">'+usd(-b.cb1)+'</td><td class="n">'+usd(b.rw-b.cb1)+'</td></tr>';}).join("")+'</table>';
+  }
+  function calcCard(p,r){
+    var c=p.code,ce=ceiling(p),h='<div class="cb-card"><h5>'+c+'<small>'+usd(ce.net)+'/mo ceiling</small></h5>';
+    h+='<div class="cbc-h">1 \u00b7 Ceiling per month (every window hit)</div><table class="cbc-t">';
+    ORDER.forEach(function(k){
+      var on=p[k+"_on"]!==false,lim=+p[k+"_limit"],w=MONTH_DAYS*24/M[k][1];
+      if(!on){h+=row2(M[k][0]+' \u00b7 off','\u2014','off');return;}
+      if(!(lim>0)){h+=row2(M[k][0]+' \u00b7 <b>no max typed</b> (skipped)','\u2014','off');return;}
+      h+=row2(M[k][0]+': '+usd(lim)+' \u00d7 '+w.toFixed(1)+' windows \u00d7 '+pct(M[k][2]),usd(lim*w*M[k][2]));
+    });
+    h+=row2('Rewards ceiling',usd(ce.gross),'sum');
+    h+=row2('\u2212 Coinbase One (we pay)',usd(-(+p.cb1_monthly||0)));
+    if(p.fee_on===true)h+=row2('\u2212 Monthly fee',usd(-(+p.fee_amount||0)));
+    h+=row2('= per month',usd(ce.net),'res')+row2('\u00d7 12 = per year',usd(ce.net*12),'res')+'</table>';
+    var mine=r.rw.filter(function(x){return x.code===c&&new Date(x.at).getTime()<=r.nowMs;});
+    h+='<div class="cbc-h">2 \u00b7 Made so far (ticked deposits)</div><table class="cbc-t">';
+    var got=0;
+    ORDER.forEach(function(k){
+      var xs=mine.filter(function(x){return x.method===k;});if(!xs.length)return;
+      var sp=xs.reduce(function(a,x){return a+x.spend;},0),am=xs.reduce(function(a,x){return a+x.amt;},0);got+=am;
+      h+=row2(M[k][0]+': '+xs.length+' deposit'+(xs.length>1?'s':'')+' '+usd(sp)+' \u00d7 '+pct(M[k][2]),usd(am));
+    });
+    if(!mine.length)h+=row2('No deposits ticked yet','$0');
+    var ch=cb1List(p,r.nowMs),cost=ch.length*(+p.cb1_monthly||0);
+    h+=row2('\u2212 Coinbase One: '+(ch.length?ch.length+' \u00d7 '+usd(p.cb1_monthly)+' ('+ch.map(fmtDay).join(", ")+')':'no start date typed'),usd(-cost));
+    h+=row2('= net so far',usd(got-cost),'res')+'</table>';
+    h+='<div class="cbc-h">3 \u00b7 History by month</div>'+historyTable(mine,ch,+p.cb1_monthly||0);
+    return h+'</div>';
+  }
+  function renderCalc(r){
+    var o=document.getElementById("cbCalc");if(!o)return;
+    var first=S.hist.length?fmtDay(S.hist[0].swipe_at):"\u2014",last=S.hist.length?fmtDay(S.hist[S.hist.length-1].swipe_at):"\u2014";
+    var hs=r.rw.filter(function(x){return x.src==="taekus";}),hsp=hs.reduce(function(a,x){return a+x.spend;},0);
+    var shared='<div class="cb-card"><h5>Taekus \u00b7\u00b78010<small>not split by player</small></h5><table class="cbc-t">'+
+      row2(hs.length+' swipes read straight from Taekus ('+first+' \u2013 '+last+')',usd(hsp))+
+      row2('Points \u00f7 100 (= '+(hsp?pct(r.taekus/hsp):'\u2014')+' back)',usd(r.taekus),'res')+'</table>'+
+      '<div class="cbc-h">History by month</div>'+historyTable(hs,[],0)+
+      '<p class="cbo-note">Everyone\u2019s GPay + Apple Pay runs on this card. Taekus doesn\u2019t say whose swipe it was, so it sits here. GPay/Apple Pay ticks after '+last+' count inside each player.</p></div>';
     o.innerHTML='<div class="cbo-sec">Money made · rewards minus Coinbase One</div><div class="cbo-tiles">'+
       tile("Total",r.total-r.cb1,usd(r.total)+" rewards − "+usd(r.cb1)+" Coinbase One")+
       tile("This year",r.ytd-r.cb1ytd,usd(r.ytd)+" rewards − "+usd(r.cb1ytd)+" Coinbase One")+
@@ -7586,10 +7663,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
       tile("Next 1 year (ceiling)",r.proj.net*12,"every window hit, 12 months","proj")+'</div>'+
       '<p class="cbo-note">Rewards come from: <b>'+usd(r.taekus)+'</b> read straight from Medi’s Taekus ··8010 (swipes since '+first+') · <b>'+usd(r.tick8010)+'</b> GPay/Apple Pay ticks after that (2.13%) · <b>'+usd(r.hamed)+'</b> PayPal/Samsung <b>from tracker ticks only</b> (2.3%, Hamed’s Taekus can’t be read).'+
       (r.proj.missing.length?' Ceiling skips methods with no max: '+r.proj.missing.join(", ")+'.':'')+'</p>'+
-      '<div class="cbo-sec">Where the money is now</div><div class="cbo-tiles">'+
-      tile("In Coinbase",agg.inCB,"all players")+tile("Withdrawing to banks",agg.wd,"sent, not landed")+
-      tile("In bank accounts",agg.bank,"landed, not sent to Taekus")+tile("ACH to Taekus",agg.ach,"sent, not landed")+'</div>'+
-      '<div class="cbo-sec">Players · tap a box to log it (time + amount)</div><div class="cb-grid">'+S.people.map(function(p){return player(p,L);}).join("")+'</div>';
+      '<div class="cbo-sec">The math, player by player</div><div class="cb-grid">'+shared+S.people.map(function(p){return calcCard(p,r);}).join("")+'</div>';
   }
 
   /* ---- actions ---- */
@@ -7646,16 +7720,16 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
     document.querySelectorAll("#cbSubBar .rsub-btn").forEach(function(b){var on=b.dataset.cbsub===name;if(on)ok=true;b.setAttribute("aria-selected",on?"true":"false");var pn=document.getElementById("cbsub-"+b.dataset.cbsub);if(pn)pn.hidden=!on;});
     if(!ok){showSub("ov");return;}
     try{localStorage.setItem(SUB_KEY,name);}catch(e){}
-    if(name==="ov")load();
+    if(name==="ov"||name==="calc")load();
   }
   var bar=document.getElementById("cbSubBar");
   if(bar)bar.addEventListener("click",function(ev){var b=ev.target.closest(".rsub-btn");if(b)showSub(b.dataset.cbsub);});
   var init="ov";try{init=localStorage.getItem(SUB_KEY)||"ov";}catch(e){}
   showSub(init);
   document.addEventListener("cb:changed",load);
-  var tb=document.getElementById("tabBtnCb");if(tb)tb.addEventListener("click",function(){var pn=document.getElementById("cbsub-ov");if(pn&&!pn.hidden)load();});
+  var tb=document.getElementById("tabBtnCb");if(tb)tb.addEventListener("click",function(){var pn=document.getElementById("cbsub-ov"),pc=document.getElementById("cbsub-calc");if((pn&&!pn.hidden)||(pc&&!pc.hidden))load();});
   // Keep countdowns / "x ago" honest (skip while Medi is typing in a box).
-  setInterval(function(){var a=document.activeElement;if(a&&a.closest&&a.closest("#cbOv"))return;var pn=document.getElementById("cbsub-ov");if(pn&&!pn.hidden&&S.people.length)render();},60000);
+  setInterval(function(){var a=document.activeElement;if(a&&a.closest&&a.closest("#cbOv"))return;var pn=document.getElementById("cbsub-ov"),pc=document.getElementById("cbsub-calc");if(((pn&&!pn.hidden)||(pc&&!pc.hidden))&&S.people.length)render();},60000);
   window.__cbOv={S:S,money:money,stages:stages,live:live,ceiling:ceiling,render:render,load:load};
 }();
 </script>
@@ -7955,7 +8029,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "9253fd2 2026-09-29 07:37 UTC".indexOf("STAMP") >= 0 ? "dev" : "9253fd2 2026-09-29 07:37 UTC";
+  var GFH_BUILD = "55ca527 2026-09-29 07:51 UTC".indexOf("STAMP") >= 0 ? "dev" : "55ca527 2026-09-29 07:51 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
