@@ -1308,6 +1308,33 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   .cbc-t tr.res td{color:var(--gold);font-weight:700}
   .cbc-t tr.res td.n{color:var(--gold)}
   .cbc-h{font:700 10.5px var(--mono);letter-spacing:.08em;color:var(--ink-mute);text-transform:uppercase;margin:10px 0 2px}
+  /* player card v2 (2026-09-29): one aligned grid, icons, bars */
+  .cbv-stats{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin:0 0 10px}
+  .cbv-stats div{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:5px 2px;text-align:center}
+  .cbv-stats i{display:block;font-style:normal;font-size:15px;line-height:1.1}
+  .cbv-stats b{display:block;font:700 11.5px var(--mono);color:var(--ink);margin-top:2px;white-space:nowrap}
+  .cbv-stats em{display:block;font-style:normal;font-size:9px;color:var(--ink-mute)}
+  .cbr{display:grid;grid-template-columns:34px minmax(0,1fr) 96px 28px;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+  .cbr.dim{opacity:.4}
+  #cbOv .cb-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,350px),1fr))}
+  .cbr-top span:first-child{overflow:hidden;text-overflow:ellipsis}
+  .cbr .cbo-box{width:34px;height:34px;padding:0;justify-content:center;border-radius:9px}
+  .cbr .cbo-box::before{width:16px;height:16px}
+  .cbr-l{min-width:0}
+  .cbr-top{display:flex;justify-content:space-between;gap:6px;font-size:12.5px;color:var(--ink);white-space:nowrap}
+  .cbr-top span:last-child{font:11px var(--mono);color:var(--ink-mute)}
+  .cbr-top .go{color:var(--good);font-weight:700}
+  .cbr-bar{height:5px;border-radius:3px;background:var(--line2);margin-top:4px;overflow:hidden}
+  .cbr-bar i{display:block;height:100%;background:var(--gold);border-radius:3px}
+  .cbr-bar i.full{background:var(--good)}
+  .cbr input{width:100%;box-sizing:border-box;background:var(--bg2);border:1px solid var(--line2);color:var(--ink);border-radius:8px;padding:7px 6px;font:12.5px var(--mono);text-align:right}
+  .cbr input:disabled{opacity:.6}
+  .cbr .amt{font:12.5px var(--mono);text-align:right;color:var(--ink)}
+  .cbr-u{background:none;border:1px solid var(--line2);color:var(--ink-soft);border-radius:8px;width:28px;height:28px;padding:0;font-size:14px;cursor:pointer}
+  .cbr-sub{padding-left:14px}
+  .cbv-when{display:flex;align-items:center;gap:6px;margin:0 0 4px;font-size:14px}
+  .cbv-when input{background:var(--bg2);border:1px solid var(--line2);color:var(--ink);border-radius:8px;padding:6px 7px;font:12px var(--mono)}
+  .cbv-when button{background:none;border:1px solid var(--line2);color:var(--ink-soft);border-radius:8px;padding:5px 8px;font-size:11px;cursor:pointer}
   .cbo-msg{font-size:11.5px;color:var(--ink-mute);min-height:14px} .cbo-msg.bad{color:var(--bad)} .cbo-msg.ok{color:var(--good)}
   .cb-gen{border-top:1px solid var(--line);margin-top:6px;padding-top:6px}
   .cb-st{font-family:var(--mono);font-size:9.5px;font-weight:800;letter-spacing:.04em;padding:2px 7px;border-radius:6px}
@@ -2957,7 +2984,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 9b326d1 · built 2026-09-29 07:58 UTC</span>
+    <span id="verStamp" class="tnum">version: cac1d53 · built 2026-09-29 08:19 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7475,7 +7502,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   function ym(ms){var p=tzParts(new Date(ms));return [+p.year,+p.month];}
   function monthStart(y,m){return new Date(fromLocalInput(y+"-"+(m<10?"0":"")+m+"-01T00:00")).getTime();}
 
-  var S={people:[],events:[],hist:[],msg:{}};
+  var S={people:[],events:[],hist:[],msg:{},when:{}};
   function get(path){return fetch(URL_+"/rest/v1/"+path,{headers:H()}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();});}
   function load(){
     return Promise.all([get("cb_people?select=*&order=sort_order"),get("cb_events?select=*&order=at.asc,id.asc"),get("cb_rewards_history?select=*&order=swipe_at")])
@@ -7553,42 +7580,58 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   function tile(k,v,s,cls){return '<div class="cbo-t'+(cls?' '+cls:'')+'"><div class="k">'+k+'</div><div class="v'+(v<0?' neg':'')+'">'+usd(v)+'</div><div class="s">'+s+'</div></div>';}
   function openMs(p,k){var l=p[k+"_last"];return l?new Date(l).getTime()+M[k][1]*36e5:0;}
   function onMethods(p){return ORDER.filter(function(k){return p[k+"_on"]!==false;});}
-  function methodOpts(p){
-    return onMethods(p).map(function(k){
-      var left=openMs(p,k)-Date.now();
-      return '<option value="'+k+'" data-max="'+(+p[k+"_limit"]||"")+'">'+M[k][0]+(left>0?' · opens in '+dur(left):' · open')+'</option>';
-    }).join("");
+  var ICON={paypal:"\ud83c\udd7f\ufe0f",samsung:"\ud83d\udcf1",gpay:"\ud83d\udd35",applepay:"\ud83c\udf4e"};
+  function k$(n){n=+n||0;return n>=1000?"$"+(Math.round(n/100)/10)+"k":usd(n);}
+  function latest(code,test){var L=live(),x=null;L.ev.forEach(function(e){if(e.code===code&&test(e,L))x=e;});return x;}
+  function undoBtn(e){return e?'<button type="button" class="cbr-u cbo-undo" data-undo="'+e.id+'" title="Undo '+STAGE[e.stage]+' '+usd(e.amount)+'">\u21b6</button>':'<span></span>';}
+  function pbar(frac,full){return '<div class="cbr-bar"><i class="'+(full?'full':'')+'" style="width:'+Math.round(Math.max(0,Math.min(1,frac))*100)+'%"></i></div>';}
+  function depRow(p,k){
+    var lim=+p[k+"_limit"],last=p[k+"_last"]?new Date(p[k+"_last"]).getTime():0,win=M[k][1]*36e5,left=last?last+win-Date.now():0;
+    var open=left<=0,t=!last?'<span>\u2014</span>':open?'<span class="go">\u2713 open</span>':'<span>\u23f3 '+dur(left)+'</span>';
+    var e=latest(p.code,function(x){return x.stage==="deposit"&&x.method===k&&Date.now()-new Date(x.at).getTime()<win;});
+    return '<div class="cbr'+(open?'':' wait')+'" data-row="deposit" data-m="'+k+'">'+
+      '<button type="button" class="cbo-box" data-do="deposit" aria-label="Deposit '+M[k][0]+'"></button>'+
+      '<div class="cbr-l"><div class="cbr-top"><span>'+ICON[k]+' '+M[k][0]+'</span>'+t+'</div>'+pbar(last?(Date.now()-last)/win:0,open&&last)+'</div>'+
+      '<input type="text" inputmode="decimal" class="cb-money cbo-amt" value="'+(lim?usd(lim):'')+'" placeholder="$">'+undoBtn(e)+'</div>';
   }
-  function openRow(e,stage,label){
-    return '<div class="cbo-open"><button type="button" class="cbo-box" data-do="'+stage+'" data-ref="'+e.id+'" data-amt="'+e.amount+'">'+label+'</button>'+usd(e.amount)+' sent '+fmt(e.at)+' · '+dur(Date.now()-new Date(e.at).getTime())+' ago</div>';
+  function moveRow(stage,icon,label,amt,p,sentStage){
+    var e=latest(p.code,function(x,L){return x.stage===sentStage&&!L.landed[x.id]&&Date.now()-new Date(x.at).getTime()<864e5;});
+    var off=!(amt>0);
+    return '<div class="cbr'+(off?' dim':'')+'" data-row="'+stage+'">'+
+      '<button type="button" class="cbo-box" data-do="'+stage+'"'+(off?' disabled':'')+' aria-label="'+label+'"></button>'+
+      '<div class="cbr-l"><div class="cbr-top"><span>'+icon+' '+label+'</span><span>'+(stage==="withdraw_sent"?'keeps '+k$(p.usdc_floor):'')+'</span></div></div>'+
+      '<input type="text" inputmode="decimal" class="cb-money cbo-amt" value="'+(off?'$0':usd(amt))+'"'+(off?' disabled':'')+'>'+undoBtn(e)+'</div>';
+  }
+  function openRow(e,stage,icon,label){
+    var ago=Date.now()-new Date(e.at).getTime();
+    return '<div class="cbr cbr-sub" data-row="'+stage+'">'+
+      '<button type="button" class="cbo-box" data-do="'+stage+'" data-ref="'+e.id+'" data-amt="'+e.amount+'" aria-label="'+label+'"></button>'+
+      '<div class="cbr-l"><div class="cbr-top"><span>'+icon+' '+label+'</span><span>\u23f1 '+dur(ago)+'</span></div></div>'+
+      '<div class="amt">'+usd(e.amount)+'</div><span></span></div>';
   }
   function player(p,L){
-    var st=stages(p,L),c=p.code,floor=+p.usdc_floor||0,ce=ceiling(p),first=onMethods(p)[0];
-    var h='<div class="cb-card cbo-p" data-p="'+c+'"><h5>'+c+'<small>ceiling '+usd(ce.net)+'/mo'+(ce.missing.length?' · no max: '+ce.missing.join(", "):'')+'</small></h5>';
-    h+='<div class="cbo-stages">'+
-       '<div><i>Deposited (all)</i><b>'+usd(st.dep)+'</b></div>'+
-       '<div><i>In Coinbase</i><b>'+usd(st.inCB)+'</b></div>'+
-       '<div><i>Withdrawing</i><b>'+usd(st.wd)+'</b></div>'+
-       '<div><i>In bank</i><b>'+usd(st.bank)+'</b></div>'+
-       '<div><i>ACH → Taekus</i><b>'+usd(st.ach)+'</b></div>'+
-       '<div><i>Landed Taekus</i><b>'+usd(st.taekus)+'</b></div></div>';
-    h+='<div class="cbo-act"><label style="font-size:11px;color:var(--ink-mute)">When <input type="datetime-local" class="cbo-when"></label><span style="font-size:10.5px;color:var(--ink-mute)">blank = right now · Pacific</span></div>';
-    if(first)h+='<div class="cbo-act"><button type="button" class="cbo-box" data-do="deposit">Deposit to CB</button>'+
-       '<select class="cbo-meth">'+methodOpts(p)+'</select>'+
-       '<input type="text" inputmode="decimal" class="cb-money cbo-amt" value="'+(+p[first+"_limit"]?usd(+p[first+"_limit"]):"")+'" placeholder="$"></div>';
-    var wdDefault=Math.max(0,st.inCB-floor);
-    h+='<div class="cbo-act"><button type="button" class="cbo-box" data-do="withdraw_sent">Withdraw from CB</button>'+
-       '<input type="text" inputmode="decimal" class="cb-money cbo-amt" value="'+(wdDefault?usd(wdDefault):"")+'" placeholder="$"><span style="font-size:10.5px;color:var(--ink-mute)">leaves '+usd(floor)+' floor</span></div>';
-    st.openWd.forEach(function(e){h+=openRow(e,"withdraw_landed","Landed in bank");});
-    h+='<div class="cbo-act"><button type="button" class="cbo-box" data-do="ach_sent">ACH to Taekus</button>'+
-       '<input type="text" inputmode="decimal" class="cb-money cbo-amt" value="'+(st.bank>0?usd(st.bank):"")+'" placeholder="$"></div>';
-    st.openAch.forEach(function(e){h+=openRow(e,"ach_landed","Landed in Taekus");});
+    var st=stages(p,L),c=p.code,floor=+p.usdc_floor||0,ce=ceiling(p);
+    var h='<div class="cb-card cbo-p" data-p="'+c+'"><h5>'+c+'<small>'+usd(ce.net)+'/mo max</small></h5>';
+    h+='<div class="cbv-stats">'+
+       '<div><i>\ud83d\udce5</i><b>'+k$(st.dep)+'</b><em>deposited</em></div>'+
+       '<div><i>\ud83d\udcb0</i><b>'+k$(st.inCB)+'</b><em>in CB</em></div>'+
+       '<div><i>\ud83c\udfe7</i><b>'+k$(st.wd)+'</b><em>\u2192 bank</em></div>'+
+       '<div><i>\ud83c\udfe6</i><b>'+k$(st.bank)+'</b><em>in bank</em></div>'+
+       '<div><i>\u27a1\ufe0f</i><b>'+k$(st.ach)+'</b><em>\u2192 Taekus</em></div>'+
+       '<div><i>\u2705</i><b>'+k$(st.taekus)+'</b><em>Taekus</em></div></div>';
+    var wv=S.when[c]||toLocalInput(new Date().toISOString());
+    h+='<div class="cbv-when">\ud83d\udd52<input type="datetime-local" class="cbo-when" value="'+wv+'"'+(S.when[c]?' data-edited="1"':'')+'>'+(S.when[c]?'<button type="button" class="cbv-now">now</button>':'')+'</div>';
+    onMethods(p).forEach(function(k){h+=depRow(p,k);});
+    h+=moveRow("withdraw_sent","\ud83c\udfe7","Withdraw",Math.max(0,st.inCB-floor),p,"withdraw_sent");
+    st.openWd.forEach(function(e){h+=openRow(e,"withdraw_landed","\ud83c\udfe6","landed "+fmtDay(e.at).replace(/^\w+ /,""));});
+    h+=moveRow("ach_sent","\u27a1\ufe0f","ACH \u2192 Taekus",Math.max(0,st.bank),p,"ach_sent");
+    st.openAch.forEach(function(e){h+=openRow(e,"ach_landed","\u2705","in Taekus");});
     var mg=S.msg[c]&&Date.now()-S.msg[c].t<12e4?S.msg[c]:null;
-    h+='<div class="cbo-msg'+(mg?' ok':'')+'">'+(mg?mg.text:'')+'</div>';
-    var mine=S.events.filter(function(e){return e.code===c&&e.stage!=="void";}).slice(-6).reverse();
+    h+='<div class="cbo-msg'+(mg?' '+(mg.bad?'bad':'ok'):'')+'">'+(mg?mg.text:'')+'</div>';
+    var mine=S.events.filter(function(e){return e.code===c&&e.stage!=="void";}).slice(-4).reverse();
     if(mine.length)h+='<ul class="cbo-log">'+mine.map(function(e){
         var v=L.voided[e.id];
-        return '<li'+(v?' class="void"':'')+'><span>'+fmt(e.at)+' · '+STAGE[e.stage]+(e.method&&M[e.method]?' ('+M[e.method][0]+')':'')+'</span><span>'+usd(e.amount)+'</span>'+(v?'':'<button type="button" class="cbo-undo" data-undo="'+e.id+'">undo</button>')+'</li>';
+        return '<li'+(v?' class="void"':'')+'><span>'+fmt(e.at).replace(/^\w+, /,"")+' \u00b7 '+(e.method&&ICON[e.method]?ICON[e.method]+' ':'')+STAGE[e.stage]+'</span><span>'+usd(e.amount)+'</span>'+(v?'':'<button type="button" class="cbo-undo" data-undo="'+e.id+'" title="Undo">\u21b6</button>')+'</li>';
       }).join("")+'</ul>';
     return h+'</div>';
   }
@@ -7669,49 +7712,56 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
 
   /* ---- actions ---- */
   function post(rec){return fetch(URL_+"/rest/v1/cb_events",{method:"POST",headers:H({Prefer:"return=representation"}),body:JSON.stringify(rec)}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();});}
-  // A deposit also moves that method's "last used" forward so the Settings countdown syncs.
-  function bumpLast(code,k,at){
+  // Deposit moves that method's "last used" so the window/bar resets; undo puts the old value back.
+  function setLast(code,k,at){
     var p=S.people.filter(function(x){return x.code===code;})[0];if(!p)return;
-    if(p[k+"_last"]&&new Date(p[k+"_last"]).getTime()>=new Date(at).getTime())return;
     var patch={};patch[k+"_last"]=at;patch.updated_at=new Date().toISOString();patch.updated_by="medi";
     fetch(URL_+"/rest/v1/cb_people?code=eq."+encodeURIComponent(code),{method:"PATCH",headers:H({Prefer:"return=minimal"}),body:JSON.stringify(patch)}).then(function(r){
       if(!r.ok)return;p[k+"_last"]=at;render();
-      var log={code:code,note:"last used from Overview deposit",updated_by:"medi"};log[k+"_last"]=at;
+      var log={code:code,note:"last used from Overview",updated_by:"medi"};log[k+"_last"]=at;
       fetch(URL_+"/rest/v1/cb_people_log",{method:"POST",headers:H({Prefer:"return=minimal"}),body:JSON.stringify(log)}).catch(function(){});
       var i=document.getElementById("cb_"+code+"_"+k+"_last");
-      if(i){i.value=toLocalInput(at);i.dataset.orig=at;i.dispatchEvent(new Event("input",{bubbles:true}));}
+      if(i){i.value=toLocalInput(at);i.dataset.orig=at||"";i.dispatchEvent(new Event("input",{bubbles:true}));}
     }).catch(function(){});
   }
-  document.addEventListener("change",function(ev){
-    var t=ev.target;if(!t.classList||!t.classList.contains("cbo-meth"))return;
-    var a=t.closest(".cbo-act").querySelector(".cbo-amt"),mx=+t.selectedOptions[0].dataset.max;a.value=mx?usd(mx):"";
+  function say(code,text,bad){S.msg[code]={t:Date.now(),text:text,bad:!!bad};render();}
+  document.addEventListener("input",function(ev){
+    var t=ev.target;if(!t.classList||!t.classList.contains("cbo-when"))return;
+    var c=t.closest(".cbo-p");if(c&&t.value)S.when[c.dataset.p]=t.value;
+  });
+  document.addEventListener("click",function(ev){
+    var n=ev.target.closest&&ev.target.closest(".cbv-now");if(!n)return;
+    delete S.when[n.closest(".cbo-p").dataset.p];render();
   });
   document.addEventListener("click",function(ev){
     var b=ev.target.closest&&ev.target.closest(".cbo-box,.cbo-undo");if(!b||!b.closest("#cbOv"))return;
-    var card=b.closest(".cbo-p"),code=card.dataset.p,msg=card.querySelector(".cbo-msg"),rec={code:code,created_by:"medi"};
+    var card=b.closest(".cbo-p"),code=card.dataset.p,rec={code:code,created_by:"medi"},p=S.people.filter(function(x){return x.code===code;})[0],undone=null;
     if(b.classList.contains("cbo-undo")){
-      var e=S.events.filter(function(x){return String(x.id)===b.dataset.undo;})[0];if(!e)return;
-      if(!confirm(code+": undo "+STAGE[e.stage]+" "+usd(e.amount)+" ("+fmt(e.at)+")?"))return;
-      rec.stage="void";rec.ref_id=e.id;rec.amount=e.amount;rec.note="undo "+e.stage;
+      undone=S.events.filter(function(x){return String(x.id)===b.dataset.undo;})[0];if(!undone)return;
+      if(!confirm(code+": undo "+STAGE[undone.stage]+" "+usd(undone.amount)+" ("+fmt(undone.at)+")?"))return;
+      rec.stage="void";rec.ref_id=undone.id;rec.amount=undone.amount;rec.note="undo "+undone.stage;
     }else{
       var when=card.querySelector(".cbo-when");
-      if(when.value===""&&when.validity&&when.validity.badInput){msg.className="cbo-msg bad";msg.textContent="Finish the When box (time + AM/PM) or clear it. Nothing saved.";return;}
+      if(when.value===""&&when.validity&&when.validity.badInput){say(code,"\u26a0 finish the \ud83d\udd52 time (AM/PM)",1);return;}
       rec.stage=b.dataset.do;rec.at=when.value?fromLocalInput(when.value):new Date().toISOString();
       if(b.dataset.ref){rec.ref_id=+b.dataset.ref;rec.amount=+b.dataset.amt;}
       else{
-        var amt=parseDollars(b.closest(".cbo-act").querySelector(".cbo-amt").value);
-        if(!(amt>0)){msg.className="cbo-msg bad";msg.textContent="Type an amount first.";return;}
+        var amt=parseDollars(b.closest(".cbr").querySelector(".cbo-amt").value);
+        if(!(amt>0)){say(code,"\u26a0 type an amount",1);return;}
         rec.amount=amt;
-        if(rec.stage==="deposit")rec.method=card.querySelector(".cbo-meth").value;
+        if(rec.stage==="deposit"){var k=b.closest(".cbr").dataset.m;rec.method=k;rec.note="prev_last="+(p&&p[k+"_last"]||"");}
       }
     }
-    b.disabled=true;msg.className="cbo-msg";msg.textContent="Saving…";
+    b.disabled=true;b.classList.add("done");
     post(rec).then(function(rows){
-      // Saved note survives re-renders for 2 minutes (text only, escaped by construction).
-      S.msg[code]={t:Date.now(),text:"✓ "+STAGE[rec.stage]+" "+usd(rec.amount)+(rec.at?" · "+fmt(rec.at):"")+" saved"};
-      S.events=S.events.concat(rows);render();
-      if(rec.stage==="deposit")bumpLast(code,rec.method,rec.at);
-    }).catch(function(){b.disabled=false;msg.className="cbo-msg bad";msg.textContent="Not saved — tap again.";});
+      S.events=S.events.concat(rows);delete S.when[code];
+      say(code,rec.stage==="void"?"\u21b6 undone":"\u2713 "+STAGE[rec.stage]+" "+usd(rec.amount)+" \u00b7 "+fmt(rec.at).replace(/^\w+, /,""));
+      if(rec.stage==="deposit"&&p&&(!p[rec.method+"_last"]||new Date(p[rec.method+"_last"]).getTime()<new Date(rec.at).getTime()))setLast(code,rec.method,rec.at);
+      // Undo a deposit that set the window -> put the window back where it was.
+      if(undone&&undone.stage==="deposit"&&p&&p[undone.method+"_last"]&&new Date(p[undone.method+"_last"]).getTime()===new Date(undone.at).getTime()){
+        var m=/^prev_last=(.*)$/.exec(undone.note||"");if(m)setLast(code,undone.method,m[1]||null);
+      }
+    }).catch(function(){b.disabled=false;b.classList.remove("done");say(code,"\u26a0 not saved \u2014 tap again",1);});
   });
 
   /* ---- sub-tabs (scoped to #tab-cb; own storage key) ---- */
@@ -8030,7 +8080,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "9b326d1 2026-09-29 07:58 UTC".indexOf("STAMP") >= 0 ? "dev" : "9b326d1 2026-09-29 07:58 UTC";
+  var GFH_BUILD = "cac1d53 2026-09-29 08:19 UTC".indexOf("STAMP") >= 0 ? "dev" : "cac1d53 2026-09-29 08:19 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
