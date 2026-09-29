@@ -1693,7 +1693,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   <div class="tabpanel" id="tab-cb" role="tabpanel" aria-labelledby="tabBtnCb" hidden>
     <div class="rx-mhead" style="margin-top:8px"><span class="em">💰</span><div class="tt">
       <h4>CB tracker &mdash; settings per person</h4>
-      <p class="md">Switch a method <b>off</b> if that person doesn't qualify. Type each <b>max</b> and when it was <b>last used</b> so every window syncs. PayPal resets <b>24h</b> after a buy &middot; Samsung, GPay &amp; Apple Pay reset <b>7 days</b> after. Floor = USDC always left in Coinbase. Coinbase One = <b>we pay</b> monthly. All times <b>Pacific</b>. Leave blank if you don't know yet.</p>
+      <p class="md">Switch a method <b>off</b> when we don't run it for that person (e.g. they deposit it themselves). Type each <b>max</b> and when it was <b>last used</b> so every window syncs. PayPal resets <b>24h</b> after a buy &middot; Samsung, GPay &amp; Apple Pay reset <b>7 days</b> after. Floor = USDC always left in Coinbase. Coinbase One = <b>we pay</b> monthly. All times <b>Pacific</b>. Leave blank if you don't know yet.</p>
     </div></div>
     <div class="cb-grid" id="cbGrid"><div class="cb-soon">Loading&hellip;</div></div>
     <div class="cb-soon">Coming next on this tab: our Taekus balance at the top (from Sabz) &middot; buy log with &#9744; action items &middot; withdraw / bank / Taekus steps with timers &middot; ntfy alarms (quiet 12&ndash;8 AM).</div>
@@ -2904,7 +2904,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 458ae8d · built 2026-09-29 03:40 UTC</span>
+    <span id="verStamp" class="tnum">version: 9521fb6 · built 2026-09-29 03:44 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7165,7 +7165,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   var URL_="https://cuubqcxzvyiryxcygadh.supabase.co", KEY="sb_publishable_vuJ1bfkLjpPNbrouZb_3eQ_9dSJXlep";
   var TZ="America/Los_Angeles";
   function H(x){var h={apikey:KEY,Authorization:"Bearer "+KEY,"Content-Type":"application/json"};for(var k in (x||{}))h[k]=x[k];return h;}
-  /* Each method: own on/off switch (not everyone qualifies), own max, own last-used
+  /* Each method: own on/off switch (off = we don't run it for that person), own max, own last-used
      time. Window reopens last + hours (rolling). */
   var METHODS=[
     ["paypal","PayPal",24,"resets 24h after a buy"],
@@ -7209,7 +7209,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
     METHODS.forEach(function(m){
       var k=m[0],on=r[k+"_on"]!==false;
       h+='<div class="cb-m'+(on?'':' off')+'" data-m="'+k+'" data-h="'+m[2]+'">'+
-         '<label class="cb-sw"><input type="checkbox" data-f="'+k+'_on"'+(on?' checked':'')+'><span class="tr"></span><b>'+m[1]+'</b><em>'+(on?'qualifies':'doesn\'t qualify')+'</em></label>'+
+         '<label class="cb-sw"><input type="checkbox" data-f="'+k+'_on"'+(on?' checked':'')+'><span class="tr"></span><b>'+m[1]+'</b><em>'+(on?'on':'off')+'</em></label>'+
          '<div class="cb-mb">'+
            row('cb_'+c+'_'+k+'_limit','Max',m[3],inp('cb_'+c+'_'+k+'_limit',k+'_limit',dollars(r[k+"_limit"]),"$"))+
            row('cb_'+c+'_'+k+'_last','Last used','Pacific time',inp('cb_'+c+'_'+k+'_last',k+'_last',toLocalInput(r[k+"_last"]),"dt"))+
@@ -7253,7 +7253,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   document.addEventListener("change",function(ev){
     var t=ev.target;if(!(t.type==="checkbox"&&t.closest&&t.closest(".cb-sw")))return;
     var m=t.closest(".cb-m");m.classList.toggle("off",!t.checked);
-    m.querySelector(".cb-sw em").textContent=t.checked?"qualifies":"doesn't qualify";
+    m.querySelector(".cb-sw em").textContent=t.checked?"on":"off";
   });
   // Keep countdowns honest while the tab is open.
   setInterval(function(){
@@ -7584,7 +7584,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "458ae8d 2026-09-29 03:40 UTC".indexOf("STAMP") >= 0 ? "dev" : "458ae8d 2026-09-29 03:40 UTC";
+  var GFH_BUILD = "9521fb6 2026-09-29 03:44 UTC".indexOf("STAMP") >= 0 ? "dev" : "9521fb6 2026-09-29 03:44 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
