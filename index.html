@@ -1266,6 +1266,8 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   .cb-sw input:focus-visible + .tr{outline:2px solid var(--gold-deep);outline-offset:2px}
   .cb-sw b{font-size:13px;color:var(--ink)} .cb-sw em{font-style:normal;font-size:10.5px;color:var(--ink-mute);margin-left:auto}
   .cb-mb{margin-top:6px}
+  .cb-f input.cb-bad{border-color:var(--bad);outline:2px solid var(--bad)}
+  .cb-al{margin:2px 0 6px;padding:5px 0 7px;border-bottom:1px dashed var(--line)} .cb-al .tr{width:30px;height:18px} .cb-al .tr::after{width:12px;height:12px} .cb-al input:checked + .tr::after{left:15px} .cb-al b{font-size:12px;font-weight:600}
   .cb-st.late{background:var(--bad-bg);color:var(--bad)} .cb-st.ok2{background:var(--bg2);color:var(--ink-soft)}
   .cb-paid{margin-left:6px;background:transparent;border:1px solid var(--good);color:var(--good);border-radius:7px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer}
   .cb-paid:disabled{opacity:.5}
@@ -1701,7 +1703,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   <div class="tabpanel" id="tab-cb" role="tabpanel" aria-labelledby="tabBtnCb" hidden>
     <div class="rx-mhead" style="margin-top:8px"><span class="em">💰</span><div class="tt">
       <h4>CB tracker &mdash; settings per person</h4>
-      <p class="md">Switch a method <b>off</b> when we don't run it for that person (e.g. they deposit it themselves). Type each <b>max</b> and when it was <b>last used</b> so every window syncs. PayPal resets <b>24h</b> after a buy &middot; Samsung, GPay &amp; Apple Pay reset <b>7 days</b> after. Floor = USDC always left in Coinbase. Coinbase One = <b>we pay</b> monthly. All times <b>Pacific</b>. Leave blank if you don't know yet.</p>
+      <p class="md"><b>On/Off</b> = does it count toward the numbers. <b>Alarm</b> = does it ping you (e.g. RIN deposits PayPal &amp; Apple Pay herself: on, alarm off). Type each <b>max</b> and when it was <b>last used</b> so every window syncs. PayPal resets <b>24h</b> after a buy &middot; Samsung, GPay &amp; Apple Pay reset <b>7 days</b> after. Floor = USDC always left in Coinbase. Coinbase One = <b>we pay</b> monthly. All times <b>Pacific</b>. Leave blank if you don't know yet.</p>
     </div></div>
     <div class="cb-grid" id="cbGrid"><div class="cb-soon">Loading&hellip;</div></div>
     <div class="cb-soon">Coming next on this tab: our Taekus balance at the top (from Sabz) &middot; buy log with &#9744; action items &middot; withdraw / bank / Taekus steps with timers &middot; ntfy alarms (quiet 12&ndash;8 AM).</div>
@@ -2912,7 +2914,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: cb9c144 · built 2026-09-29 04:26 UTC</span>
+    <span id="verStamp" class="tnum">version: 300157d · built 2026-09-29 04:33 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7208,7 +7210,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
                   :'<span class="cb-st wait">opens in '+dur(left)+'</span> &middot; '+fmt(at);
   }
   function inp(id,f,v,kind){
-    return kind==="dt"?'<input type="datetime-local" id="'+id+'" data-f="'+f+'" value="'+v+'">'
+    return kind==="dt"?'<input type="datetime-local" id="'+id+'" data-f="'+f+'" value="'+v+'" data-orig="'+(v?fromLocalInput(v):"")+'">'
                       :'<input type="text" inputmode="decimal" class="cb-money" placeholder="&mdash;" id="'+id+'" data-f="'+f+'" value="'+v+'">';
   }
   function esc(v){return String(v==null?"":v).replace(/[&<>"]/g,function(ch){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch];});}
@@ -7236,6 +7238,8 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
     var tag=s.kind==="late"?'<span class="cb-st late">OVERDUE '+dur(-s.left)+'</span>':s.kind==="soon"?'<span class="cb-st wait">due in '+dur(s.left)+'</span>':'<span class="cb-st ok2">due in '+dur(s.left)+'</span>';
     return tag+' &middot; '+fmtDay(s.due)+' <button type="button" class="cb-paid" data-due="'+s.due.toISOString()+'">Mark paid &#10003;</button>';
   }
+  // Second, smaller switch: does this ping Medi? (on/off above = does it count at all)
+  function alarmSw(f,on){return '<label class="cb-sw cb-al"><input type="checkbox" data-f="'+f+'"'+(on?' checked':'')+'><span class="tr"></span><b>'+(on?'&#128276;':'&#128277;')+' Alarm</b><em>'+(on?'alarm on':'alarm off')+'</em></label>';}
   function row(id,label,sub,input){return '<div class="cb-f"><label for="'+id+'">'+label+'<i>'+sub+'</i></label>'+input+'</div>';}
   function card(r){
     var c=r.code,h='<div class="cb-card" data-code="'+c+'"><h5>'+c+'<small>'+(r.updated_at&&r.updated_by!=="seed"?"saved "+fmt(new Date(r.updated_at)):"")+'</small></h5>';
@@ -7243,7 +7247,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
       var k=m[0],on=r[k+"_on"]!==false;
       h+='<div class="cb-m'+(on?'':' off')+'" data-m="'+k+'" data-h="'+m[2]+'">'+
          '<label class="cb-sw"><input type="checkbox" data-f="'+k+'_on"'+(on?' checked':'')+'><span class="tr"></span><b>'+m[1]+'</b><em>'+(on?'on':'off')+'</em></label>'+
-         '<div class="cb-mb">'+
+         '<div class="cb-mb">'+alarmSw(k+'_alarm',r[k+'_alarm']!==false)+
            row('cb_'+c+'_'+k+'_limit','Max',m[3],inp('cb_'+c+'_'+k+'_limit',k+'_limit',dollars(r[k+"_limit"]),"$"))+
            row('cb_'+c+'_'+k+'_last','Last used','Pacific time',inp('cb_'+c+'_'+k+'_last',k+'_last',toLocalInput(r[k+"_last"]),"dt"))+
            '<p class="cb-nx cb-re">'+reopenHtml(r[k+"_last"],m[2])+'</p>'+
@@ -7252,7 +7256,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
     var fon=r.fee_on===true,fid='cb_'+c+'_fee_';
     h+='<div class="cb-m cb-fee'+(fon?'':' off')+'">'+
        '<label class="cb-sw"><input type="checkbox" data-f="fee_on"'+(fon?' checked':'')+'><span class="tr"></span><b>Monthly fee</b><em>'+(fon?'on':'off')+'</em></label>'+
-       '<div class="cb-mb">'+
+       '<div class="cb-mb">'+alarmSw('fee_alarm',r.fee_alarm!==false)+
          row(fid+'amount','Amount','per month',inp(fid+'amount','fee_amount',dollars(r.fee_amount),"$"))+
          row(fid+'day','Due day','day of the month (1&ndash;31)','<input type="text" inputmode="numeric" id="'+fid+'day" data-f="fee_day" data-kind="int" placeholder="&mdash;" value="'+(r.fee_day||"")+'">')+
          '<p class="cb-nx cb-fs" data-paid="'+(r.fee_paid_for||"")+'">'+feeHtml(r.fee_day,null,r.fee_paid_for)+'</p>'+
@@ -7274,6 +7278,9 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
       loaded=false;g.innerHTML='<div class="cb-soon">Couldn\'t reach the database. Check your connection and reload.</div>';
     });
   }
+  // Remember that a date box was typed in; a complete value clears the flag.
+  document.addEventListener("keydown",function(ev){var t=ev.target;if(t.type==="datetime-local"&&t.closest&&t.closest("#cbGrid"))t.dataset.typed="1";});
+  document.addEventListener("input",function(ev){var t=ev.target;if(t.type==="datetime-local"&&t.value){t.dataset.typed="";t.classList.remove("cb-bad");}});
   // Live "$6,500" formatting as you type (keeps the caret at the end - simple + safe).
   document.addEventListener("input",function(ev){
     var t=ev.target;
@@ -7293,8 +7300,9 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   });
   document.addEventListener("change",function(ev){
     var t=ev.target;if(!(t.type==="checkbox"&&t.closest&&t.closest(".cb-sw")))return;
+    if(t.closest(".cb-al")){var a=t.closest(".cb-al");a.querySelector("em").textContent=t.checked?"alarm on":"alarm off";a.querySelector("b").innerHTML=(t.checked?"&#128276;":"&#128277;")+" Alarm";return;}
     var m=t.closest(".cb-m");m.classList.toggle("off",!t.checked);
-    m.querySelector(".cb-sw em").textContent=t.checked?"on":"off";
+    m.querySelector(".cb-sw:not(.cb-al) em").textContent=t.checked?"on":"off";
   });
   // Keep countdowns honest while the tab is open.
   setInterval(function(){
@@ -7304,16 +7312,26 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   },60000);
   document.addEventListener("click",function(ev){
     var b=ev.target.closest&&ev.target.closest(".cb-save");if(!b)return;
-    var c=b.closest(".cb-card"),msg=c.querySelector(".cb-msg"),rec={code:c.dataset.code},bad=false,badDay=false;
+    var c=b.closest(".cb-card"),msg=c.querySelector(".cb-msg"),rec={code:c.dataset.code},bad=false,badDay=false,partial=[];
+    c.querySelectorAll(".cb-bad").forEach(function(x){x.classList.remove("cb-bad");});
     c.querySelectorAll("input[data-f]").forEach(function(i){
       var f=i.dataset.f;
       if(i.type==="checkbox")rec[f]=i.checked;
-      else if(i.type==="datetime-local")rec[f]=fromLocalInput(i.value);
+      else if(i.type==="datetime-local"){
+        // A half-typed box (date but no time/AM-PM) reads as EMPTY in the browser -
+        // saving it would wipe the stored date. Refuse and point at the box instead.
+        // badInput is not reliable across browsers, so also treat "you typed in it
+        // but it reads empty" as half-finished. Never silently wipe a stored date.
+        if(i.value===""&&((i.validity&&i.validity.badInput)||i.dataset.typed==="1")){partial.push(i);return;}
+        if(i.value===""&&i.dataset.orig&&!confirm(c.dataset.code+": clear this date? (Cancel keeps "+fmt(new Date(i.dataset.orig))+")")){rec[f]=i.dataset.orig;return;}
+        rec[f]=fromLocalInput(i.value);
+      }
       else if(i.dataset.kind==="text")rec[f]=i.value.trim()||null;
       else if(i.dataset.kind==="int"){var n=i.value.trim();if(n==="")rec[f]=null;else if(!/^\d+$/.test(n)||+n<1||+n>31)badDay=true;else rec[f]=+n;}
       else{var v=parseDollars(i.value);if(v!==v)bad=true;else rec[f]=v;}
     });
     if(bad){msg.className="cb-msg bad";msg.textContent="Numbers only, 0 or more.";return;}
+    if(partial.length){partial.forEach(function(x){x.classList.add("cb-bad");});partial[0].focus();msg.className="cb-msg bad";msg.textContent="Finish the red date box — it needs the time and AM/PM too. Nothing saved.";return;}
     if(badDay){msg.className="cb-msg bad";msg.textContent="Due day must be 1–31.";return;}
     if(rec.usdc_floor==null)rec.usdc_floor=6000;
     if(rec.cb1_monthly==null)rec.cb1_monthly=300;
@@ -7324,6 +7342,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
       if(!r.ok)throw new Error(r.status);
       fetch(URL_+"/rest/v1/cb_people_log",{method:"POST",headers:H({Prefer:"return=minimal"}),body:JSON.stringify(rec)}).catch(function(){});
       msg.className="cb-msg ok";msg.textContent="✓ Saved";
+      c.querySelectorAll('input[type="datetime-local"]').forEach(function(i){i.dataset.orig=rec[i.dataset.f]||"";i.dataset.typed="";});
       refreshFee(c);
     }).catch(function(){msg.className="cb-msg bad";msg.textContent="Not saved — try again.";})
     .then(function(){b.disabled=false;});
@@ -7338,7 +7357,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
     var chip=document.getElementById("tabCbChip");if(!chip)return;
     var late=0,soon=0;
     document.querySelectorAll("#cbGrid .cb-card").forEach(function(c){
-      var sw=c.querySelector('[data-f="fee_on"]'),fs=c.querySelector(".cb-fs");if(!sw||!sw.checked||!fs)return;
+      var sw=c.querySelector('[data-f="fee_on"]'),al=c.querySelector('[data-f="fee_alarm"]'),fs=c.querySelector(".cb-fs");if(!sw||!sw.checked||(al&&!al.checked)||!fs)return;
       var s=feeState(c.querySelector('[data-f="fee_day"]').value,null,fs.dataset.paid||null);
       if(s&&s.kind==="late")late++;else if(s&&s.kind==="soon")soon++;
     });
@@ -7347,7 +7366,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   }
   // Fee day/time or switch edited -> refresh its status line right away.
   document.addEventListener("input",function(ev){var t=ev.target;if(t.dataset&&t.dataset.f==="fee_day"){var c=t.closest(".cb-card");if(c)refreshFee(c);}});
-  document.addEventListener("change",function(ev){var t=ev.target;if(t.dataset&&t.dataset.f==="fee_on"){var c=t.closest(".cb-card");if(c)refreshFee(c);}});
+  document.addEventListener("change",function(ev){var t=ev.target;if(t.dataset&&(t.dataset.f==="fee_on"||t.dataset.f==="fee_alarm")){var c=t.closest(".cb-card");if(c)refreshFee(c);}});
   // Mark paid: saves ONLY fee_paid_for (PATCH), so it never overwrites unsaved edits elsewhere.
   document.addEventListener("click",function(ev){
     var b=ev.target.closest&&ev.target.closest(".cb-paid");if(!b)return;
@@ -7662,7 +7681,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "cb9c144 2026-09-29 04:26 UTC".indexOf("STAMP") >= 0 ? "dev" : "cb9c144 2026-09-29 04:26 UTC";
+  var GFH_BUILD = "300157d 2026-09-29 04:33 UTC".indexOf("STAMP") >= 0 ? "dev" : "300157d 2026-09-29 04:33 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
