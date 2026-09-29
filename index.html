@@ -1356,6 +1356,11 @@ var ELEM_SHEET_DATE = "2026-09-29";   /* GFH_SHEET_DATE */
   /* Taekus load bars (09-29): one full-width bar per Taekus card */
   /* Calculations v2 rows (same grid language as the Overview rows) */
   #cbCalc .cb-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))}
+  .cbc-big{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:2px 0 12px}
+  .cbc-big div{background:var(--gold-glow);border:1px solid var(--gold-deep);border-radius:12px;padding:12px 14px}
+  .cbc-big b{display:block;font:800 clamp(26px,4vw,36px)/1.05 var(--mono);color:var(--gold);letter-spacing:-.02em}
+  .cbc-big b.neg{color:var(--bad)}
+  .cbc-big i{display:block;font-style:normal;font-size:11px;color:var(--ink-mute);margin-top:4px;text-transform:uppercase;letter-spacing:.08em}
   .cbc-r{display:grid;grid-template-columns:30px 110px minmax(0,1fr) 92px;column-gap:10px;align-items:center;min-height:42px;border-top:1px solid var(--line);padding:4px 0}
   .cbc-r .cbr-logo{grid-area:auto}
   .cbc-n{font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -3148,7 +3153,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: d5b49c2 · built 2026-09-29 14:52 UTC</span>
+    <span id="verStamp" class="tnum">version: 6b6825b · built 2026-09-29 16:19 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7854,7 +7859,9 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
       ks.map(function(k){var b=m[k];return '<div class="cbc-hr"><span>'+monthName(k)+'</span><span>'+k$(b.dep)+'</span><span>'+usd(b.rw)+'</span><span>'+usd(-b.cb1)+'</span><span class="'+(b.rw-b.cb1<0?'neg':'pos')+'">'+usd(b.rw-b.cb1)+'</span></div>';}).join("");
   }
   function calcCard(p,r){
-    var c=p.code,ce=ceiling(p),h='<div class="cb-card cbc-card"><h5>'+c+'<small>'+usd(ce.net)+'/mo \u00b7 '+usd(ce.net*12)+'/yr</small></h5>';
+    var c=p.code,ce=ceiling(p),h='<div class="cb-card cbc-card"><h5>'+c+'</h5>'+
+      // Medi 09-29: the per-player max is the headline - big, not a footnote.
+      '<div class="cbc-big"><div><b class="'+(ce.net<0?'neg':'')+'">'+usd(ce.net)+'</b><i>per month</i></div><div><b class="'+(ce.net<0?'neg':'')+'">'+usd(ce.net*12)+'</b><i>per year</i></div></div>';
     h+='<div class="cbc-h">\ud83d\udcc8 Max per month</div>';
     ORDER.forEach(function(k){
       var on=p[k+"_on"]!==false,lim=+p[k+"_limit"],w=MONTH_DAYS*24/M[k][1];
@@ -8383,7 +8390,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "d5b49c2 2026-09-29 14:52 UTC".indexOf("STAMP") >= 0 ? "dev" : "d5b49c2 2026-09-29 14:52 UTC";
+  var GFH_BUILD = "6b6825b 2026-09-29 16:19 UTC".indexOf("STAMP") >= 0 ? "dev" : "6b6825b 2026-09-29 16:19 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
