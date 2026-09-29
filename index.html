@@ -3158,7 +3158,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: c884820 · built 2026-09-29 20:22 UTC</span>
+    <span id="verStamp" class="tnum">version: 11ebad7 · built 2026-09-29 20:27 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7795,8 +7795,14 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
       t1:st&&st.held>0?'<b>\ud83d\udd12 '+k$(st.held)+' \u2192 '+new Intl.DateTimeFormat("en-US",{timeZone:TZ,weekday:"short",hour:"numeric",minute:"2-digit"}).format(new Date(st.unlock))+'</b>':'',
       amt:'<input type="text" inputmode="decimal" class="cb-money cbo-amt" value="'+(off?'$0':usd(amt))+'"'+(off?' disabled':'')+'>',undo:e?undoBtn(e):''});
   }
-  function openRow(e,stage,icon,label){
-    return rowHtml({row:stage,cls:' cbr-sub',
+  function wdEta(at){
+    var t=new Date(at).getTime(),f=function(ms){return new Intl.DateTimeFormat("en-US",{timeZone:TZ,weekday:"short",hour:"numeric",minute:"2-digit"}).format(new Date(ms));};
+    if(Date.now()<t+864e5)return 'exp '+f(t+864e5);
+    for(var x=t,n=0;n<3;){x+=864e5;var w=new Date(new Date(x).toLocaleString("en-US",{timeZone:TZ})).getDay();if(w!==0&&w!==6)n++;}
+    return (Date.now()>x?'\u26a0 overdue ':'max ')+f(x);
+  }
+  function openRow(e,stage,icon,label,t2){
+    return rowHtml({row:stage,cls:' cbr-sub',t2:t2||'',
       box:'<button type="button" class="cbo-box" data-do="'+stage+'" data-ref="'+e.id+'" data-amt="'+e.amount+'" aria-label="'+label+'"></button>',
       logo:icon,name:label,t1:'<b>\u23f1 '+dur(Date.now()-new Date(e.at).getTime())+'</b>',
       amt:'<div class="amt">'+usd(e.amount)+'</div>'});
@@ -7814,7 +7820,8 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     h+='<div class="cbv-when">\ud83d\udd52<input type="datetime-local" class="cbo-when" value="'+wv+'"'+(S.when[c]?' data-edited="1"':'')+'>'+(S.when[c]?'<button type="button" class="cbv-now">now</button>':'')+'</div>';
     onMethods(p).forEach(function(k){h+=depRow(p,k);});
     h+=moveRow("withdraw_sent",logo("coinbase"),"Withdraw",Math.max(0,st.inCB-floor-st.held),p,"withdraw_sent",st);
-    st.openWd.forEach(function(e){h+=openRow(e,"withdraw_landed","\ud83d\udcb0","landed "+fmtDay(e.at).replace(/^\w+ /,""));});
+    // Medi 09-29: Coinbase says 1-3 business days, almost always lands within 24h -> show the 24h ETA, then the 3-day max.
+    st.openWd.forEach(function(e){h+=openRow(e,"withdraw_landed","\ud83d\udcb0","CB withdrawal pending",wdEta(e.at));});
     h+=moveRow("ach_sent",logo("taekus"),"ACH",Math.max(0,st.bank),p,"ach_sent");
     st.openAch.forEach(function(e){h+=openRow(e,"ach_landed","\u2705","in Taekus");});
     var mg=S.msg[c]&&Date.now()-S.msg[c].t<12e4?S.msg[c]:null;
@@ -8405,7 +8412,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "c884820 2026-09-29 20:22 UTC".indexOf("STAMP") >= 0 ? "dev" : "c884820 2026-09-29 20:22 UTC";
+  var GFH_BUILD = "11ebad7 2026-09-29 20:27 UTC".indexOf("STAMP") >= 0 ? "dev" : "11ebad7 2026-09-29 20:27 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
