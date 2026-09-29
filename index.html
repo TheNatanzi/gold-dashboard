@@ -1354,23 +1354,6 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
     .cbr-t{flex-direction:row;justify-content:space-between;align-items:center;gap:8px}
   }
   /* Taekus load bars (09-29): one full-width bar per Taekus card */
-  .tkb{display:grid;grid-template-columns:minmax(170px,1fr) minmax(220px,1.4fr) minmax(260px,1.6fr);gap:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);margin:0 0 10px;overflow:hidden}
-  .tkb>div{padding:12px 14px;min-width:0}
-  .tkb>div+div{border-left:1px solid var(--line)}
-  .tkb .k{font-size:11px;color:var(--ink-mute);display:flex;align-items:center;gap:6px}
-  .tkb .v{font:700 21px var(--mono);color:var(--ink);margin-top:3px;display:flex;align-items:center;gap:8px}
-  .tkb .s{font:11px var(--mono);color:var(--ink-mute);margin-top:4px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
-  .tkb .s b{color:var(--ink-soft);font-weight:600}
-  .tkb .late{color:var(--bad)} .tkb .ok{color:var(--good)}
-  .tkb .cbr-bar{margin-top:6px}
-  .tkb .cbr-bar i.red{background:var(--bad)}
-  .tk-edit{background:none;border:1px solid var(--line2);color:var(--ink-mute);border-radius:7px;padding:1px 7px;font-size:11px;cursor:pointer}
-  .tk-row{display:flex;align-items:center;gap:8px;margin-top:6px}
-  .tk-row input{width:110px;background:var(--bg2);border:1px solid var(--line2);color:var(--ink);border-radius:8px;padding:6px 7px;font:13px var(--mono);text-align:right}
-  .tk-row .cbo-box{width:30px;height:30px;padding:0;justify-content:center}
-  .tk-row .cbo-box::before{width:15px;height:15px}
-  .tk-tr{margin-top:6px;padding-top:6px;border-top:1px dashed var(--line)}
-  @media (max-width:760px){.tkb{grid-template-columns:1fr}.tkb>div+div{border-left:0;border-top:1px solid var(--line)}}
   /* Calculations v2 rows (same grid language as the Overview rows) */
   #cbCalc .cb-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))}
   .cbc-r{display:grid;grid-template-columns:30px 110px minmax(0,1fr) 92px;column-gap:10px;align-items:center;min-height:42px;border-top:1px solid var(--line);padding:4px 0}
@@ -1388,6 +1371,35 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   .cbc-hh .cbl{width:18px;height:18px;background:none} .cbc-hh .cbl svg{width:16px;height:16px}
   @media (max-width:520px){.cbc-r{grid-template-columns:28px 1fr 88px;grid-template-areas:"lg n a" "lg m a"}
     .cbc-r .cbr-logo{grid-area:lg}.cbc-n{grid-area:n}.cbc-m{grid-area:m}.cbc-a{grid-area:a}}
+  /* Taekus cards v2 (09-29): header strip + aligned window rows */
+  .tkc{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);margin:0 0 10px;padding:4px 14px 8px}
+  .tkc-h{display:grid;grid-template-columns:auto repeat(3,minmax(0,1fr));gap:18px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line2)}
+  .tkc-id{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--ink);white-space:nowrap}
+  .tkc-id small{display:block;font:11px var(--mono);color:var(--ink-mute);font-weight:400}
+  .tkc-s i{display:block;font-style:normal;font-size:10.5px;color:var(--ink-mute)}
+  .tkc-s b{display:flex;align-items:center;gap:6px;font:700 18px var(--mono);color:var(--ink);white-space:nowrap}
+  .tkc-s b.late{color:var(--bad)} .tkc-s b.ok{color:var(--good)} .tkc-s em{font-style:normal;font:11px var(--mono);color:var(--ink-mute)}
+  .tkc-s .cbr-bar{margin-top:5px} .tkc-s .cbr-bar i.red{background:var(--bad)}
+  .tk-edit{background:none;border:1px solid var(--line2);color:var(--ink-mute);border-radius:7px;padding:1px 7px;font-size:11px;cursor:pointer}
+  .tkw{display:grid;grid-template-columns:34px 30px minmax(0,1fr) 120px 120px 96px 100px 30px;column-gap:10px;align-items:center;min-height:44px;border-top:1px solid var(--line);font:12px var(--mono);color:var(--ink-soft)}
+  .tkw:first-of-type{border-top:0}
+  .tkw .cbr-logo{grid-area:auto}
+  .tkw .nm{font:600 13px var(--sans);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tkw .r{text-align:right;white-space:nowrap} .tkw .a{text-align:right;font:600 13px var(--mono);color:var(--ink)}
+  .tkw .late{color:var(--bad);font-weight:700} .tkw .ok{color:var(--good)}
+  .tkw.hd{min-height:26px;font:600 10.5px var(--sans);color:var(--ink-mute);border-top:0}
+  .tkw.cov{opacity:.45}
+  .tkw .cbo-box{width:30px;height:30px;padding:0;justify-content:center} .tkw .cbo-box::before{width:15px;height:15px}
+  .tkw input{width:100%;box-sizing:border-box;background:var(--bg2);border:1px solid var(--line2);color:var(--ink);border-radius:8px;padding:6px 7px;font:13px var(--mono);text-align:right}
+  .tkw .cbr-bar{margin:0}
+  .tkc-sec{font:700 10px var(--mono);letter-spacing:.08em;color:var(--ink-mute);text-transform:uppercase;margin:10px 0 2px}
+  @media (max-width:760px){
+    .tkc-h{grid-template-columns:1fr 1fr;gap:10px}
+    .tkw{grid-template-columns:30px 28px minmax(0,1fr) 92px 30px;grid-template-areas:"x lg nm a u" "x lg t1 t2 u"}
+    .tkw>:nth-child(1){grid-area:x}.tkw>:nth-child(2){grid-area:lg}.tkw>:nth-child(3){grid-area:nm}
+    .tkw>:nth-child(4){grid-area:t1;text-align:left}.tkw>:nth-child(5){grid-area:t2}.tkw>:nth-child(6){display:none}
+    .tkw>:nth-child(7){grid-area:a}.tkw>:nth-child(8){grid-area:u}.tkw.hd{display:none}
+  }
   .cbo-msg{font-size:11.5px;color:var(--ink-mute);min-height:14px} .cbo-msg.bad{color:var(--bad)} .cbo-msg.ok{color:var(--good)}
   .cb-gen{border-top:1px solid var(--line);margin-top:6px;padding-top:6px}
   .cb-st{font-family:var(--mono);font-size:9.5px;font-weight:800;letter-spacing:.04em;padding:2px 7px;border-radius:6px}
@@ -3136,7 +3148,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 859c312 · built 2026-09-29 09:01 UTC</span>
+    <span id="verStamp" class="tnum">version: 190782d · built 2026-09-29 09:19 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7882,90 +7894,110 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   }
 
 
-  /* ---- Taekus load bars (Medi 09-29) ----------------------------------------------------
-     One bar per Taekus card. Total = last balance Medi typed + loads landed since - deposits
-     ticked since on that card's methods. "Needed" walks the next 7 days of windows (every ON
-     method, every player, max each time) in order; the first window the money can't cover
-     sets the due time = that opening minus 1 business day (Medi: a load takes ~1 business day). */
-  var TK_CARDS=[{id:"medi8010",name:"Medi \u00b7 Taekus \u00b7\u00b78010",methods:["gpay","applepay"]},
-                {id:"brother",name:"Brother \u00b7 Taekus",methods:["samsung"]}];
+  /* ---- Taekus load cards v2 (Medi 09-29) ------------------------------------------------
+     8010: balance (typed) + loads in transit + window list.  Brother: load needed ONLY (Medi:
+     "we will never have his total"). Lead time = LOAD LAG + 1 day cushion. Load lag starts at
+     2 business days (Medi) and switches to the slowest MEASURED load once loads are ticked landed. */
+  var TK_CARDS=[{id:"medi8010",name:"Taekus \u00b7\u00b78010",who:"Medi",methods:["gpay","applepay"],bal:true},
+                {id:"brother",name:"Taekus",who:"Brother",methods:["samsung"],bal:false}];
   var DAY=864e5;
   function pacDow(ms){return new Date(new Date(ms).toLocaleString("en-US",{timeZone:TZ})).getDay();}
   function bdays(ms,n){var d=n<0?-1:1;for(var i=0;i<Math.abs(n);){ms+=d*DAY;var w=pacDow(ms);if(w!==0&&w!==6)i++;}return ms;}
+  // Weekday-only elapsed time, in days (a Fri->Mon load = 1 business day, not 3).
+  function bizDays(a,b){var t=0;for(var x=a;x<b;x+=36e5){var w=pacDow(x);if(w!==0&&w!==6)t+=36e5;}return t/DAY;}
   function tkLive(card){
     var v={},landed={};S.tk.forEach(function(r){if(r.kind==="void"&&r.ref_id)v[r.ref_id]=1;});
     var rows=S.tk.filter(function(r){return r.card===card&&r.kind!=="void"&&!v[r.id];});
     rows.forEach(function(r){if(r.kind==="load_landed"&&r.ref_id)landed[r.ref_id]=r;});
     return {rows:rows,landed:landed};
   }
+  // Evidence: every sent->landed pair on any card. Lag = slowest one, rounded UP to whole business days.
+  function loadLag(){
+    var sent={},m=[];tkLive("medi8010");
+    ["medi8010","brother"].forEach(function(cid){var T=tkLive(cid);
+      T.rows.forEach(function(r){if(r.kind==="load_sent"&&T.landed[r.id])m.push(bizDays(new Date(r.at).getTime(),new Date(T.landed[r.id].at).getTime()));});});
+    if(!m.length)return {n:2,measured:0,src:"2 business days (your number \u2014 no load measured yet)"};
+    var worst=Math.max.apply(null,m),n=Math.max(1,Math.ceil(worst-1e-9));
+    return {n:n,measured:m.length,src:n+" business day"+(n>1?"s":"")+" (slowest of "+m.length+" measured load"+(m.length>1?"s":"")+": "+worst.toFixed(1)+")"};
+  }
+  function loadBy(openMs,lag){return bdays(openMs,-lag.n)-DAY;}   // lag + 1 day cushion
   function tkState(c){
-    var T=tkLive(c.id),bal=null,t0=0,now=Date.now();
-    T.rows.forEach(function(r){if(r.kind==="balance"){bal=+r.amount;t0=new Date(r.at).getTime();}});
+    var T=tkLive(c.id),bal=null,t0=0,now=Date.now(),lag=loadLag();
+    var balRow=null;T.rows.forEach(function(r){if(r.kind==="balance"){bal=+r.amount;t0=new Date(r.at).getTime();balRow=r;}});
+    var landedRows=T.rows.filter(function(r){return r.kind==="load_landed";}).slice(-3);
     var landedAmt=0,swipes=0,open=[],transit=0;
     T.rows.forEach(function(r){var t=new Date(r.at).getTime();
       if(r.kind==="load_landed"&&t>=t0)landedAmt+=+r.amount||0;
       if(r.kind==="load_sent"&&!T.landed[r.id]){open.push(r);transit+=+r.amount||0;}});
     live().ev.forEach(function(e){if(e.stage==="deposit"&&c.methods.indexOf(e.method)>=0&&new Date(e.at).getTime()>=t0)swipes+=+e.amount||0;});
-    var total=bal==null?null:bal+landedAmt-swipes;
+    var total=c.bal&&bal!=null?bal+landedAmt-swipes:null;
     var wins=[];
     S.people.forEach(function(p){c.methods.forEach(function(k){
       if(p[k+"_on"]===false)return;var lim=+p[k+"_limit"];if(!(lim>0))return;
       var h=M[k][1]*36e5,last=p[k+"_last"]?new Date(p[k+"_last"]).getTime():0,at=last?last+h:now;if(at<now)at=now;
-      for(;at<now+7*DAY;at+=h)wins.push({at:at,amt:lim,who:p.code,k:k});
+      for(;at<now+7*DAY;at+=h)wins.push({at:at,amt:lim,who:p.code,k:k,by:loadBy(at,lag)});
     });});
     wins.sort(function(a,b){return a.at-b.at;});
-    var have=(total||0)+transit,cum=0,first=null,need7=0;
-    wins.forEach(function(w){cum+=w.amt;if(!first&&cum>have)first=w;});
-    need7=Math.max(0,cum-have);
-    var due=first?bdays(first.at,-1):null;
-    return {total:total,t0:t0,open:open,transit:transit,need:need7,first:first,due:due,wins:wins.length,T:T};
+    var have=c.bal?Math.max(0,total||0)+transit:0,need=0,next=null;
+    wins.forEach(function(w){var cover=Math.min(have,w.amt);have-=cover;w.short=w.amt-cover;need+=w.short;if(w.short>0&&!next)next=w;});
+    return {balRow:balRow,landedRows:landedRows,total:total,t0:t0,open:open,transit:transit,need:need,next:next,wins:wins,lag:lag};
   }
   function fmtS(ms){return new Intl.DateTimeFormat("en-US",{timeZone:TZ,weekday:"short",hour:"numeric",minute:"2-digit"}).format(new Date(ms));}
   function tkUndo(r){return '<button type="button" class="cbr-u tk-undo" data-undo="'+r.id+'" title="Undo">\u21b6</button>';}
+  function stat(lbl,val,sub,cls,bar){return '<div class="tkc-s"><i>'+lbl+'</i><b class="'+(cls||'')+'">'+val+'</b>'+(sub?'<em>'+sub+'</em>':'')+(bar||'')+'</div>';}
   function tkBar(c){
-    var st=tkState(c),now=Date.now(),h='<div class="tkb" data-card="'+c.id+'">';
-    // 1) total
-    h+='<div><div class="k">'+logo("taekus")+c.name+'</div><div class="v">'+(st.total==null?'\u2014':usd(st.total))+
-       ' <button type="button" class="tk-edit tk-bal" title="Type the real Taekus balance">\u270e</button></div>'+
-       '<div class="s"><span>'+(st.t0?'typed '+fmtS(st.t0):'type the balance \u270e')+'</span><span>'+c.methods.map(function(k){return ICON[k];}).join("")+'</span></div></div>';
-    // 2) deposit needed
-    if(!st.first){
-      h+='<div><div class="k">\ud83d\udce5 Deposit needed</div><div class="v ok">\u2713 $0</div><div class="s"><span>covers every window in the next 7 days ('+st.wins+')</span></div></div>';
-    }else{
-      var left=st.due-now,late=left<=0;
-      h+='<div><div class="k">\ud83d\udce5 Deposit needed (next 7 days)</div><div class="v'+(late?' late':'')+'">'+usd(st.need)+'</div>'+
-         '<div class="s"><span>'+(late?'<b class="late">\u26a0 load NOW</b>':'<b>\u23f3 '+dur(left)+'</b>')+'</span><span>'+(late?'window open since '+fmtS(st.first.at):'load by '+fmtS(st.due))+'</span></div>'+
-         pbar(late?1:1-left/(7*DAY),false).replace('<i class="','<i class="'+(late?'red ':''))+
-         '<div class="s"><span>first short: '+st.first.who+' '+M[st.first.k][0]+' opens '+fmtS(st.first.at)+'</span></div></div>';
-    }
-    // 3) in transit
-    h+='<div><div class="k">\ud83d\ude9a Load in transit</div>';
-    st.open.forEach(function(r){
-      var sent=new Date(r.at).getTime(),eta=bdays(sent,1),frac=(now-sent)/(eta-sent);
-      h+='<div class="tk-tr"><div class="v" style="font-size:16px">'+usd(r.amount)+'</div>'+
-         '<div class="s"><span><b>\u23f1 '+dur(now-sent)+'</b> since '+fmtS(sent)+'</span><span>'+(now>eta?'<b class="late">late \u2014 ETA was '+fmtS(eta)+'</b>':'ETA '+fmtS(eta))+'</span></div>'+
-         pbar(frac,frac>=1)+
-         '<div class="tk-row"><button type="button" class="cbo-box tk-land" data-ref="'+r.id+'" data-amt="'+r.amount+'" aria-label="Landed"></button><span style="font-size:12px">landed in Taekus</span>'+tkUndo(r)+'</div></div>';
+    var st=tkState(c),now=Date.now(),h='<div class="tkc" data-card="'+c.id+'">';
+    // header strip: id | balance or "no balance" | next load | 7-day total
+    h+='<div class="tkc-h"><div class="tkc-id">'+logo("taekus")+'<div>'+c.who+' \u00b7 '+c.name+'<small>'+c.methods.map(function(k){return M[k][0];}).join(" + ")+'</small></div></div>';
+    if(c.bal)h+=stat('Balance',(st.total==null?'\u2014':usd(st.total))+' <button type="button" class="tk-edit tk-bal" title="Type the real Taekus balance">\u270e</button>'+(st.balRow?' '+tkUndo(st.balRow):''),st.t0?'typed '+fmtS(st.t0)+(st.transit?' \u00b7 +'+k$(st.transit)+' on the way':''):'tap \u270e to type it');
+    if(st.next){
+      var left=st.next.by-now,late=left<=0;
+      h+=stat('Next load',usd(st.next.short),(late?'\u26a0 LOAD NOW \u00b7 '+(st.next.at<=now?'window open':'overdue '+dur(-left)):'\u23f3 '+dur(left)+' \u00b7 by '+fmtS(st.next.by)),late?'late':'',
+              pbar(late?1:1-left/(7*DAY),false).replace('<i class="','<i class="'+(late?'red ':'')));
+    }else h+=stat('Next load','\u2713 $0','covered for 7 days','ok');
+    h+=stat('Needed \u00b7 7 days',usd(st.need),'lead = '+st.lag.n+' bd + 1 day');
+    h+='</div>';
+    // window rows
+    h+='<div class="tkc-sec">Windows \u00b7 next 7 days \u00b7 load lag '+st.lag.src+' + 1 day cushion</div>';
+    h+='<div class="tkw hd"><span></span><span></span><span>Who</span><span class="r">Opens</span><span class="r">Load by</span><span class="r">\u23f3</span><span class="r">Amount</span><span></span></div>';
+    if(!st.wins.length)h+='<div class="tkw"><span></span><span></span><span class="nm">No windows in the next 7 days</span></div>';
+    st.wins.forEach(function(w){
+      var left=w.by-now,cov=!w.short;
+      h+='<div class="tkw'+(cov?' cov':'')+'"><span></span><span class="cbr-logo">'+ICON[w.k]+'</span><span class="nm">'+w.who+'</span>'+
+         '<span class="r">'+fmtS(w.at)+'</span><span class="r'+(!cov&&left<=0?' late':'')+'">'+(cov?'covered':w.at<=now?'open now':left<=0?'overdue':fmtS(w.by))+'</span>'+
+         '<span class="r '+(cov?'ok':left<=0?'late':'')+'">'+(cov?'\u2713':left<=0?'now':dur(left))+'</span>'+
+         '<span class="a">'+usd(cov?w.amt:w.short)+'</span><span></span></div>';
     });
-    h+='<div class="tk-row"><button type="button" class="cbo-box tk-send" aria-label="Load sent"></button>'+
-       '<input type="text" inputmode="decimal" class="cb-money tk-amt" value="'+(st.need?usd(Math.ceil(st.need)):'')+'" placeholder="$">'+
-       '<span style="font-size:12px;color:var(--ink-mute)">load sent</span></div></div>';
+    // 8010 only: loads in transit + send
+    if(c.bal){
+      h+='<div class="tkc-sec">Loads</div>';
+      st.open.forEach(function(r){
+        var sent=new Date(r.at).getTime(),eta=bdays(sent,st.lag.n),frac=(now-sent)/(eta-sent);
+        h+='<div class="tkw"><button type="button" class="cbo-box tk-land" data-ref="'+r.id+'" data-amt="'+r.amount+'" aria-label="Landed in Taekus" title="Tick when it lands in Taekus"></button>'+
+           '<span>\ud83d\ude9a</span><span class="nm">sent '+fmtS(sent)+'</span><span class="r">'+(now>eta?'<b class="late">late</b>':'ETA')+'</span><span class="r">'+fmtS(eta)+'</span>'+
+           '<span class="r">'+dur(now-sent)+'</span><span class="a">'+usd(r.amount)+'</span>'+tkUndo(r)+'</div>'+
+           '<div class="tkw" style="min-height:10px;border-top:0"><span></span><span></span><span style="grid-column:3/8">'+pbar(frac,frac>=1)+'</span><span></span></div>';
+      });
+      st.landedRows.forEach(function(r){h+='<div class="tkw cov"><span class="cbo-box0"></span><span>\u2705</span><span class="nm">landed '+fmtS(new Date(r.at).getTime())+'</span><span></span><span></span><span></span><span class="a">'+usd(r.amount)+'</span>'+tkUndo(r)+'</div>';});
+      h+='<div class="tkw"><button type="button" class="cbo-box tk-send" aria-label="Load sent"></button><span>\ud83c\udfe6</span><span class="nm">Load sent \u2192 tick when you push it</span><span></span><span></span><span></span>'+
+         '<input type="text" inputmode="decimal" class="cb-money tk-amt" value="'+(st.next?usd(Math.ceil(st.next.short)):'')+'" placeholder="$"><span></span></div>';
+    }
     return h+'</div>';
   }
   function tkPost(rec){return fetch(URL_+"/rest/v1/cb_taekus",{method:"POST",headers:H({Prefer:"return=representation"}),body:JSON.stringify(rec)}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();});}
   document.addEventListener("click",function(ev){
     var b=ev.target.closest&&ev.target.closest(".tk-bal,.tk-send,.tk-land,.tk-undo");if(!b||!b.closest("#cbOv"))return;
-    var card=b.closest(".tkb").dataset.card,rec={card:card,created_by:"medi"};
+    var card=b.closest(".tkc").dataset.card,rec={card:card,created_by:"medi"};
     if(b.classList.contains("tk-bal")){
       var v=prompt("Taekus balance right now ($)?","");if(v==null)return;var n=parseDollars(v);
       if(!(n>=0)){alert("Numbers only.");return;}rec.kind="balance";rec.amount=n;rec.at=new Date().toISOString();
     }else if(b.classList.contains("tk-send")){
-      var a=parseDollars(b.closest(".tk-row").querySelector(".tk-amt").value);if(!(a>0)){alert("Type the load amount first.");return;}
+      var a=parseDollars(b.closest(".tkw").querySelector(".tk-amt").value);if(!(a>0)){alert("Type the load amount first.");return;}
       rec.kind="load_sent";rec.amount=a;rec.at=new Date().toISOString();
     }else if(b.classList.contains("tk-land")){
       rec.kind="load_landed";rec.ref_id=+b.dataset.ref;rec.amount=+b.dataset.amt;rec.at=new Date().toISOString();
     }else{
-      var r=S.tk.filter(function(x){return String(x.id)===b.dataset.undo;})[0];if(!r||!confirm("Undo this "+usd(r.amount)+" load?"))return;
+      var r=S.tk.filter(function(x){return String(x.id)===b.dataset.undo;})[0];if(!r||!confirm("Undo "+({balance:"typed balance",load_sent:"load sent",load_landed:"landed"}[r.kind]||r.kind)+" "+usd(r.amount)+"?"))return;
       rec.kind="void";rec.ref_id=r.id;rec.amount=r.amount;
     }
     b.disabled=true;
@@ -8351,7 +8383,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "859c312 2026-09-29 09:01 UTC".indexOf("STAMP") >= 0 ? "dev" : "859c312 2026-09-29 09:01 UTC";
+  var GFH_BUILD = "190782d 2026-09-29 09:19 UTC".indexOf("STAMP") >= 0 ? "dev" : "190782d 2026-09-29 09:19 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
