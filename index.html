@@ -1281,7 +1281,7 @@ var ELEM_SHEET_DATE = "2026-09-29";   /* GFH_SHEET_DATE */
   .cbo-t{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:11px 12px;box-shadow:var(--shadow)}
   .cbo-t .k{font-size:11px;color:var(--ink-mute)} .cbo-t .v{font:700 21px var(--mono);color:var(--ink);margin-top:3px}
   .cbo-t .s{font-size:10.5px;color:var(--ink-mute);margin-top:3px;line-height:1.35}
-  .cbo-t.proj .v{color:var(--gold)} .cbo-t .v.neg{color:var(--bad)}
+  .cbo-t.proj .v,.cbo-t.money .v.pos{color:var(--good)} .cbo-t .v.neg{color:var(--bad)}
   .cbo-note{font-size:11px;color:var(--ink-mute);margin:6px 0 0;line-height:1.45}
   .cbo-p .cbo-stages{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0 0 10px}
   .cbo-stages div{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:6px 7px}
@@ -1359,8 +1359,8 @@ var ELEM_SHEET_DATE = "2026-09-29";   /* GFH_SHEET_DATE */
   #cbCalc .cbc-card{padding:10px 12px}
   #cbCalc .cbc-card h5{margin:0 0 6px}
   .cbc-big{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 8px}
-  .cbc-big div{background:var(--gold-glow);border:1px solid var(--gold-deep);border-radius:8px;padding:4px 9px;display:flex;align-items:baseline;justify-content:space-between;gap:6px}
-  .cbc-big b{display:block;font:800 19px/1.2 var(--mono);color:var(--gold);letter-spacing:-.02em}
+  .cbc-big div{background:var(--good-bg);border:1px solid var(--good);border-radius:8px;padding:4px 9px;display:flex;align-items:baseline;justify-content:space-between;gap:6px}
+  .cbc-big b{display:block;font:800 19px/1.2 var(--mono);color:var(--good);letter-spacing:-.02em}
   .cbc-big b.neg{color:var(--bad)}
   .cbc-big i{display:block;font-style:normal;font-size:10px;color:var(--ink-mute);text-transform:uppercase;letter-spacing:.08em}
   .cbc-r{display:grid;grid-template-columns:20px 84px minmax(0,1fr) 76px;column-gap:8px;align-items:center;min-height:26px;border-top:1px solid var(--line);padding:1px 0}
@@ -1371,7 +1371,7 @@ var ELEM_SHEET_DATE = "2026-09-29";   /* GFH_SHEET_DATE */
   .cbc-a{font:600 12.5px var(--mono);color:var(--ink);text-align:right}
   .cbc-r.off{opacity:.45} .cbc-r.neg .cbc-a{color:var(--bad)}
   .cbc-r.res{border-top:2px solid var(--line2)} .cbc-r.res+.cbc-r.res{border-top:1px solid var(--line)}
-  .cbc-r.res .cbc-n,.cbc-r.res .cbc-a{color:var(--gold);font-weight:700}
+  .cbc-r.res .cbc-n,.cbc-r.res .cbc-a{color:var(--good);font-weight:700} .cbc-r.res.neg .cbc-a{color:var(--bad)}
   .cbc-hr{display:grid;grid-template-columns:1.1fr 1fr 1fr 1fr 1fr;column-gap:8px;align-items:center;min-height:24px;border-top:1px solid var(--line);font:12px var(--mono);color:var(--ink)}
   .cbc-hr span+span{text-align:right} .cbc-hr .neg{color:var(--bad)} .cbc-hr .pos{color:var(--good)}
   .cbc-hh{font:600 10px var(--sans);color:var(--ink-mute);border-top:0;min-height:20px}
@@ -3156,7 +3156,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 4862a56 · built 2026-09-29 16:23 UTC</span>
+    <span id="verStamp" class="tnum">version: 94a8c9c · built 2026-09-29 16:24 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7749,7 +7749,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   }
 
   /* ---- render ---- */
-  function tile(k,v,s,cls){return '<div class="cbo-t'+(cls?' '+cls:'')+'"><div class="k">'+k+'</div><div class="v'+(v<0?' neg':'')+'">'+usd(v)+'</div><div class="s">'+s+'</div></div>';}
+  function tile(k,v,s,cls){return '<div class="cbo-t'+(cls?' '+cls:'')+'"><div class="k">'+k+'</div><div class="v'+(v<0?' neg':v>0?' pos':'')+'">'+usd(v)+'</div><div class="s">'+s+'</div></div>';}
   function openMs(p,k){var l=p[k+"_last"];return l?new Date(l).getTime()+M[k][1]*36e5:0;}
   function onMethods(p){return ORDER.filter(function(k){return p[k+"_on"]!==false;});}
   /* Brand logos (simple-icons 16.33, CC0) as inline SVG = sharp at any size, no network. */
@@ -7849,6 +7849,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   /* Calculations v2 (Medi 09-29: "same look as Overview"): every line = logo | name | math | $,
      one grid so columns line up across all cards. */
   function crow(lg,name,math,amt,cls){
+    if(cls==="res"&&/^−|^-/.test(amt))cls="res neg";
     return '<div class="cbc-r'+(cls?' '+cls:'')+'"><span class="cbr-logo">'+(lg||'')+'</span>'+(math?'<span class="cbc-n">'+name+'</span><span class="cbc-m">'+math+'</span>':'<span class="cbc-n" style="grid-column:span 2">'+name+'</span>')+'<span class="cbc-a">'+amt+'</span></div>';
   }
   function historyTable(rows,charges,monthly){
@@ -7893,9 +7894,9 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     var o=document.getElementById("cbCalc");if(!o)return;
     var first=S.hist.length?fmtDay(S.hist[0].swipe_at):"\u2014",last=S.hist.length?fmtDay(S.hist[S.hist.length-1].swipe_at):"\u2014";
     o.innerHTML='<div class="cbo-sec">Money made · rewards minus Coinbase One</div><div class="cbo-tiles">'+
-      tile("Total",r.total-r.cb1,usd(r.total)+" rewards − "+usd(r.cb1)+" Coinbase One")+
-      tile("This year",r.ytd-r.cb1ytd,usd(r.ytd)+" rewards − "+usd(r.cb1ytd)+" Coinbase One")+
-      tile("Last month ("+r.lastName+")",r.last-r.cb1last,usd(r.last)+" rewards − "+usd(r.cb1last)+" Coinbase One")+
+      tile("Total",r.total-r.cb1,usd(r.total)+" rewards − "+usd(r.cb1)+" Coinbase One","money")+
+      tile("This year",r.ytd-r.cb1ytd,usd(r.ytd)+" rewards − "+usd(r.cb1ytd)+" Coinbase One","money")+
+      tile("Last month ("+r.lastName+")",r.last-r.cb1last,usd(r.last)+" rewards − "+usd(r.cb1last)+" Coinbase One","money")+
       tile("Next 1 month (ceiling)",r.proj.net,usd(r.proj.gross)+" rewards − "+usd(r.proj.cost)+" fees","proj")+
       tile("Next 1 year (ceiling)",r.proj.net*12,"every window hit, 12 months","proj")+'</div>'+
       '<p class="cbo-note">Rewards come from: <b>'+usd(r.taekus)+'</b> read straight from Medi’s Taekus ··8010 (swipes since '+first+') · <b>'+usd(r.tick8010)+'</b> GPay/Apple Pay ticks after that (2.13%) · <b>'+usd(r.hamed)+'</b> PayPal/Samsung <b>from tracker ticks only</b> (2.3%, Hamed’s Taekus can’t be read).'+
@@ -8393,7 +8394,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "4862a56 2026-09-29 16:23 UTC".indexOf("STAMP") >= 0 ? "dev" : "4862a56 2026-09-29 16:23 UTC";
+  var GFH_BUILD = "94a8c9c 2026-09-29 16:24 UTC".indexOf("STAMP") >= 0 ? "dev" : "94a8c9c 2026-09-29 16:24 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
