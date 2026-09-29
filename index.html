@@ -1346,6 +1346,8 @@ var ELEM_SHEET_DATE = "2026-09-29";   /* GFH_SHEET_DATE */
   .cbr .cbr-u,.cbr .cbr-u0{grid-area:undo}
   .cbr-u{background:none;border:1px solid var(--line2);color:var(--ink-soft);border-radius:8px;width:30px;height:30px;padding:0;font-size:15px;cursor:pointer}
   .cbr.dim{opacity:.4} .cbr.mute{opacity:.45}
+  /* Medi 09-29: window not reset yet = row grayed, but the bar + ⏳ timer stay full color. */
+  .cbr.wait:not(.mute)>*:not(.cbr-t):not(.cbr-bar),.cbr.wait:not(.mute) .cbr-t>span{opacity:.4}
   .cbr.dim .cbr-n{align-self:center} .cbr.dim .cbr-nobar,.cbr-sub .cbr-nobar{display:none}
   .cbr-sub{padding-left:12px;background:var(--panel2);border-radius:8px}
   @media (max-width:520px){
@@ -3156,7 +3158,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: fe1211b · built 2026-09-29 16:38 UTC</span>
+    <span id="verStamp" class="tnum">version: 2ce7aad · built 2026-09-29 19:33 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -5958,23 +5960,23 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-09-29T07:24:44-07:00",
+    at: "2026-09-29T11:01:44-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
-    price: 4199.99,
+    price: 4229.99,
     // Written by warehouse-inventory/daily_pull.py — see DAILY-PULL.md.
-    // 7 of the 45, keyed on the row carrying the SKU, never the store badge.
-    inStock: ["antioch", "danville", "fairfield", "sacstockton", "sanleandro",
-              "santaclara", "sjsenter"],
-    // 35 of the 45. Stores whose rail rows were truncated were opened and
+    // 6 of the 45, keyed on the row carrying the SKU, never the store badge.
+    inStock: ["antioch", "concord", "danville", "fairfield", "sacstockton",
+              "santaclara"],
+    // 36 of the 45. Stores whose rail rows were truncated were opened and
     // read from their own page this run, not carried forward.
-    soldOut: {brentwood:"10d", concord:"8d", fostercity:"1d", fremont:"2d",
-              gilroy:"2m", hayward:"3d", livermore:"1d", lodi:"11d", manteca:"6d",
-              modesto:"6d", mountainview:"2d", newark:"3d", novato:"10d",
-              pleasanton:"today", ranchocordova:"6d", redwoodcity:"13d",
-              richmond:"11d", riverbank:"6d", rohnertpark:"2m", saccalexpo:"10d",
-              sacnatomas:"2m", santacruz:"10d", santarosa:"10d", sf:"today",
-              sjalmaden:"today", sjgreatoaks:"today", sjne:"2d", ssf:"2d",
+    soldOut: {brentwood:"10d", fostercity:"1d", fremont:"2d", gilroy:"2m",
+              hayward:"3d", livermore:"1d", lodi:"11d", manteca:"6d", modesto:"6d",
+              mountainview:"2d", newark:"3d", novato:"10d", pleasanton:"today",
+              ranchocordova:"6d", redwoodcity:"13d", richmond:"11d", riverbank:"6d",
+              rohnertpark:"2m", saccalexpo:"10d", sacnatomas:"2m", sanleandro:"today",
+              santacruz:"10d", santarosa:"10d", sf:"today", sjalmaden:"today",
+              sjgreatoaks:"today", sjne:"2d", sjsenter:"today", ssf:"2d",
               ssfairport:"8d", stockton:"8d", sunnyvale:"today", tracy:"today",
               vacaville:"11d", vallejo:"2d", woodland:"11d"}
   };
@@ -8401,7 +8403,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "fe1211b 2026-09-29 16:38 UTC".indexOf("STAMP") >= 0 ? "dev" : "fe1211b 2026-09-29 16:38 UTC";
+  var GFH_BUILD = "2ce7aad 2026-09-29 19:33 UTC".indexOf("STAMP") >= 0 ? "dev" : "2ce7aad 2026-09-29 19:33 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
