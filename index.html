@@ -1406,7 +1406,23 @@ var ELEM_SHEET_DATE = "2026-09-29";   /* GFH_SHEET_DATE */
   .tkw .cbo-box{width:30px;height:30px;padding:0;justify-content:center} .tkw .cbo-box::before{width:15px;height:15px}
   .tkw input{width:100%;box-sizing:border-box;background:var(--bg2);border:1px solid var(--line2);color:var(--ink);border-radius:8px;padding:6px 7px;font:13px var(--mono);text-align:right}
   .tkw .cbr-bar{margin:0}
-  .tkc-sec{font:700 10px var(--mono);letter-spacing:.08em;color:var(--ink-mute);text-transform:uppercase;margin:10px 0 2px}
+  .tkc-sec{font:700 10px var(--mono);letter-spacing:.08em;color:var(--ink-mute);text-transform:uppercase;margin:8px 0 2px}
+  /* Compact (Medi 09-29): two cards side by side, slim rows. */
+  .tkg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start}
+  .tkg .tkc{margin:0;padding:2px 12px 6px}
+  .tkg .tkc-h{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 12px;padding:8px 0}
+  .tkg .tkc-id{grid-column:1/-1;font-size:13px} .tkg .tkc-id .cbl{width:22px;height:22px}
+  .tkg .tkc-s b{font-size:15px} .tkg .tkc-s em{font-size:10.5px}
+  .tkg .tkw{column-gap:6px;min-height:30px;font-size:11.5px}
+  @media(min-width:761px){.tkg .tkw{grid-template-columns:26px 20px minmax(0,1fr) 34px 96px 64px 84px 26px}}
+  .tkg .tkw .cbo-box{width:24px;height:24px} .tkg .tkw .cbo-box::before{width:12px;height:12px}
+  .tkg .tkw .cbr-u{width:24px;height:24px}
+  .tkg .tkw input{padding:3px 6px;font-size:12px}
+  .tkn{display:grid;grid-template-columns:20px 40px minmax(0,1fr) minmax(0,1fr) 58px 72px;column-gap:6px;align-items:center;min-height:26px;border-top:1px solid var(--line);font:11.5px var(--mono);color:var(--ink-soft)}
+  .tkn .lg .cbl{width:20px;height:20px} .tkn .lg .cbl svg,.tkn .lg .cbl img{width:17px;height:17px} .tkn .lg .cbl svg.wide{width:22px!important}
+  .tkn .nm{font:600 12px var(--sans);color:var(--ink)} .tkn .r{text-align:right;white-space:nowrap}
+  .tkn .a{text-align:right;font:600 12px var(--mono);color:var(--ink)} .tkn .late{color:var(--bad);font-weight:700}
+  @media(max-width:1100px){.tkg{grid-template-columns:1fr}}
   @media (max-width:760px){
     .tkc-h{grid-template-columns:1fr 1fr;gap:10px}
     .tkw{grid-template-columns:30px 28px minmax(0,1fr) 92px 30px;grid-template-areas:"x lg nm a u" "x lg t1 t2 u"}
@@ -3162,7 +3178,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 7bfde02 · built 2026-09-29 21:23 UTC</span>
+    <span id="verStamp" class="tnum">version: cd0c9f2 · built 2026-09-29 21:29 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7846,7 +7862,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     o.innerHTML='<div class="cbo-sec">Where the money is now</div><div class="cbo-tiles">'+
       tile("In Coinbase",agg.inCB,"all players")+tile("Withdrawing to banks",agg.wd,"sent, not landed")+
       tile("In bank accounts",agg.bank,"landed, not sent to Taekus")+tile("ACH to Taekus",agg.ach,"sent, not landed")+'</div>'+
-      '<div class="cbo-sec">Taekus loads</div>'+TK_CARDS.map(tkBar).join("")+
+      '<div class="cbo-sec">Taekus loads</div><div class="tkg">'+TK_CARDS.map(tkBar).join("")+'</div>'+
       '<div class="cbo-sec">Players \u00b7 tap a box to log it (time + amount)</div><div class="cb-grid">'+S.people.map(function(p){return player(p,L);}).join("")+'</div>';
   }
 
@@ -8002,17 +8018,17 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     h+=stat('Needed \u00b7 7 days',usd(st.need),'lead = '+st.lag.n+' bd + 1 day');
     h+='</div>';
     // window rows
-    h+='<div class="tkc-sec">Windows \u00b7 next 7 days \u00b7 load lag '+st.lag.src+' + 1 day cushion</div>';
-    h+='<div class="tkw hd"><span></span><span></span><span>Who</span><span class="r">Opens</span><span class="r">Load by</span><span class="r">\u23f3</span><span class="r">Amount</span><span></span></div>';
+    // Medi 09-29 "compress": one short title, no header row, slim rows (logo | who | opens | load by | timer | amount).
+    h+='<div class="tkc-sec" title="Load lag '+st.lag.src+' + 1 day cushion">Needed \u00b7 opens \u2192 load by</div>';
     // Medi 09-29: "I don't care about covered" -> list only windows that still need money (active + upcoming).
     var needW=st.wins.filter(function(w){return w.short>0;});
-    if(!needW.length)h+='<div class="tkw"><span></span><span></span><span class="nm">Nothing needed in the next 7 days</span></div>';
+    if(!needW.length)h+='<div class="tkn"><span></span><span class="nm">Nothing needed in the next 7 days</span></div>';
     needW.forEach(function(w){
       var left=w.by-now,cov=!w.short;
-      h+='<div class="tkw'+(cov?' cov':'')+'"><span></span><span class="cbr-logo">'+ICON[w.k]+'</span><span class="nm">'+w.who+'</span>'+
+      h+='<div class="tkn"><span class="lg">'+ICON[w.k]+'</span><span class="nm">'+w.who+'</span>'+
          '<span class="r">'+fmtS(w.at)+'</span><span class="r'+(!cov&&left<=0?' late':'')+'">'+(cov?'covered':w.at<=now?'open now':left<=0?'overdue':fmtS(w.by))+'</span>'+
          '<span class="r '+(cov?'ok':left<=0?'late':'')+'">'+(cov?'\u2713':left<=0?'now':dur(left))+'</span>'+
-         '<span class="a">'+usd(cov?w.amt:w.short)+'</span><span></span></div>';
+         '<span class="a">'+usd(cov?w.amt:w.short)+'</span></div>';
     });
     // 8010 only: loads in transit + send
     if(c.bal){
@@ -8022,10 +8038,10 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
         h+='<div class="tkw"><button type="button" class="cbo-box tk-land" data-ref="'+r.id+'" data-amt="'+r.amount+'" aria-label="Landed in Taekus" title="Tick when it lands in Taekus"></button>'+
            '<span>\ud83d\ude9a</span><span class="nm">sent '+fmtS(sent)+'</span><span class="r">'+(now>eta?'<b class="late">late</b>':'ETA')+'</span><span class="r">'+fmtS(eta)+'</span>'+
            '<span class="r">'+dur(now-sent)+'</span><span class="a">'+usd(r.amount)+'</span>'+tkUndo(r)+'</div>'+
-           '<div class="tkw" style="min-height:10px;border-top:0"><span></span><span></span><span style="grid-column:3/8">'+pbar(frac,frac>=1)+'</span><span></span></div>';
+           '<div class="tkw" style="min-height:6px;border-top:0"><span></span><span></span><span style="grid-column:3/8">'+pbar(frac,frac>=1)+'</span><span></span></div>';
       });
       st.landedRows.forEach(function(r){h+='<div class="tkw cov"><span class="cbo-box0"></span><span>\u2705</span><span class="nm">landed '+fmtS(new Date(r.at).getTime())+'</span><span></span><span></span><span></span><span class="a">'+usd(r.amount)+'</span>'+tkUndo(r)+'</div>';});
-      h+='<div class="tkw"><button type="button" class="cbo-box tk-send" aria-label="Load sent"></button><span>\ud83c\udfe6</span><span class="nm">Load sent \u2192 tick when you push it</span><span></span><span></span><span></span>'+
+      h+='<div class="tkw"><button type="button" class="cbo-box tk-send" aria-label="Load sent"></button><span>\ud83c\udfe6</span><span class="nm" title="Tick when you push a load">Load sent</span><span></span><span></span><span></span>'+
          '<input type="text" inputmode="decimal" class="cb-money tk-amt" value="'+(st.next?usd(Math.ceil(st.next.short)):'')+'" placeholder="$"><span></span></div>';
     }
     return h+'</div>';
@@ -8429,7 +8445,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "7bfde02 2026-09-29 21:23 UTC".indexOf("STAMP") >= 0 ? "dev" : "7bfde02 2026-09-29 21:23 UTC";
+  var GFH_BUILD = "cd0c9f2 2026-09-29 21:29 UTC".indexOf("STAMP") >= 0 ? "dev" : "cd0c9f2 2026-09-29 21:29 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
