@@ -3196,7 +3196,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 91a8e14 · built 2026-09-29 23:02 UTC</span>
+    <span id="verStamp" class="tnum">version: 80c2fdf · built 2026-09-29 23:27 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7849,7 +7849,8 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   }
   function player(p,L){
     var st=stages(p,L),c=p.code,floor=+p.usdc_floor||0,ce=ceiling(p);
-    var h='<div class="cb-card cbo-p" data-p="'+c+'"><h5>'+c+'<small>'+usd(ce.net)+'/mo max</small></h5>';
+        // Medi 09-29: header = total FLOAT (every stage before Taekus: in CB + withdrawing + in bank + ACH), not /mo max.
+    var h='<div class="cb-card cbo-p" data-p="'+c+'"><h5>'+c+'<small title="In CB + withdrawing + in bank + ACH">float <b>'+usd(st.inCB+st.wd+st.bank+st.ach)+'</b></small></h5>';
     h+='<div class="cbv-stats">'+
        '<div><i>'+logo("coinbase")+'</i><b>'+k$(st.inCB)+'</b><em>CB</em></div>'+
        '<div><i>\u2b06\ufe0f</i><b>'+k$(st.wd)+'</b><em>withdraw</em></div>'+
@@ -8469,7 +8470,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "91a8e14 2026-09-29 23:02 UTC".indexOf("STAMP") >= 0 ? "dev" : "91a8e14 2026-09-29 23:02 UTC";
+  var GFH_BUILD = "80c2fdf 2026-09-29 23:27 UTC".indexOf("STAMP") >= 0 ? "dev" : "80c2fdf 2026-09-29 23:27 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
