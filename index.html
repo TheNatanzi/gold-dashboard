@@ -2957,7 +2957,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 6d99432 · built 2026-09-29 07:54 UTC</span>
+    <span id="verStamp" class="tnum">version: 9b326d1 · built 2026-09-29 07:58 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7373,12 +7373,19 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
         rec[f]=fromLocalInput(i.value);
       }
       else if(i.dataset.kind==="text")rec[f]=i.value.trim()||null;
-      else if(i.dataset.kind==="int"){var n=i.value.trim();if(n==="")rec[f]=null;else if(!/^\d+$/.test(n)||+n<1||+n>31)badDay=true;else rec[f]=+n;}
+      else if(i.dataset.kind==="int"){
+        // Accept "1", "1st", or a date like "10/1" (= the 1st of every month).
+        var n=i.value.trim(),md=n.match(/^\d{1,2}\s*[\/\-.]\s*(\d{1,2})(?:\s*[\/\-.]\s*\d{2,4})?$/);
+        if(md)n=md[1];n=n.replace(/(st|nd|rd|th)$/i,"");
+        if(n==="")rec[f]=null;else if(!/^\d+$/.test(n)||+n<1||+n>31){badDay=true;i.classList.add("cb-bad");}else{rec[f]=+n;i.value=String(+n);}
+      }
       else{var v=parseDollars(i.value);if(v!==v)bad=true;else rec[f]=v;}
     });
-    if(bad){msg.className="cb-msg bad";msg.textContent="Numbers only, 0 or more.";return;}
-    if(partial.length){partial.forEach(function(x){x.classList.add("cb-bad");});partial[0].focus();msg.className="cb-msg bad";msg.textContent="Finish the red date box — it needs the time and AM/PM too. Nothing saved.";return;}
-    if(badDay){msg.className="cb-msg bad";msg.textContent="Due day must be 1–31.";return;}
+    // A blocked save must be impossible to miss: scroll to the message.
+    function stop(t){msg.className="cb-msg bad";msg.textContent="⚠ NOT SAVED — "+t;msg.scrollIntoView({block:"center",behavior:"smooth"});}
+    if(bad){stop("dollar boxes take numbers only, 0 or more.");return;}
+    if(partial.length){partial.forEach(function(x){x.classList.add("cb-bad");});partial[0].focus();stop("finish the red date box — it needs the time and AM/PM too.");return;}
+    if(badDay){stop("Due day is the day of the month, 1–31 (e.g. 1 or 10/1).");return;}
     // Balance changed but "as of" untouched -> the new balance is as of NOW.
     var asof=c.querySelector('[data-f="bal_as_of"]');
     if(String(rec.cb_start==null?"":rec.cb_start)!==c.dataset.cbstart&&asof&&fromLocalInput(asof.value)===(asof.dataset.orig||null)){rec.bal_as_of=new Date().toISOString();asof.value=toLocalInput(rec.bal_as_of);}
@@ -8023,7 +8030,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "6d99432 2026-09-29 07:54 UTC".indexOf("STAMP") >= 0 ? "dev" : "6d99432 2026-09-29 07:54 UTC";
+  var GFH_BUILD = "9b326d1 2026-09-29 07:58 UTC".indexOf("STAMP") >= 0 ? "dev" : "9b326d1 2026-09-29 07:58 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
