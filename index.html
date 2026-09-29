@@ -2912,7 +2912,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: a4934e9 · built 2026-09-29 04:25 UTC</span>
+    <span id="verStamp" class="tnum">version: cb9c144 · built 2026-09-29 04:26 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7228,11 +7228,13 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
     }
     return null;
   }
+  // Fee is a DAY, not a time (Medi): due at 9 AM Pacific that day, shown as a date only.
+  function fmtDay(d){return new Intl.DateTimeFormat("en-US",{timeZone:TZ,weekday:"short",month:"short",day:"numeric"}).format(d);}
   function feeState(day,time,paidIso){var d=feeDue(day,time,paidIso);if(!d)return null;var left=d.getTime()-Date.now();return {due:d,left:left,kind:left<0?"late":left<3*864e5?"soon":"ok"};}
   function feeHtml(day,time,paidIso){
     var s=feeState(day,time,paidIso);if(!s)return '<span class="cb-st none">Enter a due day to start reminders</span>';
     var tag=s.kind==="late"?'<span class="cb-st late">OVERDUE '+dur(-s.left)+'</span>':s.kind==="soon"?'<span class="cb-st wait">due in '+dur(s.left)+'</span>':'<span class="cb-st ok2">due in '+dur(s.left)+'</span>';
-    return tag+' &middot; '+fmt(s.due)+' <button type="button" class="cb-paid" data-due="'+s.due.toISOString()+'">Mark paid &#10003;</button>';
+    return tag+' &middot; '+fmtDay(s.due)+' <button type="button" class="cb-paid" data-due="'+s.due.toISOString()+'">Mark paid &#10003;</button>';
   }
   function row(id,label,sub,input){return '<div class="cb-f"><label for="'+id+'">'+label+'<i>'+sub+'</i></label>'+input+'</div>';}
   function card(r){
@@ -7253,8 +7255,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
        '<div class="cb-mb">'+
          row(fid+'amount','Amount','per month',inp(fid+'amount','fee_amount',dollars(r.fee_amount),"$"))+
          row(fid+'day','Due day','day of the month (1&ndash;31)','<input type="text" inputmode="numeric" id="'+fid+'day" data-f="fee_day" data-kind="int" placeholder="&mdash;" value="'+(r.fee_day||"")+'">')+
-         row(fid+'time','Due time','Pacific time','<input type="time" id="'+fid+'time" data-f="fee_time" data-kind="text" value="'+(r.fee_time||"")+'">')+
-         '<p class="cb-nx cb-fs" data-paid="'+(r.fee_paid_for||"")+'">'+feeHtml(r.fee_day,r.fee_time,r.fee_paid_for)+'</p>'+
+         '<p class="cb-nx cb-fs" data-paid="'+(r.fee_paid_for||"")+'">'+feeHtml(r.fee_day,null,r.fee_paid_for)+'</p>'+
        '</div></div>';
     h+='<div class="cb-gen">'+
        row('cb_'+c+'_usdc_floor','USDC floor','always left in Coinbase',inp('cb_'+c+'_usdc_floor','usdc_floor',dollars(r.usdc_floor),"$"))+
@@ -7329,7 +7330,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   });
   function refreshFee(c){
     var fs=c.querySelector(".cb-fs");if(!fs)return;
-    fs.innerHTML=feeHtml(c.querySelector('[data-f="fee_day"]').value,c.querySelector('[data-f="fee_time"]').value,fs.dataset.paid||null);
+    fs.innerHTML=feeHtml(c.querySelector('[data-f="fee_day"]').value,null,fs.dataset.paid||null);
     feeChip();
   }
   // Tab chip = fees due within 3 days or overdue, across people with the fee ON.
@@ -7338,14 +7339,14 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
     var late=0,soon=0;
     document.querySelectorAll("#cbGrid .cb-card").forEach(function(c){
       var sw=c.querySelector('[data-f="fee_on"]'),fs=c.querySelector(".cb-fs");if(!sw||!sw.checked||!fs)return;
-      var s=feeState(c.querySelector('[data-f="fee_day"]').value,c.querySelector('[data-f="fee_time"]').value,fs.dataset.paid||null);
+      var s=feeState(c.querySelector('[data-f="fee_day"]').value,null,fs.dataset.paid||null);
       if(s&&s.kind==="late")late++;else if(s&&s.kind==="soon")soon++;
     });
     chip.hidden=!(late||soon);chip.className="tb-chip"+(late?" late":" maybe");
     chip.textContent=late?late+" fee overdue":soon+" fee due soon";
   }
   // Fee day/time or switch edited -> refresh its status line right away.
-  document.addEventListener("input",function(ev){var t=ev.target;if(t.dataset&&(t.dataset.f==="fee_day"||t.dataset.f==="fee_time")){var c=t.closest(".cb-card");if(c)refreshFee(c);}});
+  document.addEventListener("input",function(ev){var t=ev.target;if(t.dataset&&t.dataset.f==="fee_day"){var c=t.closest(".cb-card");if(c)refreshFee(c);}});
   document.addEventListener("change",function(ev){var t=ev.target;if(t.dataset&&t.dataset.f==="fee_on"){var c=t.closest(".cb-card");if(c)refreshFee(c);}});
   // Mark paid: saves ONLY fee_paid_for (PATCH), so it never overwrites unsaved edits elsewhere.
   document.addEventListener("click",function(ev){
@@ -7661,7 +7662,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "a4934e9 2026-09-29 04:25 UTC".indexOf("STAMP") >= 0 ? "dev" : "a4934e9 2026-09-29 04:25 UTC";
+  var GFH_BUILD = "cb9c144 2026-09-29 04:26 UTC".indexOf("STAMP") >= 0 ? "dev" : "cb9c144 2026-09-29 04:26 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
