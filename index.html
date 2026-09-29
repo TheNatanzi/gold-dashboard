@@ -1255,6 +1255,20 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   .cb-save:disabled{opacity:.45;cursor:default}
   .cb-msg{font-size:11.5px;color:var(--ink-mute)}
   .cb-msg.ok{color:var(--good)} .cb-msg.bad{color:var(--bad)}
+  .cb-m{border:1px solid var(--line);border-radius:12px;padding:9px 10px;margin:0 0 8px;background:var(--panel2)}
+  .cb-m.off{opacity:.55} .cb-m.off .cb-mb{display:none}
+  .cb-sw{display:flex;align-items:center;gap:9px;cursor:pointer;user-select:none}
+  .cb-sw input{position:absolute;opacity:0;width:1px;height:1px}
+  .cb-sw .tr{width:38px;height:22px;border-radius:11px;background:var(--line2);position:relative;flex:none;transition:background .15s}
+  .cb-sw .tr::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--ink);transition:left .15s}
+  .cb-sw input:checked + .tr{background:var(--good)}
+  .cb-sw input:checked + .tr::after{left:19px;background:#fff}
+  .cb-sw input:focus-visible + .tr{outline:2px solid var(--gold-deep);outline-offset:2px}
+  .cb-sw b{font-size:13px;color:var(--ink)} .cb-sw em{font-style:normal;font-size:10.5px;color:var(--ink-mute);margin-left:auto}
+  .cb-mb{margin-top:6px}
+  .cb-gen{border-top:1px solid var(--line);margin-top:6px;padding-top:6px}
+  .cb-st{font-family:var(--mono);font-size:9.5px;font-weight:800;letter-spacing:.04em;padding:2px 7px;border-radius:6px}
+  .cb-st.open{background:var(--good-bg);color:var(--good)} .cb-st.wait{background:var(--warn-bg);color:var(--warn)} .cb-st.none{background:var(--bg2);color:var(--ink-mute);font-weight:600}
   .cb-soon{margin-top:14px;padding:12px 14px;border:1px dashed var(--line2);border-radius:var(--r-sm);font-size:12.5px;color:var(--ink-mute)}
 </style>
 
@@ -1679,7 +1693,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   <div class="tabpanel" id="tab-cb" role="tabpanel" aria-labelledby="tabBtnCb" hidden>
     <div class="rx-mhead" style="margin-top:8px"><span class="em">💰</span><div class="tt">
       <h4>CB tracker &mdash; settings per person</h4>
-      <p class="md">Type each person's <b>max</b> per method. PayPal resets <b>24h</b> after a buy &middot; Samsung &amp; GPay reset <b>7 days</b> after. Floor = USDC always left in Coinbase. Coinbase One = <b>we pay</b> monthly. All times <b>Pacific</b>. Leave blank if you don't know yet.</p>
+      <p class="md">Switch a method <b>off</b> if that person doesn't qualify. Type each <b>max</b> and when it was <b>last used</b> so every window syncs. PayPal resets <b>24h</b> after a buy &middot; Samsung &amp; GPay reset <b>7 days</b> after. Floor = USDC always left in Coinbase. Coinbase One = <b>we pay</b> monthly. All times <b>Pacific</b>. Leave blank if you don't know yet.</p>
     </div></div>
     <div class="cb-grid" id="cbGrid"><div class="cb-soon">Loading&hellip;</div></div>
     <div class="cb-soon">Coming next on this tab: our Taekus balance at the top (from Sabz) &middot; buy log with &#9744; action items &middot; withdraw / bank / Taekus steps with timers &middot; ntfy alarms (quiet 12&ndash;8 AM).</div>
@@ -2890,7 +2904,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 50962b9 · built 2026-09-29 02:07 UTC</span>
+    <span id="verStamp" class="tnum">version: 3c24858 · built 2026-09-29 03:32 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7151,13 +7165,12 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   var URL_="https://cuubqcxzvyiryxcygadh.supabase.co", KEY="sb_publishable_vuJ1bfkLjpPNbrouZb_3eQ_9dSJXlep";
   var TZ="America/Los_Angeles";
   function H(x){var h={apikey:KEY,Authorization:"Bearer "+KEY,"Content-Type":"application/json"};for(var k in (x||{}))h[k]=x[k];return h;}
-  var FIELDS=[
-    ["paypal_limit","PayPal max","resets 24h after a buy","$"],
-    ["samsung_limit","Samsung Pay max","resets 7 days after","$"],
-    ["gpay_limit","GPay max","resets 7 days after &middot; our Taekus","$"],
-    ["usdc_floor","USDC floor","always left in Coinbase","$"],
-    ["cb1_monthly","Coinbase One / month","we pay it","$"],
-    ["cb1_start","Coinbase One started","Pacific time","dt"]
+  /* Each method: own on/off switch (not everyone qualifies), own max, own last-used
+     time. Window reopens last + hours (rolling). */
+  var METHODS=[
+    ["paypal","PayPal",24,"resets 24h after a buy"],
+    ["samsung","Samsung Pay",168,"resets 7 days after a buy"],
+    ["gpay","GPay",168,"resets 7 days after &middot; our Taekus"]
   ];
   /* Pacific wall-clock <-> UTC, independent of the viewer's own time zone
      (RAN's phone runs UTC+7 - never trust a device clock). */
@@ -7169,24 +7182,45 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
     for(var i=0;i<3;i++){var p=tzParts(new Date(t));var got=Date.UTC(+p.year,p.month-1,+p.day,+p.hour,+p.minute);t+=want-got;}
     return new Date(t).toISOString();
   }
-  function fmt(d){return new Intl.DateTimeFormat("en-US",{timeZone:TZ,month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}).format(d);}
+  function fmt(d){return new Intl.DateTimeFormat("en-US",{timeZone:TZ,weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}).format(d);}
   function nextCharge(iso){
     if(!iso)return null;var s=new Date(iso),now=Date.now();
     for(var k=1;k<600;k++){var d=new Date(s);d.setUTCMonth(s.getUTCMonth()+k);if(d.getTime()>now)return d;}
     return null;
   }
   function nxHtml(iso){var nc=nextCharge(iso);return nc?'Next Coinbase One charge &asymp; <b>'+fmt(nc)+'</b>':'Coinbase One start not entered yet';}
-  function money(n){return n==null||n===""?"":Number(n);}
+  function dollars(n){return n==null||n===""||isNaN(+n)?"":"$"+Number(n).toLocaleString("en-US",{maximumFractionDigits:2});}
+  function parseDollars(v){v=String(v||"").replace(/[$,\s]/g,"");if(v==="")return null;return isNaN(+v)||+v<0?NaN:+v;}
+  function dur(ms){var m=Math.round(ms/6e4),h=Math.floor(m/60),d=Math.floor(h/24);return d?d+"d "+(h%24)+"h":h?h+"h "+(m%60)+"m":m+"m";}
+  function reopenHtml(lastIso,hours){
+    if(!lastIso)return '<span class="cb-st none">No last-used time &mdash; enter it to sync</span>';
+    var at=new Date(new Date(lastIso).getTime()+hours*36e5),left=at.getTime()-Date.now();
+    return left<=0?'<span class="cb-st open">OPEN NOW</span> since '+fmt(at)
+                  :'<span class="cb-st wait">opens in '+dur(left)+'</span> &middot; '+fmt(at);
+  }
+  function inp(id,f,v,kind){
+    return kind==="dt"?'<input type="datetime-local" id="'+id+'" data-f="'+f+'" value="'+v+'">'
+                      :'<input type="text" inputmode="decimal" class="cb-money" placeholder="&mdash;" id="'+id+'" data-f="'+f+'" value="'+v+'">';
+  }
+  function row(id,label,sub,input){return '<div class="cb-f"><label for="'+id+'">'+label+'<i>'+sub+'</i></label>'+input+'</div>';}
   function card(r){
-    var h='<div class="cb-card" data-code="'+r.code+'"><h5>'+r.code+'<small>'+(r.updated_at&&r.updated_by!=="seed"?"saved "+fmt(new Date(r.updated_at)):"")+'</small></h5>';
-    FIELDS.forEach(function(f){
-      var id='cb_'+r.code+'_'+f[0], v=f[3]==="dt"?toLocalInput(r[f[0]]):money(r[f[0]]);
-      h+='<div class="cb-f"><label for="'+id+'">'+f[1]+'<i>'+f[2]+'</i></label>'+
-         (f[3]==="dt"?'<input type="datetime-local" id="'+id+'" data-f="'+f[0]+'" value="'+v+'">'
-                     :'<input type="number" inputmode="decimal" min="0" step="any" placeholder="&mdash;" id="'+id+'" data-f="'+f[0]+'" value="'+v+'">')+'</div>';
+    var c=r.code,h='<div class="cb-card" data-code="'+c+'"><h5>'+c+'<small>'+(r.updated_at&&r.updated_by!=="seed"?"saved "+fmt(new Date(r.updated_at)):"")+'</small></h5>';
+    METHODS.forEach(function(m){
+      var k=m[0],on=r[k+"_on"]!==false;
+      h+='<div class="cb-m'+(on?'':' off')+'" data-m="'+k+'" data-h="'+m[2]+'">'+
+         '<label class="cb-sw"><input type="checkbox" data-f="'+k+'_on"'+(on?' checked':'')+'><span class="tr"></span><b>'+m[1]+'</b><em>'+(on?'qualifies':'doesn\'t qualify')+'</em></label>'+
+         '<div class="cb-mb">'+
+           row('cb_'+c+'_'+k+'_limit','Max',m[3],inp('cb_'+c+'_'+k+'_limit',k+'_limit',dollars(r[k+"_limit"]),"$"))+
+           row('cb_'+c+'_'+k+'_last','Last used','Pacific time',inp('cb_'+c+'_'+k+'_last',k+'_last',toLocalInput(r[k+"_last"]),"dt"))+
+           '<p class="cb-nx cb-re">'+reopenHtml(r[k+"_last"],m[2])+'</p>'+
+         '</div></div>';
     });
-    h+='<p class="cb-nx">'+nxHtml(r.cb1_start)+'</p>';
-    h+='<div class="cb-row"><button class="cb-save" type="button">Save '+r.code+'</button><span class="cb-msg"></span></div></div>';
+    h+='<div class="cb-gen">'+
+       row('cb_'+c+'_usdc_floor','USDC floor','always left in Coinbase',inp('cb_'+c+'_usdc_floor','usdc_floor',dollars(r.usdc_floor),"$"))+
+       row('cb_'+c+'_cb1_monthly','Coinbase One / month','we pay it',inp('cb_'+c+'_cb1_monthly','cb1_monthly',dollars(r.cb1_monthly),"$"))+
+       row('cb_'+c+'_cb1_start','Coinbase One started','Pacific time',inp('cb_'+c+'_cb1_start','cb1_start',toLocalInput(r.cb1_start),"dt"))+
+       '<p class="cb-nx cb-c1">'+nxHtml(r.cb1_start)+'</p></div>';
+    h+='<div class="cb-row"><button class="cb-save" type="button">Save '+c+'</button><span class="cb-msg"></span></div></div>';
     return h;
   }
   var loaded=false;
@@ -7198,26 +7232,54 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
       loaded=false;g.innerHTML='<div class="cb-soon">Couldn\'t reach the database. Check your connection and reload.</div>';
     });
   }
+  // Live "$6,500" formatting as you type (keeps the caret at the end - simple + safe).
+  document.addEventListener("input",function(ev){
+    var t=ev.target;
+    if(t.classList&&t.classList.contains("cb-money")){
+      var raw=t.value.replace(/[^0-9.]/g,""),parts=raw.split(".");
+      if(parts.length>2)raw=parts[0]+"."+parts.slice(1).join("");
+      if(raw===""){t.value="";return;}
+      var ip=raw.split(".")[0],dp=raw.indexOf(".")>=0?"."+raw.split(".")[1].slice(0,2):"";
+      t.value="$"+(ip===""?"0":Number(ip).toLocaleString("en-US"))+dp;
+    }
+    // Last-used time edited -> refresh that method's reopen line right away.
+    if(t.type==="datetime-local"){
+      var m=t.closest(".cb-m");
+      if(m)m.querySelector(".cb-re").innerHTML=reopenHtml(fromLocalInput(t.value),+m.dataset.h);
+      else if(t.dataset.f==="cb1_start"){var c=t.closest(".cb-card");c.querySelector(".cb-c1").innerHTML=nxHtml(fromLocalInput(t.value));}
+    }
+  });
+  document.addEventListener("change",function(ev){
+    var t=ev.target;if(!(t.type==="checkbox"&&t.closest&&t.closest(".cb-sw")))return;
+    var m=t.closest(".cb-m");m.classList.toggle("off",!t.checked);
+    m.querySelector(".cb-sw em").textContent=t.checked?"qualifies":"doesn't qualify";
+  });
+  // Keep countdowns honest while the tab is open.
+  setInterval(function(){
+    document.querySelectorAll("#cbGrid .cb-m").forEach(function(m){
+      var i=m.querySelector('input[type="datetime-local"]');if(i)m.querySelector(".cb-re").innerHTML=reopenHtml(fromLocalInput(i.value),+m.dataset.h);
+    });
+  },60000);
   document.addEventListener("click",function(ev){
     var b=ev.target.closest&&ev.target.closest(".cb-save");if(!b)return;
     var c=b.closest(".cb-card"),msg=c.querySelector(".cb-msg"),rec={code:c.dataset.code},bad=false;
     c.querySelectorAll("input[data-f]").forEach(function(i){
       var f=i.dataset.f;
-      if(i.type==="datetime-local"){rec[f]=fromLocalInput(i.value);}
-      else{var v=i.value.trim();if(v===""){rec[f]=null;}else if(isNaN(+v)||+v<0){bad=true;}else rec[f]=+v;}
+      if(i.type==="checkbox")rec[f]=i.checked;
+      else if(i.type==="datetime-local")rec[f]=fromLocalInput(i.value);
+      else{var v=parseDollars(i.value);if(v!==v)bad=true;else rec[f]=v;}
     });
     if(bad){msg.className="cb-msg bad";msg.textContent="Numbers only, 0 or more.";return;}
     if(rec.usdc_floor==null)rec.usdc_floor=6000;
     if(rec.cb1_monthly==null)rec.cb1_monthly=300;
     rec.updated_at=new Date().toISOString();rec.updated_by="medi";
-    b.disabled=true;msg.className="cb-msg";msg.textContent="Saving\u2026";
+    b.disabled=true;msg.className="cb-msg";msg.textContent="Saving…";
     fetch(URL_+"/rest/v1/cb_people?on_conflict=code",{method:"POST",headers:H({Prefer:"resolution=merge-duplicates,return=minimal"}),body:JSON.stringify(rec)})
     .then(function(r){
       if(!r.ok)throw new Error(r.status);
       fetch(URL_+"/rest/v1/cb_people_log",{method:"POST",headers:H({Prefer:"return=minimal"}),body:JSON.stringify(rec)}).catch(function(){});
-      msg.className="cb-msg ok";msg.textContent="\u2713 Saved";
-      c.querySelector(".cb-nx").innerHTML=nxHtml(rec.cb1_start);
-    }).catch(function(){msg.className="cb-msg bad";msg.textContent="Not saved \u2014 try again.";})
+      msg.className="cb-msg ok";msg.textContent="✓ Saved";
+    }).catch(function(){msg.className="cb-msg bad";msg.textContent="Not saved — try again.";})
     .then(function(){b.disabled=false;});
   });
   var btn=document.getElementById("tabBtnCb");
@@ -7521,7 +7583,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "50962b9 2026-09-29 02:07 UTC".indexOf("STAMP") >= 0 ? "dev" : "50962b9 2026-09-29 02:07 UTC";
+  var GFH_BUILD = "3c24858 2026-09-29 03:32 UTC".indexOf("STAMP") >= 0 ? "dev" : "3c24858 2026-09-29 03:32 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
