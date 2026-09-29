@@ -3156,7 +3156,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 94a8c9c · built 2026-09-29 16:24 UTC</span>
+    <span id="verStamp" class="tnum">version: fe1211b · built 2026-09-29 16:38 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7677,8 +7677,8 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var S={people:[],events:[],hist:[],tk:[],msg:{},when:{}};
   function get(path){return fetch(URL_+"/rest/v1/"+path,{headers:H()}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();});}
   function load(){
-    return Promise.all([get("cb_people?select=*&order=sort_order"),get("cb_events?select=*&order=at.asc,id.asc"),get("cb_rewards_history?select=*&order=swipe_at"),get("cb_taekus?select=*&order=at.asc,id.asc")])
-    .then(function(a){S.people=a[0];S.events=a[1];S.hist=a[2];S.tk=a[3];render();})
+    return Promise.all([get("cb_people?select=*&order=sort_order"),get("cb_events?select=*&order=at.asc,id.asc"),get("cb_rewards_history?select=*&order=swipe_at"),get("cb_taekus?select=*&order=at.asc,id.asc"),get("cb_people_log?select=code,fee_paid_for&note=eq.fee%20marked%20paid&order=id")])
+    .then(function(a){S.people=a[0];S.events=a[1];S.hist=a[2];S.tk=a[3];S.feePaid=a[4]||[];render();})
     .catch(function(){var o=document.getElementById("cbOv");if(o)o.innerHTML='<div class="cb-soon">Couldn’t reach the database. Check your connection and reload.</div>';});
   }
 
@@ -7741,7 +7741,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     rw.forEach(function(x){var t=new Date(x.at).getTime();if(t>nowMs)return;r.total+=x.amt;if(t>=yStart)r.ytd+=x.amt;if(t>=lmStart&&t<mStart)r.last+=x.amt;r[x.src]+=x.amt;});
     var proj={gross:0,cost:0,net:0,missing:[]};
     S.people.forEach(function(p){
-      r.cb1+=cb1Charges(p,0,nowMs);r.cb1ytd+=cb1Charges(p,yStart,nowMs);r.cb1last+=cb1Charges(p,lmStart,mStart-1);
+      r.cb1+=cb1Charges(p,0,nowMs)+feeSum(p,0,nowMs);r.cb1ytd+=cb1Charges(p,yStart,nowMs)+feeSum(p,yStart,nowMs);r.cb1last+=cb1Charges(p,lmStart,mStart-1)+feeSum(p,lmStart,mStart-1);
       var c=ceiling(p);proj.gross+=c.gross;proj.cost+=c.cost;proj.net+=c.net;c.missing.forEach(function(m){proj.missing.push(p.code+" "+m);});
     });
     r.proj=proj;r.lastName=new Intl.DateTimeFormat("en-US",{month:"long",timeZone:"UTC"}).format(new Date(Date.UTC(ly[0],ly[1]-1,15)));
@@ -7838,6 +7838,12 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   /* ---- Calculations sub-tab: money-made tiles + every player's math + month-by-month history ---- */
   function row2(a,b,cls){return '<tr'+(cls?' class="'+cls+'"':'')+'><td>'+a+'</td><td class="n">'+b+'</td></tr>';}
   function pct(x){return (Math.round(x*10000)/100)+"%";}
+  function feeList(p,nowMs){
+    var amt=+p.fee_amount||0,seen={};
+    return (S.feePaid||[]).filter(function(x){if(x.code!==p.code||!x.fee_paid_for||seen[x.fee_paid_for])return false;seen[x.fee_paid_for]=1;return new Date(x.fee_paid_for).getTime()<=nowMs;})
+      .map(function(x){return {d:new Date(x.fee_paid_for),amt:amt};});
+  }
+  function feeSum(p,a,b){return feeList(p,b).filter(function(x){return x.d.getTime()>=a;}).reduce(function(t,x){return t+x.amt;},0);}
   function cb1List(p,nowMs){
     if(!p.cb1_start)return [];var s0=new Date(p.cb1_start),out=[];
     for(var k=0;k<600;k++){var d=new Date(s0);d.setUTCMonth(s0.getUTCMonth()+k);if(d.getTime()>nowMs)break;out.push(d);}
@@ -7852,14 +7858,14 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     if(cls==="res"&&/^−|^-/.test(amt))cls="res neg";
     return '<div class="cbc-r'+(cls?' '+cls:'')+'"><span class="cbr-logo">'+(lg||'')+'</span>'+(math?'<span class="cbc-n">'+name+'</span><span class="cbc-m">'+math+'</span>':'<span class="cbc-n" style="grid-column:span 2">'+name+'</span>')+'<span class="cbc-a">'+amt+'</span></div>';
   }
-  function historyTable(rows,charges,monthly){
+  function historyTable(rows,charges){
     var m={};
     function g(k){return m[k]||(m[k]={dep:0,rw:0,cb1:0});}
     rows.forEach(function(x){var b=g(monthKey(new Date(x.at).getTime()));b.dep+=x.spend;b.rw+=x.amt;});
-    charges.forEach(function(d){g(monthKey(d.getTime())).cb1+=monthly;});
+    charges.forEach(function(c){g(monthKey(c.d.getTime())).cb1+=c.amt;});
     var ks=Object.keys(m).sort().reverse();
     if(!ks.length)return '<div class="cbc-r cbc-empty"><span></span><span class="cbc-n">No history yet</span><span></span><span class="cbc-a">\u2014</span></div>';
-    return '<div class="cbc-hr cbc-hh"><span>Month</span><span>\ud83d\udce5 In</span><span>\ud83c\udf81 Rewards</span><span>'+logo("coinbase")+' One</span><span>Net</span></div>'+
+    return '<div class="cbc-hr cbc-hh"><span>Month</span><span>\ud83d\udce5 In</span><span>\ud83c\udf81 Rewards</span><span>Fees</span><span>Net</span></div>'+
       ks.map(function(k){var b=m[k];return '<div class="cbc-hr"><span>'+monthName(k)+'</span><span>'+k$(b.dep)+'</span><span>'+usd(b.rw)+'</span><span>'+usd(-b.cb1)+'</span><span class="'+(b.rw-b.cb1<0?'neg':'pos')+'">'+usd(b.rw-b.cb1)+'</span></div>';}).join("");
   }
   function calcCard(p,r){
@@ -7874,7 +7880,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
       h+=crow(ICON[k],M[k][0],k$(lim)+' \u00d7 '+w.toFixed(1)+' \u00d7 '+pct(M[k][2]),usd(lim*w*M[k][2]));
     });
     h+=crow(logo("coinbase"),'Coinbase One','we pay',usd(-(+p.cb1_monthly||0)),'neg');
-    if(p.fee_on===true)h+=crow('\ud83e\uddfe','Monthly fee','',usd(-(+p.fee_amount||0)),'neg');
+    h+=crow('\ud83e\uddfe','Monthly fee',p.fee_on===true?'due day '+(p.fee_day||'?'):'none',usd(-(p.fee_on===true?(+p.fee_amount||0):0)),p.fee_on===true?'neg':'off');
     h+=crow('','= per month','',usd(ce.net),'res')+crow('','\u00d7 12 = per year','',usd(ce.net*12),'res');
     var mine=r.rw.filter(function(x){return x.code===c&&new Date(x.at).getTime()<=r.nowMs;}),got=0;
     h+='<div class="cbc-h">\u2705 Made so far</div>';
@@ -7884,19 +7890,20 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
       h+=crow(ICON[k],M[k][0],xs.length+' \u00d7 '+k$(sp/xs.length)+' \u00d7 '+pct(M[k][2]),usd(am));
     });
     if(!mine.length)h+=crow('','No deposits ticked yet','','$0','off');
-    var ch=cb1List(p,r.nowMs),cost=ch.length*(+p.cb1_monthly||0);
+    var ch=cb1List(p,r.nowMs),cost=ch.length*(+p.cb1_monthly||0),fl=feeList(p,r.nowMs),fcost=fl.reduce(function(t,x){return t+x.amt;},0);
     h+=crow(logo("coinbase"),'Coinbase One',ch.length?ch.length+' \u00d7 '+k$(p.cb1_monthly)+' \u00b7 '+ch.map(fmtDay).join(", "):'no start date',usd(-cost),'neg');
-    h+=crow('','= net so far','',usd(got-cost),'res');
-    h+='<div class="cbc-h">\ud83d\udcc5 By month</div>'+historyTable(mine,ch,+p.cb1_monthly||0);
+    h+=crow('\ud83e\uddfe','Monthly fee',fl.length?fl.length+' paid \u00b7 '+fl.map(function(x){return fmtDay(x.d);}).join(', '):(p.fee_on===true?'none paid yet':'none'),usd(-fcost),fcost?'neg':'off');
+    h+=crow('','= net so far','',usd(got-cost-fcost),'res');
+    h+='<div class="cbc-h">\ud83d\udcc5 By month</div>'+historyTable(mine,ch.map(function(d){return {d:d,amt:+p.cb1_monthly||0};}).concat(fl));
     return h+'</div>';
   }
   function renderCalc(r){
     var o=document.getElementById("cbCalc");if(!o)return;
     var first=S.hist.length?fmtDay(S.hist[0].swipe_at):"\u2014",last=S.hist.length?fmtDay(S.hist[S.hist.length-1].swipe_at):"\u2014";
     o.innerHTML='<div class="cbo-sec">Money made · rewards minus Coinbase One</div><div class="cbo-tiles">'+
-      tile("Total",r.total-r.cb1,usd(r.total)+" rewards − "+usd(r.cb1)+" Coinbase One","money")+
-      tile("This year",r.ytd-r.cb1ytd,usd(r.ytd)+" rewards − "+usd(r.cb1ytd)+" Coinbase One","money")+
-      tile("Last month ("+r.lastName+")",r.last-r.cb1last,usd(r.last)+" rewards − "+usd(r.cb1last)+" Coinbase One","money")+
+      tile("Total",r.total-r.cb1,usd(r.total)+" rewards − "+usd(r.cb1)+" fees","money")+
+      tile("This year",r.ytd-r.cb1ytd,usd(r.ytd)+" rewards − "+usd(r.cb1ytd)+" fees","money")+
+      tile("Last month ("+r.lastName+")",r.last-r.cb1last,usd(r.last)+" rewards − "+usd(r.cb1last)+" fees","money")+
       tile("Next 1 month (ceiling)",r.proj.net,usd(r.proj.gross)+" rewards − "+usd(r.proj.cost)+" fees","proj")+
       tile("Next 1 year (ceiling)",r.proj.net*12,"every window hit, 12 months","proj")+'</div>'+
       '<p class="cbo-note">Rewards come from: <b>'+usd(r.taekus)+'</b> read straight from Medi’s Taekus ··8010 (swipes since '+first+') · <b>'+usd(r.tick8010)+'</b> GPay/Apple Pay ticks after that (2.13%) · <b>'+usd(r.hamed)+'</b> PayPal/Samsung <b>from tracker ticks only</b> (2.3%, Hamed’s Taekus can’t be read).'+
@@ -8394,7 +8401,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "94a8c9c 2026-09-29 16:24 UTC".indexOf("STAMP") >= 0 ? "dev" : "94a8c9c 2026-09-29 16:24 UTC";
+  var GFH_BUILD = "fe1211b 2026-09-29 16:38 UTC".indexOf("STAMP") >= 0 ? "dev" : "fe1211b 2026-09-29 16:38 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
