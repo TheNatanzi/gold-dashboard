@@ -3162,7 +3162,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 40784fe · built 2026-09-29 20:33 UTC</span>
+    <span id="verStamp" class="tnum">version: 2f1a075 · built 2026-09-29 20:48 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -5964,25 +5964,24 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-09-29T13:09:45-07:00",
+    at: "2026-09-29T13:39:50-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
     price: 4229.99,
     // Written by warehouse-inventory/daily_pull.py — see DAILY-PULL.md.
-    // 6 of the 45, keyed on the row carrying the SKU, never the store badge.
-    inStock: ["antioch", "concord", "danville", "fairfield", "sacstockton",
-              "santaclara"],
-    // 36 of the 45. Stores whose rail rows were truncated were opened and
+    // 5 of the 45, keyed on the row carrying the SKU, never the store badge.
+    inStock: ["antioch", "concord", "danville", "fairfield", "sacstockton"],
+    // 37 of the 45. Stores whose rail rows were truncated were opened and
     // read from their own page this run, not carried forward.
-    soldOut: {brentwood:"10d", fostercity:"1d", fremont:"2d", gilroy:"2m",
+    soldOut: {brentwood:"11d", fostercity:"1d", fremont:"2d", gilroy:"2m",
               hayward:"3d", livermore:"1d", lodi:"12d", manteca:"6d", modesto:"6d",
               mountainview:"2d", newark:"3d", novato:"10d", pleasanton:"today",
               ranchocordova:"6d", redwoodcity:"13d", richmond:"11d", riverbank:"6d",
               rohnertpark:"2m", saccalexpo:"10d", sacnatomas:"2m", sanleandro:"today",
-              santacruz:"10d", santarosa:"10d", sf:"today", sjalmaden:"today",
-              sjgreatoaks:"today", sjne:"2d", sjsenter:"today", ssf:"2d",
-              ssfairport:"8d", stockton:"8d", sunnyvale:"today", tracy:"today",
-              vacaville:"12d", vallejo:"2d", woodland:"11d"}
+              santaclara:"today", santacruz:"10d", santarosa:"10d", sf:"today",
+              sjalmaden:"today", sjgreatoaks:"today", sjne:"2d", sjsenter:"today",
+              ssf:"2d", ssfairport:"8d", stockton:"8d", sunnyvale:"today",
+              tracy:"today", vacaville:"12d", vallejo:"2d", woodland:"11d"}
   };
 
   // Turn the snapshot into the same row shape wiRenderNow/wiRenderTable already
@@ -7683,8 +7682,9 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var S={people:[],events:[],hist:[],tk:[],msg:{},when:{}};
   function get(path){return fetch(URL_+"/rest/v1/"+path,{headers:H()}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();});}
   function load(){
-    return Promise.all([get("cb_people?select=*&order=sort_order"),get("cb_events?select=*&order=at.asc,id.asc"),get("cb_rewards_history?select=*&order=swipe_at"),get("cb_taekus?select=*&order=at.asc,id.asc"),get("cb_people_log?select=code,fee_paid_for&note=eq.fee%20marked%20paid&order=id")])
-    .then(function(a){S.people=a[0];S.events=a[1];S.hist=a[2];S.tk=a[3];S.feePaid=a[4]||[];render();})
+    return Promise.all([get("cb_people?select=*&order=sort_order"),get("cb_events?select=*&order=at.asc,id.asc"),get("cb_rewards_history?select=*&order=swipe_at"),get("cb_taekus?select=*&order=at.asc,id.asc"),get("cb_people_log?select=code,fee_paid_for&note=eq.fee%20marked%20paid&order=id"),
+        get("cb_taekus_feed?select=card,balance,as_of&order=id.desc&limit=5").catch(function(){return [];})])
+    .then(function(a){S.people=a[0];S.events=a[1];S.hist=a[2];S.tk=a[3];S.feePaid=a[4]||[];S.feed=a[5]||[];render();})
     .catch(function(){var o=document.getElementById("cbOv");if(o)o.innerHTML='<div class="cb-soon">Couldn’t reach the database. Check your connection and reload.</div>';});
   }
 
@@ -7973,7 +7973,16 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     wins.sort(function(a,b){return a.at-b.at;});
     var have=c.bal?Math.max(0,total||0)+transit:0,need=0,next=null;
     wins.forEach(function(w){var cover=Math.min(have,w.amt);have-=cover;w.short=w.amt-cover;need+=w.short;if(w.short>0&&!next)next=w;});
-    return {balRow:balRow,landedRows:landedRows,total:total,t0:t0,open:open,transit:transit,need:need,next:next,wins:wins,lag:lag};
+    // Auto-check (Medi 09-29): SimpleFIN's 8010 balance vs our math at the same moment. A gap = money that
+    // moved without a tick (e.g. RIN's alarm-off Apple Pay). Only when the typed balance is older than the snapshot.
+    var feed=null,f=c.bal&&(S.feed||[]).filter(function(x){return x.card===c.id;})[0];
+    if(f){var fa=new Date(f.as_of).getTime(),b0=null,tb=0;
+      T.rows.forEach(function(r){if(r.kind==="balance"&&new Date(r.at).getTime()<=fa){b0=+r.amount;tb=new Date(r.at).getTime();}});
+      if(b0!=null){var m=b0;
+        T.rows.forEach(function(r){var t=new Date(r.at).getTime();if(r.kind==="load_landed"&&t>=tb&&t<=fa)m+=+r.amount||0;});
+        live().ev.forEach(function(e){var t=new Date(e.at).getTime();if(e.stage==="deposit"&&c.methods.indexOf(e.method)>=0&&t>=tb&&t<=fa)m-=+e.amount||0;});
+        feed={bal:+f.balance,at:fa,gap:Math.round((+f.balance-m)*100)/100};}}
+    return {balRow:balRow,landedRows:landedRows,total:total,t0:t0,open:open,transit:transit,need:need,next:next,wins:wins,lag:lag,feed:feed};
   }
   function fmtS(ms){return new Intl.DateTimeFormat("en-US",{timeZone:TZ,weekday:"short",hour:"numeric",minute:"2-digit"}).format(new Date(ms));}
   function tkUndo(r){return '<button type="button" class="cbr-u tk-undo" data-undo="'+r.id+'" title="Undo">\u21b6</button>';}
@@ -7982,7 +7991,9 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     var st=tkState(c),now=Date.now(),h='<div class="tkc" data-card="'+c.id+'">';
     // header strip: id | balance or "no balance" | next load | 7-day total
     h+='<div class="tkc-h"><div class="tkc-id">'+logo("taekus")+'<div>'+c.who+' \u00b7 '+c.name+'<small>'+c.methods.map(function(k){return M[k][0];}).join(" + ")+'</small></div></div>';
-    if(c.bal)h+=stat('Balance',(st.total==null?'\u2014':usd(st.total))+' <button type="button" class="tk-edit tk-bal" title="Type the real Taekus balance">\u270e</button>'+(st.balRow?' '+tkUndo(st.balRow):''),st.t0?'typed '+fmtS(st.t0)+(st.transit?' \u00b7 +'+k$(st.transit)+' on the way':''):'tap \u270e to type it');
+    if(c.bal)h+=stat('Balance',(st.total==null?'\u2014':usd(st.total))+' <button type="button" class="tk-edit tk-bal" title="Type the real Taekus balance">\u270e</button>'+(st.balRow?' '+tkUndo(st.balRow):''),(st.t0?'typed '+fmtS(st.t0)+(st.transit?' \u00b7 +'+k$(st.transit)+' on the way':''):'tap \u270e to type it')+
+      (st.feed?'<br>'+(Math.abs(st.feed.gap)<1?'<span class="ok">\u2713 matches SimpleFIN '+fmtS(st.feed.at)+'</span>':
+        '<span class="late">\u26a0 '+usd(Math.abs(st.feed.gap))+(st.feed.gap<0?' spent':' arrived')+' with no tick \u00b7 SimpleFIN '+usd(st.feed.bal)+' '+fmtS(st.feed.at)+'</span>'):''));
     if(st.next){
       var left=st.next.by-now,late=left<=0;
       h+=stat('Next load',usd(st.next.short),(late?'\u26a0 LOAD NOW \u00b7 '+(st.next.at<=now?'window open':'overdue '+dur(-left)):'\u23f3 '+dur(left)+' \u00b7 by '+fmtS(st.next.by)),late?'late':'',
@@ -8418,7 +8429,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "40784fe 2026-09-29 20:33 UTC".indexOf("STAMP") >= 0 ? "dev" : "40784fe 2026-09-29 20:33 UTC";
+  var GFH_BUILD = "2f1a075 2026-09-29 20:48 UTC".indexOf("STAMP") >= 0 ? "dev" : "2f1a075 2026-09-29 20:48 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
