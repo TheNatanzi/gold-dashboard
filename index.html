@@ -1275,6 +1275,30 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   .cb-fee{border-color:var(--gold-deep)}
   .tb-chip.late{border-color:var(--bad);color:var(--bad);background:var(--bad-bg)}
   .tb-chip[hidden]{display:none}
+  /* ---- CB tracker OVERVIEW sub-tab (2026-09-29) ---- */
+  .cbo-sec{margin:14px 0 6px;font:700 11px var(--mono);letter-spacing:.09em;color:var(--ink-mute);text-transform:uppercase}
+  .cbo-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  .cbo-t{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:11px 12px;box-shadow:var(--shadow)}
+  .cbo-t .k{font-size:11px;color:var(--ink-mute)} .cbo-t .v{font:700 21px var(--mono);color:var(--ink);margin-top:3px}
+  .cbo-t .s{font-size:10.5px;color:var(--ink-mute);margin-top:3px;line-height:1.35}
+  .cbo-t.proj .v{color:var(--gold)} .cbo-t .v.neg{color:var(--bad)}
+  .cbo-note{font-size:11px;color:var(--ink-mute);margin:6px 0 0;line-height:1.45}
+  .cbo-p .cbo-stages{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0 0 10px}
+  .cbo-stages div{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:6px 7px}
+  .cbo-stages i{display:block;font-style:normal;font-size:10px;color:var(--ink-mute)} .cbo-stages b{font:700 13px var(--mono);color:var(--ink)}
+  .cbo-act{display:flex;flex-wrap:wrap;align-items:center;gap:6px;border-top:1px dashed var(--line);padding:8px 0 4px}
+  .cbo-act select,.cbo-act input{background:var(--bg2);border:1px solid var(--line2);color:var(--ink);border-radius:8px;padding:6px 7px;font:12.5px var(--mono);max-width:112px} .cbo-act select{max-width:200px}
+  .cbo-act input[type=datetime-local]{max-width:190px;font-size:11px}
+  .cbo-box{display:inline-flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--line2);color:var(--ink);border-radius:9px;padding:6px 10px;font-size:12.5px;font-weight:650;cursor:pointer}
+  .cbo-box::before{content:"";width:15px;height:15px;border:2px solid var(--ink-mute);border-radius:4px;flex:none}
+  .cbo-box.done{border-color:var(--good);color:var(--good)} .cbo-box.done::before{content:"\2713";border-color:var(--good);background:var(--good);color:#fff;font-size:11px;line-height:15px;text-align:center}
+  .cbo-box:disabled{opacity:.5;cursor:default}
+  .cbo-open{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-soft);padding:4px 0}
+  .cbo-log{margin:8px 0 0;padding:0;list-style:none;font-size:11px;color:var(--ink-mute)}
+  .cbo-log li{display:flex;gap:6px;padding:2px 0;border-top:1px solid var(--line)} .cbo-log li span:first-child{flex:1}
+  .cbo-log li.void{text-decoration:line-through;opacity:.6}
+  .cbo-undo{background:none;border:0;color:var(--ink-mute);font-size:11px;cursor:pointer;text-decoration:underline}
+  .cbo-msg{font-size:11.5px;color:var(--ink-mute);min-height:14px} .cbo-msg.bad{color:var(--bad)} .cbo-msg.ok{color:var(--good)}
   .cb-gen{border-top:1px solid var(--line);margin-top:6px;padding-top:6px}
   .cb-st{font-family:var(--mono);font-size:9.5px;font-weight:800;letter-spacing:.04em;padding:2px 7px;border-radius:6px}
   .cb-st.open{background:var(--good-bg);color:var(--good)} .cb-st.wait{background:var(--warn-bg);color:var(--warn)} .cb-st.none{background:var(--bg2);color:var(--ink-mute);font-weight:600}
@@ -1701,12 +1725,19 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
        per-person limits, USDC floor, Coinbase One start. Saved to Supabase cb_people
        (+ append-only cb_people_log). All times are PACIFIC. -->
   <div class="tabpanel" id="tab-cb" role="tabpanel" aria-labelledby="tabBtnCb" hidden>
+    <nav class="rsub-bar" id="cbSubBar" role="tablist" aria-label="CB tracker sections">
+      <button class="rsub-btn" role="tab" data-cbsub="ov"  aria-selected="true">📊 Overview</button>
+      <button class="rsub-btn" role="tab" data-cbsub="set" aria-selected="false">⚙️ Settings</button>
+    </nav>
+    <div class="rsub-panel" id="cbsub-ov"><div id="cbOv"><div class="cb-soon">Loading&hellip;</div></div></div>
+    <div class="rsub-panel" id="cbsub-set" hidden>
     <div class="rx-mhead" style="margin-top:8px"><span class="em">💰</span><div class="tt">
       <h4>CB tracker &mdash; settings per person</h4>
       <p class="md"><b>On/Off</b> = does it count toward the numbers. <b>Alarm</b> = does it ping you (e.g. RIN deposits PayPal &amp; Apple Pay herself: on, alarm off). Type each <b>max</b> and when it was <b>last used</b> so every window syncs. PayPal resets <b>24h</b> after a buy &middot; Samsung, GPay &amp; Apple Pay reset <b>7 days</b> after. Floor = USDC always left in Coinbase. Coinbase One = <b>we pay</b> monthly. All times <b>Pacific</b>. Leave blank if you don't know yet.</p>
     </div></div>
     <div class="cb-grid" id="cbGrid"><div class="cb-soon">Loading&hellip;</div></div>
-    <div class="cb-soon">Coming next on this tab: our Taekus balance at the top (from Sabz) &middot; buy log with &#9744; action items &middot; withdraw / bank / Taekus steps with timers &middot; ntfy alarms (quiet 12&ndash;8 AM).</div>
+    <div class="cb-soon">Coming next on this tab: our Taekus balance at the top (from Sabz) &middot; stuck-step timers &middot; ntfy alarms (quiet 12&ndash;8 AM).</div>
+    </div>
   </div>
 
   <div class="tabpanel" id="tab-lock" role="tabpanel" aria-labelledby="tabBtnLock" hidden>
@@ -2914,7 +2945,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 300157d · built 2026-09-29 04:33 UTC</span>
+    <span id="verStamp" class="tnum">version: 9253fd2 · built 2026-09-29 07:37 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -5716,24 +5747,25 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-09-28T11:01:46-07:00",
+    at: "2026-09-29T00:24:43-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
     price: 4199.99,
     // Written by warehouse-inventory/daily_pull.py — see DAILY-PULL.md.
-    // 13 of the 45, keyed on the row carrying the SKU, never the store badge.
-    inStock: ["antioch", "danville", "fairfield", "pleasanton", "sacstockton",
-              "sanleandro", "santaclara", "sf", "sjalmaden", "sjgreatoaks", "sjsenter",
-              "sunnyvale", "tracy"],
-    // 29 of the 45. Stores whose rail rows were truncated were opened and
+    // 7 of the 45, keyed on the row carrying the SKU, never the store badge.
+    inStock: ["antioch", "danville", "fairfield", "sacstockton", "sanleandro",
+              "santaclara", "sjsenter"],
+    // 35 of the 45. Stores whose rail rows were truncated were opened and
     // read from their own page this run, not carried forward.
-    soldOut: {brentwood:"9d", concord:"8d", fostercity:"today", fremont:"1d",
-              gilroy:"2m", hayward:"2d", livermore:"today", lodi:"10d", manteca:"5d",
-              modesto:"5d", mountainview:"1d", newark:"2d", novato:"9d",
-              ranchocordova:"5d", redwoodcity:"12d", richmond:"10d", riverbank:"5d",
-              rohnertpark:"2m", saccalexpo:"9d", sacnatomas:"2m", santacruz:"9d",
-              santarosa:"9d", sjne:"1d", ssf:"1d", ssfairport:"7d", stockton:"7d",
-              vacaville:"10d", vallejo:"1d", woodland:"10d"}
+    soldOut: {brentwood:"10d", concord:"8d", fostercity:"1d", fremont:"2d",
+              gilroy:"2m", hayward:"3d", livermore:"1d", lodi:"11d", manteca:"6d",
+              modesto:"6d", mountainview:"2d", newark:"3d", novato:"10d",
+              pleasanton:"today", ranchocordova:"6d", redwoodcity:"12d",
+              richmond:"11d", riverbank:"5d", rohnertpark:"2m", saccalexpo:"10d",
+              sacnatomas:"2m", santacruz:"10d", santarosa:"10d", sf:"today",
+              sjalmaden:"today", sjgreatoaks:"today", sjne:"2d", ssf:"2d",
+              ssfairport:"8d", stockton:"8d", sunnyvale:"today", tracy:"today",
+              vacaville:"11d", vallejo:"2d", woodland:"10d"}
   };
 
   // Turn the snapshot into the same row shape wiRenderNow/wiRenderTable already
@@ -7242,7 +7274,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   function alarmSw(f,on){return '<label class="cb-sw cb-al"><input type="checkbox" data-f="'+f+'"'+(on?' checked':'')+'><span class="tr"></span><b>'+(on?'&#128276;':'&#128277;')+' Alarm</b><em>'+(on?'alarm on':'alarm off')+'</em></label>';}
   function row(id,label,sub,input){return '<div class="cb-f"><label for="'+id+'">'+label+'<i>'+sub+'</i></label>'+input+'</div>';}
   function card(r){
-    var c=r.code,h='<div class="cb-card" data-code="'+c+'"><h5>'+c+'<small>'+(r.updated_at&&r.updated_by!=="seed"?"saved "+fmt(new Date(r.updated_at)):"")+'</small></h5>';
+    var c=r.code,h='<div class="cb-card" data-code="'+c+'" data-cbstart="'+(r.cb_start==null?"":r.cb_start)+'"><h5>'+c+'<small>'+(r.updated_at&&r.updated_by!=="seed"?"saved "+fmt(new Date(r.updated_at)):"")+'</small></h5>';
     METHODS.forEach(function(m){
       var k=m[0],on=r[k+"_on"]!==false;
       h+='<div class="cb-m'+(on?'':' off')+'" data-m="'+k+'" data-h="'+m[2]+'">'+
@@ -7262,6 +7294,8 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
          '<p class="cb-nx cb-fs" data-paid="'+(r.fee_paid_for||"")+'">'+feeHtml(r.fee_day,null,r.fee_paid_for)+'</p>'+
        '</div></div>';
     h+='<div class="cb-gen">'+
+       row('cb_'+c+'_cb_start','Coinbase balance','starting point for Overview',inp('cb_'+c+'_cb_start','cb_start',dollars(r.cb_start),"$"))+
+       row('cb_'+c+'_bal_as_of','Balance as of','Pacific &middot; auto = now when balance changes',inp('cb_'+c+'_bal_as_of','bal_as_of',toLocalInput(r.bal_as_of),"dt"))+
        row('cb_'+c+'_usdc_floor','USDC floor','always left in Coinbase',inp('cb_'+c+'_usdc_floor','usdc_floor',dollars(r.usdc_floor),"$"))+
        row('cb_'+c+'_cb1_monthly','Coinbase One / month','we pay it',inp('cb_'+c+'_cb1_monthly','cb1_monthly',dollars(r.cb1_monthly),"$"))+
        row('cb_'+c+'_cb1_start','Coinbase One started','Pacific time',inp('cb_'+c+'_cb1_start','cb1_start',toLocalInput(r.cb1_start),"dt"))+
@@ -7333,6 +7367,9 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
     if(bad){msg.className="cb-msg bad";msg.textContent="Numbers only, 0 or more.";return;}
     if(partial.length){partial.forEach(function(x){x.classList.add("cb-bad");});partial[0].focus();msg.className="cb-msg bad";msg.textContent="Finish the red date box — it needs the time and AM/PM too. Nothing saved.";return;}
     if(badDay){msg.className="cb-msg bad";msg.textContent="Due day must be 1–31.";return;}
+    // Balance changed but "as of" untouched -> the new balance is as of NOW.
+    var asof=c.querySelector('[data-f="bal_as_of"]');
+    if(String(rec.cb_start==null?"":rec.cb_start)!==c.dataset.cbstart&&asof&&fromLocalInput(asof.value)===(asof.dataset.orig||null)){rec.bal_as_of=new Date().toISOString();asof.value=toLocalInput(rec.bal_as_of);}
     if(rec.usdc_floor==null)rec.usdc_floor=6000;
     if(rec.cb1_monthly==null)rec.cb1_monthly=300;
     rec.updated_at=new Date().toISOString();rec.updated_by="medi";
@@ -7342,6 +7379,8 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
       if(!r.ok)throw new Error(r.status);
       fetch(URL_+"/rest/v1/cb_people_log",{method:"POST",headers:H({Prefer:"return=minimal"}),body:JSON.stringify(rec)}).catch(function(){});
       msg.className="cb-msg ok";msg.textContent="✓ Saved";
+      c.dataset.cbstart=rec.cb_start==null?"":rec.cb_start;
+      document.dispatchEvent(new CustomEvent("cb:changed"));
       c.querySelectorAll('input[type="datetime-local"]').forEach(function(i){i.dataset.orig=rec[i.dataset.f]||"";i.dataset.typed="";});
       refreshFee(c);
     }).catch(function(){msg.className="cb-msg bad";msg.textContent="Not saved — try again.";})
@@ -7386,6 +7425,241 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   load();
 }();
 </script>
+<script>
+/* ===== CB TRACKER - OVERVIEW sub-tab (2026-09-29) =====
+   Money made (Total / YTD / last month / ceiling projections), float boxes, and one box
+   per player with check boxes that log time + amount to cb_events (append-only; undo =
+   a 'void' row). Self-contained like the Settings block. All times PACIFIC. */
+!function(){
+  var URL_="https://cuubqcxzvyiryxcygadh.supabase.co", KEY="sb_publishable_vuJ1bfkLjpPNbrouZb_3eQ_9dSJXlep";
+  var TZ="America/Los_Angeles";
+  function H(x){var h={apikey:KEY,Authorization:"Bearer "+KEY,"Content-Type":"application/json"};for(var k in (x||{}))h[k]=x[k];return h;}
+  /* key -> label, window hours, reward rate. GPay + Apple Pay = Medi's Taekus 8010 (2.13%, read
+     direct from Taekus). PayPal + Samsung = Hamed's Taekus (2.3%, Medi's number). */
+  var M={paypal:["PayPal",24,.023],samsung:["Samsung Pay",168,.023],gpay:["GPay",168,.0213],applepay:["Apple Pay",168,.0213]};
+  var ORDER=["paypal","samsung","gpay","applepay"];
+  var MONTH_DAYS=365/12;
+  var STAGE={deposit:"Deposit to CB",withdraw_sent:"Withdraw sent",withdraw_landed:"Landed in bank",ach_sent:"ACH to Taekus sent",ach_landed:"Landed in Taekus",void:"Undo"};
+  function tzParts(d){var o={};new Intl.DateTimeFormat("en-US",{timeZone:TZ,hourCycle:"h23",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}).formatToParts(d).forEach(function(p){o[p.type]=p.value;});return o;}
+  function fromLocalInput(v){
+    if(!v)return null;var m=v.match(/^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d)/);if(!m)return null;
+    var want=Date.UTC(+m[1],m[2]-1,+m[3],+m[4],+m[5]),t=want;
+    for(var i=0;i<3;i++){var p=tzParts(new Date(t));t+=want-Date.UTC(+p.year,p.month-1,+p.day,+p.hour,+p.minute);}
+    return new Date(t).toISOString();
+  }
+  function toLocalInput(iso){if(!iso)return "";var p=tzParts(new Date(iso));return p.year+"-"+p.month+"-"+p.day+"T"+p.hour+":"+p.minute;}
+  function fmt(d){return new Intl.DateTimeFormat("en-US",{timeZone:TZ,weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}).format(new Date(d));}
+  function fmtDay(d){return new Intl.DateTimeFormat("en-US",{timeZone:TZ,month:"short",day:"numeric"}).format(new Date(d));}
+  function usd(n){n=+n||0;return (n<0?"−$":"$")+Math.round(Math.abs(n)).toLocaleString("en-US");}
+  function parseDollars(v){v=String(v||"").replace(/[$,\s]/g,"");if(v==="")return null;return isNaN(+v)||+v<=0?NaN:+v;}
+  function dur(ms){var m=Math.round(ms/6e4),h=Math.floor(m/60),d=Math.floor(h/24);return d?d+"d "+(h%24)+"h":h?h+"h "+(m%60)+"m":m+"m";}
+  function ym(ms){var p=tzParts(new Date(ms));return [+p.year,+p.month];}
+  function monthStart(y,m){return new Date(fromLocalInput(y+"-"+(m<10?"0":"")+m+"-01T00:00")).getTime();}
+
+  var S={people:[],events:[],hist:[],msg:{}};
+  function get(path){return fetch(URL_+"/rest/v1/"+path,{headers:H()}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();});}
+  function load(){
+    return Promise.all([get("cb_people?select=*&order=sort_order"),get("cb_events?select=*&order=at.asc,id.asc"),get("cb_rewards_history?select=*&order=swipe_at")])
+    .then(function(a){S.people=a[0];S.events=a[1];S.hist=a[2];render();})
+    .catch(function(){var o=document.getElementById("cbOv");if(o)o.innerHTML='<div class="cb-soon">Couldn’t reach the database. Check your connection and reload.</div>';});
+  }
+
+  /* ---- math (pure: reads S, returns numbers) ---- */
+  function live(){ // events not undone + which sent rows have landed
+    var voided={},landed={};
+    S.events.forEach(function(e){if(e.stage==="void"&&e.ref_id)voided[e.ref_id]=1;});
+    var ev=S.events.filter(function(e){return e.stage!=="void"&&!voided[e.id];});
+    ev.forEach(function(e){if((e.stage==="withdraw_landed"||e.stage==="ach_landed")&&e.ref_id)landed[e.ref_id]=e;});
+    return {ev:ev,voided:voided,landed:landed};
+  }
+  function histCutoff(){return S.hist.reduce(function(m,h){return Math.max(m,new Date(h.swipe_at).getTime());},0);}
+  // Every reward dollar, dated. The 8010 read is the record for GPay/Apple Pay up to its last swipe;
+  // after that (and ALL PayPal/Samsung = Hamed's Taekus) it's tracker ticks x rate.
+  function rewards(L){
+    var cut=histCutoff(),out=S.hist.map(function(h){return {at:h.swipe_at,amt:h.points/100,src:"taekus"};});
+    L.ev.forEach(function(e){
+      if(e.stage!=="deposit"||!M[e.method])return;
+      var mine=e.method==="gpay"||e.method==="applepay";
+      if(mine&&new Date(e.at).getTime()<=cut)return;
+      out.push({at:e.at,amt:(+e.amount||0)*M[e.method][2],src:mine?"tick8010":"hamed"});
+    });
+    return out;
+  }
+  // Coinbase One charges billed in [from,to]: on the start date, then monthly.
+  function cb1Charges(p,fromMs,toMs){
+    if(!p.cb1_start)return 0;var s=new Date(p.cb1_start),n=0;
+    for(var k=0;k<600;k++){var d=new Date(s);d.setUTCMonth(s.getUTCMonth()+k);var t=d.getTime();if(t>toMs)break;if(t>=fromMs)n++;}
+    return n*(+p.cb1_monthly||0);
+  }
+  // Ceiling $/month: every ON method's window hit every time (Medi: ceiling only).
+  function ceiling(p){
+    var g=0,missing=[];
+    ORDER.forEach(function(k){
+      if(p[k+"_on"]===false)return;var lim=+p[k+"_limit"];
+      if(!(lim>0)){missing.push(M[k][0]);return;}
+      g+=lim*(MONTH_DAYS*24/M[k][1])*M[k][2];
+    });
+    var cost=(+p.cb1_monthly||0)+(p.fee_on===true?(+p.fee_amount||0):0);
+    return {gross:g,cost:cost,net:g-cost,missing:missing};
+  }
+  // Balances count ticks at/after "balance as of"; in-process boxes = every open item.
+  function stages(p,L){
+    var asof=p.bal_as_of?new Date(p.bal_as_of).getTime():0,o={dep:0,inCB:+p.cb_start||0,wd:0,bank:0,ach:0,taekus:0,openWd:[],openAch:[]};
+    L.ev.forEach(function(e){
+      if(e.code!==p.code)return;var a=+e.amount||0,after=new Date(e.at).getTime()>=asof;
+      if(e.stage==="deposit"){o.dep+=a;if(after)o.inCB+=a;}
+      else if(e.stage==="withdraw_sent"){if(after)o.inCB-=a;if(!L.landed[e.id]){o.wd+=a;o.openWd.push(e);}}
+      else if(e.stage==="withdraw_landed"){if(after)o.bank+=a;}
+      else if(e.stage==="ach_sent"){if(after)o.bank-=a;if(!L.landed[e.id]){o.ach+=a;o.openAch.push(e);}}
+      else if(e.stage==="ach_landed"){o.taekus+=a;}
+    });
+    return o;
+  }
+  function money(nowMs){
+    nowMs=nowMs||Date.now();
+    var L=live(),rw=rewards(L),np=ym(nowMs),ly=np[1]===1?[np[0]-1,12]:[np[0],np[1]-1];
+    var yStart=monthStart(np[0],1),lmStart=monthStart(ly[0],ly[1]),mStart=monthStart(np[0],np[1]);
+    var r={total:0,ytd:0,last:0,taekus:0,hamed:0,tick8010:0,cb1:0,cb1ytd:0,cb1last:0,L:L};
+    rw.forEach(function(x){var t=new Date(x.at).getTime();if(t>nowMs)return;r.total+=x.amt;if(t>=yStart)r.ytd+=x.amt;if(t>=lmStart&&t<mStart)r.last+=x.amt;r[x.src]+=x.amt;});
+    var proj={gross:0,cost:0,net:0,missing:[]};
+    S.people.forEach(function(p){
+      r.cb1+=cb1Charges(p,0,nowMs);r.cb1ytd+=cb1Charges(p,yStart,nowMs);r.cb1last+=cb1Charges(p,lmStart,mStart-1);
+      var c=ceiling(p);proj.gross+=c.gross;proj.cost+=c.cost;proj.net+=c.net;c.missing.forEach(function(m){proj.missing.push(p.code+" "+m);});
+    });
+    r.proj=proj;r.lastName=new Intl.DateTimeFormat("en-US",{month:"long",timeZone:"UTC"}).format(new Date(Date.UTC(ly[0],ly[1]-1,15)));
+    return r;
+  }
+
+  /* ---- render ---- */
+  function tile(k,v,s,cls){return '<div class="cbo-t'+(cls?' '+cls:'')+'"><div class="k">'+k+'</div><div class="v'+(v<0?' neg':'')+'">'+usd(v)+'</div><div class="s">'+s+'</div></div>';}
+  function openMs(p,k){var l=p[k+"_last"];return l?new Date(l).getTime()+M[k][1]*36e5:0;}
+  function onMethods(p){return ORDER.filter(function(k){return p[k+"_on"]!==false;});}
+  function methodOpts(p){
+    return onMethods(p).map(function(k){
+      var left=openMs(p,k)-Date.now();
+      return '<option value="'+k+'" data-max="'+(+p[k+"_limit"]||"")+'">'+M[k][0]+(left>0?' · opens in '+dur(left):' · open')+'</option>';
+    }).join("");
+  }
+  function openRow(e,stage,label){
+    return '<div class="cbo-open"><button type="button" class="cbo-box" data-do="'+stage+'" data-ref="'+e.id+'" data-amt="'+e.amount+'">'+label+'</button>'+usd(e.amount)+' sent '+fmt(e.at)+' · '+dur(Date.now()-new Date(e.at).getTime())+' ago</div>';
+  }
+  function player(p,L){
+    var st=stages(p,L),c=p.code,floor=+p.usdc_floor||0,ce=ceiling(p),first=onMethods(p)[0];
+    var h='<div class="cb-card cbo-p" data-p="'+c+'"><h5>'+c+'<small>ceiling '+usd(ce.net)+'/mo'+(ce.missing.length?' · no max: '+ce.missing.join(", "):'')+'</small></h5>';
+    h+='<div class="cbo-stages">'+
+       '<div><i>Deposited (all)</i><b>'+usd(st.dep)+'</b></div>'+
+       '<div><i>In Coinbase</i><b>'+usd(st.inCB)+'</b></div>'+
+       '<div><i>Withdrawing</i><b>'+usd(st.wd)+'</b></div>'+
+       '<div><i>In bank</i><b>'+usd(st.bank)+'</b></div>'+
+       '<div><i>ACH → Taekus</i><b>'+usd(st.ach)+'</b></div>'+
+       '<div><i>Landed Taekus</i><b>'+usd(st.taekus)+'</b></div></div>';
+    h+='<div class="cbo-act"><label style="font-size:11px;color:var(--ink-mute)">When <input type="datetime-local" class="cbo-when"></label><span style="font-size:10.5px;color:var(--ink-mute)">blank = right now · Pacific</span></div>';
+    if(first)h+='<div class="cbo-act"><button type="button" class="cbo-box" data-do="deposit">Deposit to CB</button>'+
+       '<select class="cbo-meth">'+methodOpts(p)+'</select>'+
+       '<input type="text" inputmode="decimal" class="cb-money cbo-amt" value="'+(+p[first+"_limit"]?usd(+p[first+"_limit"]):"")+'" placeholder="$"></div>';
+    var wdDefault=Math.max(0,st.inCB-floor);
+    h+='<div class="cbo-act"><button type="button" class="cbo-box" data-do="withdraw_sent">Withdraw from CB</button>'+
+       '<input type="text" inputmode="decimal" class="cb-money cbo-amt" value="'+(wdDefault?usd(wdDefault):"")+'" placeholder="$"><span style="font-size:10.5px;color:var(--ink-mute)">leaves '+usd(floor)+' floor</span></div>';
+    st.openWd.forEach(function(e){h+=openRow(e,"withdraw_landed","Landed in bank");});
+    h+='<div class="cbo-act"><button type="button" class="cbo-box" data-do="ach_sent">ACH to Taekus</button>'+
+       '<input type="text" inputmode="decimal" class="cb-money cbo-amt" value="'+(st.bank>0?usd(st.bank):"")+'" placeholder="$"></div>';
+    st.openAch.forEach(function(e){h+=openRow(e,"ach_landed","Landed in Taekus");});
+    var mg=S.msg[c]&&Date.now()-S.msg[c].t<12e4?S.msg[c]:null;
+    h+='<div class="cbo-msg'+(mg?' ok':'')+'">'+(mg?mg.text:'')+'</div>';
+    var mine=S.events.filter(function(e){return e.code===c&&e.stage!=="void";}).slice(-6).reverse();
+    if(mine.length)h+='<ul class="cbo-log">'+mine.map(function(e){
+        var v=L.voided[e.id];
+        return '<li'+(v?' class="void"':'')+'><span>'+fmt(e.at)+' · '+STAGE[e.stage]+(e.method&&M[e.method]?' ('+M[e.method][0]+')':'')+'</span><span>'+usd(e.amount)+'</span>'+(v?'':'<button type="button" class="cbo-undo" data-undo="'+e.id+'">undo</button>')+'</li>';
+      }).join("")+'</ul>';
+    return h+'</div>';
+  }
+  function render(){
+    var o=document.getElementById("cbOv");if(!o)return;
+    var r=money(),L=r.L,agg={inCB:0,wd:0,bank:0,ach:0};
+    S.people.forEach(function(p){var s=stages(p,L);agg.inCB+=s.inCB;agg.wd+=s.wd;agg.bank+=s.bank;agg.ach+=s.ach;});
+    var first=S.hist.length?fmtDay(S.hist[0].swipe_at):"—";
+    o.innerHTML='<div class="cbo-sec">Money made · rewards minus Coinbase One</div><div class="cbo-tiles">'+
+      tile("Total",r.total-r.cb1,usd(r.total)+" rewards − "+usd(r.cb1)+" Coinbase One")+
+      tile("This year",r.ytd-r.cb1ytd,usd(r.ytd)+" rewards − "+usd(r.cb1ytd)+" Coinbase One")+
+      tile("Last month ("+r.lastName+")",r.last-r.cb1last,usd(r.last)+" rewards − "+usd(r.cb1last)+" Coinbase One")+
+      tile("Next 1 month (ceiling)",r.proj.net,usd(r.proj.gross)+" rewards − "+usd(r.proj.cost)+" fees","proj")+
+      tile("Next 1 year (ceiling)",r.proj.net*12,"every window hit, 12 months","proj")+'</div>'+
+      '<p class="cbo-note">Rewards come from: <b>'+usd(r.taekus)+'</b> read straight from Medi’s Taekus ··8010 (swipes since '+first+') · <b>'+usd(r.tick8010)+'</b> GPay/Apple Pay ticks after that (2.13%) · <b>'+usd(r.hamed)+'</b> PayPal/Samsung <b>from tracker ticks only</b> (2.3%, Hamed’s Taekus can’t be read).'+
+      (r.proj.missing.length?' Ceiling skips methods with no max: '+r.proj.missing.join(", ")+'.':'')+'</p>'+
+      '<div class="cbo-sec">Where the money is now</div><div class="cbo-tiles">'+
+      tile("In Coinbase",agg.inCB,"all players")+tile("Withdrawing to banks",agg.wd,"sent, not landed")+
+      tile("In bank accounts",agg.bank,"landed, not sent to Taekus")+tile("ACH to Taekus",agg.ach,"sent, not landed")+'</div>'+
+      '<div class="cbo-sec">Players · tap a box to log it (time + amount)</div><div class="cb-grid">'+S.people.map(function(p){return player(p,L);}).join("")+'</div>';
+  }
+
+  /* ---- actions ---- */
+  function post(rec){return fetch(URL_+"/rest/v1/cb_events",{method:"POST",headers:H({Prefer:"return=representation"}),body:JSON.stringify(rec)}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();});}
+  // A deposit also moves that method's "last used" forward so the Settings countdown syncs.
+  function bumpLast(code,k,at){
+    var p=S.people.filter(function(x){return x.code===code;})[0];if(!p)return;
+    if(p[k+"_last"]&&new Date(p[k+"_last"]).getTime()>=new Date(at).getTime())return;
+    var patch={};patch[k+"_last"]=at;patch.updated_at=new Date().toISOString();patch.updated_by="medi";
+    fetch(URL_+"/rest/v1/cb_people?code=eq."+encodeURIComponent(code),{method:"PATCH",headers:H({Prefer:"return=minimal"}),body:JSON.stringify(patch)}).then(function(r){
+      if(!r.ok)return;p[k+"_last"]=at;render();
+      var log={code:code,note:"last used from Overview deposit",updated_by:"medi"};log[k+"_last"]=at;
+      fetch(URL_+"/rest/v1/cb_people_log",{method:"POST",headers:H({Prefer:"return=minimal"}),body:JSON.stringify(log)}).catch(function(){});
+      var i=document.getElementById("cb_"+code+"_"+k+"_last");
+      if(i){i.value=toLocalInput(at);i.dataset.orig=at;i.dispatchEvent(new Event("input",{bubbles:true}));}
+    }).catch(function(){});
+  }
+  document.addEventListener("change",function(ev){
+    var t=ev.target;if(!t.classList||!t.classList.contains("cbo-meth"))return;
+    var a=t.closest(".cbo-act").querySelector(".cbo-amt"),mx=+t.selectedOptions[0].dataset.max;a.value=mx?usd(mx):"";
+  });
+  document.addEventListener("click",function(ev){
+    var b=ev.target.closest&&ev.target.closest(".cbo-box,.cbo-undo");if(!b||!b.closest("#cbOv"))return;
+    var card=b.closest(".cbo-p"),code=card.dataset.p,msg=card.querySelector(".cbo-msg"),rec={code:code,created_by:"medi"};
+    if(b.classList.contains("cbo-undo")){
+      var e=S.events.filter(function(x){return String(x.id)===b.dataset.undo;})[0];if(!e)return;
+      if(!confirm(code+": undo "+STAGE[e.stage]+" "+usd(e.amount)+" ("+fmt(e.at)+")?"))return;
+      rec.stage="void";rec.ref_id=e.id;rec.amount=e.amount;rec.note="undo "+e.stage;
+    }else{
+      var when=card.querySelector(".cbo-when");
+      if(when.value===""&&when.validity&&when.validity.badInput){msg.className="cbo-msg bad";msg.textContent="Finish the When box (time + AM/PM) or clear it. Nothing saved.";return;}
+      rec.stage=b.dataset.do;rec.at=when.value?fromLocalInput(when.value):new Date().toISOString();
+      if(b.dataset.ref){rec.ref_id=+b.dataset.ref;rec.amount=+b.dataset.amt;}
+      else{
+        var amt=parseDollars(b.closest(".cbo-act").querySelector(".cbo-amt").value);
+        if(!(amt>0)){msg.className="cbo-msg bad";msg.textContent="Type an amount first.";return;}
+        rec.amount=amt;
+        if(rec.stage==="deposit")rec.method=card.querySelector(".cbo-meth").value;
+      }
+    }
+    b.disabled=true;msg.className="cbo-msg";msg.textContent="Saving…";
+    post(rec).then(function(rows){
+      // Saved note survives re-renders for 2 minutes (text only, escaped by construction).
+      S.msg[code]={t:Date.now(),text:"✓ "+STAGE[rec.stage]+" "+usd(rec.amount)+(rec.at?" · "+fmt(rec.at):"")+" saved"};
+      S.events=S.events.concat(rows);render();
+      if(rec.stage==="deposit")bumpLast(code,rec.method,rec.at);
+    }).catch(function(){b.disabled=false;msg.className="cbo-msg bad";msg.textContent="Not saved — tap again.";});
+  });
+
+  /* ---- sub-tabs (scoped to #tab-cb; own storage key) ---- */
+  var SUB_KEY="alchemy_cb_subtab";
+  function showSub(name){
+    var ok=false;
+    document.querySelectorAll("#cbSubBar .rsub-btn").forEach(function(b){var on=b.dataset.cbsub===name;if(on)ok=true;b.setAttribute("aria-selected",on?"true":"false");var pn=document.getElementById("cbsub-"+b.dataset.cbsub);if(pn)pn.hidden=!on;});
+    if(!ok){showSub("ov");return;}
+    try{localStorage.setItem(SUB_KEY,name);}catch(e){}
+    if(name==="ov")load();
+  }
+  var bar=document.getElementById("cbSubBar");
+  if(bar)bar.addEventListener("click",function(ev){var b=ev.target.closest(".rsub-btn");if(b)showSub(b.dataset.cbsub);});
+  var init="ov";try{init=localStorage.getItem(SUB_KEY)||"ov";}catch(e){}
+  showSub(init);
+  document.addEventListener("cb:changed",load);
+  var tb=document.getElementById("tabBtnCb");if(tb)tb.addEventListener("click",function(){var pn=document.getElementById("cbsub-ov");if(pn&&!pn.hidden)load();});
+  // Keep countdowns / "x ago" honest (skip while Medi is typing in a box).
+  setInterval(function(){var a=document.activeElement;if(a&&a.closest&&a.closest("#cbOv"))return;var pn=document.getElementById("cbsub-ov");if(pn&&!pn.hidden&&S.people.length)render();},60000);
+  window.__cbOv={S:S,money:money,stages:stages,live:live,ceiling:ceiling,render:render,load:load};
+}();
+</script>
+
 <!-- ============================================================================
      SUPABASE LIVE LAYER — brother's public page ONLY (never in Medi's artifact).
      The artifact reads the Google Sheet via the Drive connector. This page has no
@@ -7681,7 +7955,7 @@ var ELEM_SHEET_DATE = "2026-09-28";   /* GFH_SHEET_DATE */
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "300157d 2026-09-29 04:33 UTC".indexOf("STAMP") >= 0 ? "dev" : "300157d 2026-09-29 04:33 UTC";
+  var GFH_BUILD = "9253fd2 2026-09-29 07:37 UTC".indexOf("STAMP") >= 0 ? "dev" : "9253fd2 2026-09-29 07:37 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
