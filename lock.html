@@ -142,6 +142,7 @@
       <span><i style="border-color:var(--ok)"></i>High (ratchets up)</span>
       <span><i style="border-color:var(--grace);border-top-style:dashed"></i>Sell (high − $10)</span>
       <span><span class="swatch" style="background:var(--band)"></span>Safe zone</span>
+      <span><span class="swatch" style="background:var(--grace);opacity:.35"></span>Last 15 min · ▲ top if you lock now</span>
     </div>
   </div>
 
@@ -316,7 +317,7 @@
   // ── SVG chart ────────────────────────────────────────────────────────────
   // Plots price line, ratcheting HIGH step line, SELL line (high−$10),
   // shaded safe-zone band between them, and dots at each new high.
-  function buildChart(ticks){
+  function buildChart(ticks, live){
     const area = $('chartArea');
     if(!ticks || ticks.length===0){ area.innerHTML = '<div class="empty">No live session — the chart fills in after START.</div>'; return; }
 
@@ -383,9 +384,43 @@
     const highEl  = highStep.length>1 ? `<polyline points="${toPoly(highStep)}" fill="none" stroke="var(--ok)" stroke-width="1.6"/>` : '';
     const priceEl = pts.length>1 ? `<polyline points="${priceLine}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>` : '';
 
+    // ── Last-15-min box + the two tops (Medi 2026-10-01) ─────────────────────
+    // Once the session is ≥15 min old, shade the 15 min behind the newest read and mark the highest
+    // price inside it (= the top a lock right now would get), with clock time + how long ago. Live it
+    // slides with every read; a finished session freezes on the 15 min before it ended. The session
+    // high (what the 12-min wait counts from) gets its own green label + time when it differs.
+    const WIN_MS = 15*60*1000;
+    let winEl='', winTopEl='', hiLabEl='';
+    const sessHigh = pts.reduce((a,b)=> b.price>a.price ? b : a, pts[0]);   // first time the max was hit
+    const labAt = (x)=> x > W-150 ? { a:'end', x:W-padR } : x < padL+110 ? { a:'start', x:padL } : { a:'middle', x };
+    const halo = (x,y,a,fill,txt)=> `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="${a}" font-size="8.5" font-weight="700" fill="${fill}" stroke="var(--card)" stroke-width="3" stroke-linejoin="round" paint-order="stroke">${txt}</text>`;
+    const clockPT = (ts)=> new Date(ts).toLocaleTimeString('en-US',{timeZone:'America/Los_Angeles',hour:'numeric',minute:'2-digit',second:'2-digit',hour12:true});
+    const dur = (ms)=>{ const s=Math.max(0,Math.round(ms/1000)); return Math.floor(s/60)+'m '+String(s%60).padStart(2,'0')+'s'; };
+    let winTop = null;
+    if (t1 - t0 >= WIN_MS) {
+      const ws = t1 - WIN_MS;
+      const inWin = pts.filter(p=>p.ts>=ws);
+      winTop = inWin.reduce((a,b)=> b.price>a.price ? b : a, inWin[0]);
+      const wx = X(ws);
+      winEl = `<rect x="${wx.toFixed(1)}" y="${padT}" width="${(W-padR-wx).toFixed(1)}" height="${ih}" fill="var(--grace)" opacity="0.10"/>`+
+              `<line x1="${wx.toFixed(1)}" y1="${padT}" x2="${wx.toFixed(1)}" y2="${padT+ih}" stroke="var(--grace)" stroke-width="1" stroke-dasharray="2 2"/>`+
+              `<text x="${(wx+3).toFixed(1)}" y="${padT+ih-3}" font-size="8" fill="var(--grace)">last 15 min</text>`;
+      const ago = live ? dur(Date.now()-winTop.ts)+' ago' : dur(t1-winTop.ts)+' before end';
+      const tx = X(winTop.ts), ty = Y(winTop.price), la = labAt(tx);
+      winTopEl = `<circle cx="${tx.toFixed(1)}" cy="${ty.toFixed(1)}" r="4" fill="var(--grace)" stroke="var(--card)" stroke-width="1.5"/>`+
+                 halo(la.x, Math.max(padT+8, ty-7), la.a, 'var(--grace)', `▲ ${fmt$(winTop.price)} · ${clockPT(winTop.ts)} · ${ago}`);
+    }
+    if (!winTop || winTop.ts !== sessHigh.ts) {
+      const hx = X(sessHigh.ts), hy = Y(sessHigh.price), la = labAt(hx);
+      // Drop the label below the line if the box-top label would sit on it.
+      const clash = winTop && Math.abs(Y(winTop.price)-hy) < 12;
+      hiLabEl = `<circle cx="${hx.toFixed(1)}" cy="${hy.toFixed(1)}" r="3.6" fill="var(--ok)" stroke="var(--card)" stroke-width="1.5"/>`+
+                halo(la.x, clash ? hy+13 : Math.max(padT+8, hy-7), la.a, 'var(--ok)', `▲ HIGH ${fmt$(sessHigh.price)} · ${clockPT(sessHigh.ts)}`);
+    }
+
     area.innerHTML =
       `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Session price chart">`+
-        gl.join('')+ bandEl + sellEl + highEl + priceEl + dots + lastDot + xlab +
+        winEl + gl.join('')+ bandEl + sellEl + highEl + priceEl + dots + lastDot + xlab + hiLabEl + winTopEl +
       `</svg>`;
   }
 
@@ -573,7 +608,7 @@
     }
 
     // Chart.
-    buildChart(dTicks);
+    buildChart(dTicks, active);
 
     // Tick log (newest first).
     const log=$('log');
