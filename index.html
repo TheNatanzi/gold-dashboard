@@ -3196,7 +3196,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: a7a402e · built 2026-10-05 22:48 UTC</span>
+    <span id="verStamp" class="tnum">version: 5d43c5e · built 2026-10-05 23:37 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -5998,7 +5998,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-10-05T15:39:44-07:00",
+    at: "2026-10-05T16:07:12-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
     price: 4209.99,
@@ -6011,7 +6011,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     // read from their own page this run, not carried forward.
     soldOut: {brentwood:"3d", fairfield:"5d", fremont:"2d", gilroy:"2m", hayward:"1d",
               livermore:"today", lodi:"3d", manteca:"4d", mountainview:"2d",
-              newark:"2d", novato:"16d", pleasanton:"today", ranchocordova:"12d",
+              newark:"2d", novato:"16d", pleasanton:"today", ranchocordova:"13d",
               redwoodcity:"3d", richmond:"3d", rohnertpark:"2m", saccalexpo:"16d",
               santaclara:"today", santacruz:"2d", santarosa:"2d", sf:"1d",
               sjalmaden:"today", sjgreatoaks:"today", sjne:"today", ssf:"today",
@@ -7438,7 +7438,12 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
       var v = r.headers.get("Last-Modified") || r.headers.get("ETag");
       if(!v) return;                      // host does not send one -- give up quietly
       if(seen === null){ seen = v; return; }   // first probe just records the baseline
-      if(v !== seen && !shown){ shown = true; bar().classList.add("on"); }
+      if(v !== seen && !shown){
+        shown = true; bar().classList.add("on");
+        // Tell the live layer this tab is outdated so it stops RECORDING (buyzone_history);
+        // it keeps displaying. A stale build must never write history (2026-10-05 audit).
+        try{ window.__gfhStale = true; }catch(e){}
+      }
     }).catch(function(){});                // offline is not an error worth shouting about
   }
 
@@ -8470,7 +8475,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "a7a402e 2026-10-05 22:48 UTC".indexOf("STAMP") >= 0 ? "dev" : "a7a402e 2026-10-05 22:48 UTC";
+  var GFH_BUILD = "5d43c5e 2026-10-05 23:37 UTC".indexOf("STAMP") >= 0 ? "dev" : "5d43c5e 2026-10-05 23:37 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
@@ -8500,6 +8505,11 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   function recordBuyZone(bz){
     try{
       if(!bz || !isFinite(bz.v)) return;
+      // STALE-TAB GUARD (2026-10-05 audit): once the page's own watchdog has seen a newer
+      // build go live (window.__gfhStale), this tab's zone math may be running old offsets
+      // -- on 10/5 two tabs built 9/29 and 10/1 (Elemetal -35) wrote 450 rows while the live
+      // page said -25, so the recorded zone sat $10 high. A stale tab may display, never record.
+      if(window.__gfhStale) return;
       var now = Date.now();
       var lastRec = _gfhBzHist.length ? Number(_gfhBzHist[_gfhBzHist.length - 1].price) : null;
       var base = (_bzWrote.v != null) ? _bzWrote.v : lastRec;

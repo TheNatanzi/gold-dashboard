@@ -323,6 +323,11 @@
   function recordBuyZone(bz){
     try{
       if(!bz || !isFinite(bz.v)) return;
+      // STALE-TAB GUARD (2026-10-05 audit): once the page's own watchdog has seen a newer
+      // build go live (window.__gfhStale), this tab's zone math may be running old offsets
+      // -- on 10/5 two tabs built 9/29 and 10/1 (Elemetal -35) wrote 450 rows while the live
+      // page said -25, so the recorded zone sat $10 high. A stale tab may display, never record.
+      if(window.__gfhStale) return;
       var now = Date.now();
       var lastRec = _gfhBzHist.length ? Number(_gfhBzHist[_gfhBzHist.length - 1].price) : null;
       var base = (_bzWrote.v != null) ? _bzWrote.v : lastRec;
