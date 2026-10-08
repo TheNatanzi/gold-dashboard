@@ -3196,7 +3196,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 347c2b5 · built 2026-10-08 14:53 UTC</span>
+    <span id="verStamp" class="tnum">version: 5797e55 · built 2026-10-08 20:09 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -5998,22 +5998,24 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-10-07T19:39:39-07:00",
+    at: "2026-10-08T11:01:40-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
-    price: 4179.99,
+    price: 4189.99,
     // Written by warehouse-inventory/daily_pull.py — see DAILY-PULL.md.
-    // 34 of the 45, keyed on the row carrying the SKU, never the store badge.
-    inStock: ["antioch", "brentwood", "concord", "danville", "fairfield", "fostercity",
-              "fremont", "hayward", "livermore", "lodi", "manteca", "mountainview",
-              "newark", "pleasanton", "redwoodcity", "richmond", "riverbank",
-              "sacnatomas", "sacstockton", "sanleandro", "santaclara", "santacruz",
-              "santarosa", "sf", "sjalmaden", "sjgreatoaks", "sjne", "sjsenter", "ssf",
-              "ssfairport", "stockton", "sunnyvale", "tracy", "vallejo"],
-    // 8 of the 45. Stores whose rail rows were truncated were opened and
+    // 24 of the 45, keyed on the row carrying the SKU, never the store badge.
+    inStock: ["brentwood", "danville", "fostercity", "fremont", "manteca",
+              "mountainview", "pleasanton", "richmond", "riverbank", "sacnatomas",
+              "sacstockton", "sanleandro", "santaclara", "santacruz", "santarosa",
+              "sf", "sjalmaden", "sjne", "sjsenter", "ssf", "stockton", "sunnyvale",
+              "tracy", "vallejo"],
+    // 18 of the 45. Stores whose rail rows were truncated were opened and
     // read from their own page this run, not carried forward.
-    soldOut: {gilroy:"2m", modesto:"1d", novato:"19d", ranchocordova:"15d",
-              rohnertpark:"2m", saccalexpo:"19d", vacaville:"20d", woodland:"1d"}
+    soldOut: {antioch:"today", concord:"today", fairfield:"today", gilroy:"2m",
+              hayward:"today", livermore:"today", lodi:"today", modesto:"1d",
+              newark:"today", novato:"19d", ranchocordova:"15d", redwoodcity:"today",
+              rohnertpark:"2m", saccalexpo:"19d", sjgreatoaks:"today",
+              ssfairport:"today", vacaville:"20d", woodland:"1d"}
   };
 
   // Turn the snapshot into the same row shape wiRenderNow/wiRenderTable already
@@ -7720,7 +7722,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   function get(path){return fetch(URL_+"/rest/v1/"+path,{headers:H()}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();});}
   function load(){
     return Promise.all([get("cb_people?select=*&order=sort_order"),get("cb_events?select=*&order=at.asc,id.asc"),get("cb_rewards_history?select=*&order=swipe_at"),get("cb_taekus?select=*&order=at.asc,id.asc"),get("cb_people_log?select=code,fee_paid_for&note=eq.fee%20marked%20paid&order=id"),
-        get("cb_taekus_feed?select=card,balance,as_of&order=id.desc&limit=5").catch(function(){return [];})])
+        get("cb_taekus_feed?select=card,balance,as_of,created_at,txns&order=id.desc&limit=40").catch(function(){return [];})])
     .then(function(a){S.people=a[0];S.events=a[1];S.hist=a[2];S.tk=a[3];S.feePaid=a[4]||[];S.feed=a[5]||[];render();})
     .catch(function(){var o=document.getElementById("cbOv");if(o)o.innerHTML='<div class="cb-soon">Couldn’t reach the database. Check your connection and reload.</div>';});
   }
@@ -8025,7 +8027,17 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
       if(b0!=null){var m=b0;
         T.rows.forEach(function(r){var t=new Date(r.at).getTime();if(r.kind==="load_landed"&&t>=tb&&t<=fa)m+=+r.amount||0;});
         live().ev.forEach(function(e){var t=new Date(e.at).getTime();if(e.stage==="deposit"&&c.methods.indexOf(e.method)>=0&&t>=tb&&t<=fa)m-=+e.amount||0;});
-        feed={bal:+f.balance,at:fa,gap:Math.round((+f.balance-m)*100)/100};}}
+        feed={bal:+f.balance,at:fa,gap:Math.round((+f.balance-m)*100)/100};}
+      // STUCK guard (Medi 10-01): SimpleFIN kept moving its balance-date while the 8010 balance and bank lines
+      // froze for 2 days (a $10k load + $10k Apple Pay never showed), so "matches" could pass on dead data.
+      // Same balance + same newest bank line = no change. Ticks older than 36h after that point = STUCK.
+      var sig=function(x){var mp="";(x.txns||[]).forEach(function(t){if(String(t.posted)>mp)mp=String(t.posted);});return (+x.balance).toFixed(2)+"|"+mp;};
+      var run=(S.feed||[]).filter(function(x){return x.card===c.id;}),since=fa,s0=sig(f);
+      for(var i=0;i<run.length&&sig(run[i])===s0;i++)since=Math.min(since,new Date(run[i].as_of).getTime());
+      var miss=0,cut=now-36*36e5;
+      live().ev.forEach(function(e){var t=new Date(e.at).getTime();if(e.stage==="deposit"&&c.methods.indexOf(e.method)>=0&&t>since&&t<cut)miss+=+e.amount||0;});
+      T.rows.forEach(function(r){var t=new Date(r.at).getTime();if(r.kind==="load_sent"&&t>since&&t<cut)miss+=+r.amount||0;});
+      if(miss>0)feed={stuck:1,since:since,miss:miss,bal:+f.balance,at:fa};}
     return {balRow:balRow,landedRows:landedRows,total:total,t0:t0,open:open,transit:transit,need:need,next:next,wins:wins,lag:lag,feed:feed};
   }
   function fmtS(ms){return new Intl.DateTimeFormat("en-US",{timeZone:TZ,weekday:"short",hour:"numeric",minute:"2-digit"}).format(new Date(ms));}
@@ -8036,7 +8048,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     // header strip: id | balance or "no balance" | next load | 7-day total
     h+='<div class="tkc-h"><div class="tkc-id">'+logo("taekus")+'<div>'+c.who+' \u00b7 '+c.name+'<small>'+c.methods.map(function(k){return M[k][0];}).join(" + ")+'</small></div></div>';
     if(c.bal)h+=stat('Balance',(st.total==null?'\u2014':usd(st.total))+' <button type="button" class="tk-edit tk-bal" title="Type the real Taekus balance">\u270e</button>'+(st.balRow?' '+tkUndo(st.balRow):''),(st.t0?'typed '+fmtS(st.t0)+' \u00b7 \u23f1 '+dur(Date.now()-st.t0)+' ago'+(st.transit?' \u00b7 +'+k$(st.transit)+' on the way':''):'tap \u270e to type it')+
-      (st.feed?'<br>'+(Math.abs(st.feed.gap)<1?'<span class="ok">\u2713 matches SimpleFIN '+fmtS(st.feed.at)+' \u00b7 '+dur(Date.now()-st.feed.at)+' ago</span>':
+      (st.feed?'<br>'+(st.feed.stuck?'<span class="late">\u26a0 SimpleFIN STUCK \u00b7 no change since '+fmtS(st.feed.since)+' ('+dur(Date.now()-st.feed.since)+' ago) though '+usd(st.feed.miss)+' moved since \u00b7 can\u2019t check \u2014 re-link at beta-bridge.simplefin.org</span>':Math.abs(st.feed.gap)<1?'<span class="ok">\u2713 matches SimpleFIN '+fmtS(st.feed.at)+' \u00b7 '+dur(Date.now()-st.feed.at)+' ago</span>':
         '<span class="late">\u26a0 '+usd(Math.abs(st.feed.gap))+(st.feed.gap<0?' spent':' arrived')+' with no tick \u00b7 SimpleFIN '+usd(st.feed.bal)+' '+fmtS(st.feed.at)+' \u00b7 '+dur(Date.now()-st.feed.at)+' ago</span>'):''));
     if(st.next){
       var left=st.next.by-now,late=left<=0;
@@ -8477,7 +8489,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "347c2b5 2026-10-08 14:53 UTC".indexOf("STAMP") >= 0 ? "dev" : "347c2b5 2026-10-08 14:53 UTC";
+  var GFH_BUILD = "5797e55 2026-10-08 20:09 UTC".indexOf("STAMP") >= 0 ? "dev" : "5797e55 2026-10-08 20:09 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
