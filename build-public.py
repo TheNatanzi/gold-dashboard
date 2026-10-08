@@ -107,4 +107,32 @@ with io.open(os.path.join(BASE, "index.html"), "w", encoding="utf-8", newline="\
     f.write(out)
 
 print("Built index.html: %d bytes (dash %d + pin %d + live %d)" % (len(out), len(dash), len(pin), len(live)))
+
+# ---------------------------------------------------------------------------
+# REGISTER THIS BUILD (2026-10-07, migration 024): tell the database which build is
+# current so buyzone_history refuses rows from any OLDER tab. On 10/7 a one-day-old
+# tab wrote a $49-high buy-zone point and the 4-day rule (022) let it through.
+# Uses the management token already in the environment (same one daily_pull.py uses);
+# best-effort — a failed registration is printed, never fatal, and the 4-day rule
+# stays as the fallback. Skipped for dirty/test builds so they can't lock out the live one.
+# ---------------------------------------------------------------------------
+if os.environ.get("GFH_ALLOW_DIRTY") != "1" and _commit != "unknown":
+    _tok = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
+    if not _tok:
+        print("build register: no SUPABASE_ACCESS_TOKEN in env - skipped (4-day rule still applies)")
+    else:
+        try:
+            import json, urllib.request
+            _sql = ("insert into public.dash_build (id, build, built) values (1, %s, %s) "
+                    "on conflict (id) do update set build = excluded.build, built = excluded.built, set_at = now()"
+                    % ("'" + ("%s %s" % (_commit, _built)).replace("'", "''") + "'",
+                       "'" + _built.replace(" UTC", "+00") + "'"))
+            _req = urllib.request.Request(
+                "https://api.supabase.com/v1/projects/cuubqcxzvyiryxcygadh/database/query",
+                data=json.dumps({"query": _sql}).encode("utf-8"),
+                headers={"Authorization": "Bearer " + _tok, "Content-Type": "application/json"})
+            urllib.request.urlopen(_req, timeout=20).read()
+            print("build register: dash_build = %s %s" % (_commit, _built))
+        except Exception as _e:
+            print("build register FAILED (%s) - 4-day rule still applies" % _e)
 print("Hook injected before char offset %d (of %d)." % (idx, len(dash)))
