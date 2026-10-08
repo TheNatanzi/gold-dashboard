@@ -1277,6 +1277,17 @@ var ELEM_SHEET_DATE = "2026-10-07";   /* GFH_SHEET_DATE */
   .tb-chip[hidden]{display:none}
   /* ---- CB tracker OVERVIEW sub-tab (2026-09-29) ---- */
   .cbo-sec{margin:14px 0 6px;font:700 11px var(--mono);letter-spacing:.09em;color:var(--ink-mute);text-transform:uppercase}
+  /* Cooldown evidence (Medi 10-07): ⛔ = "Coinbase refused this deposit, log it" */
+  .cbo-blk{background:none;border:1px solid var(--line2);border-radius:6px;color:var(--ink-mute);font-size:11px;line-height:1;padding:2px 4px;cursor:pointer;margin-left:4px;vertical-align:middle}
+  .cbo-blk:hover{color:var(--bad);border-color:var(--bad)}
+  .cbr.wait:not(.mute) .cbo-blk{opacity:1}
+  .cbe{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .cbe-c{background:var(--bg2);border:1px solid var(--line2);border-radius:10px;padding:8px 10px}
+  .cbe-c h6{margin:0 0 4px;font:700 12px var(--sans);color:var(--ink)} .cbe-c h6 small{font:11px var(--mono);color:var(--ink-mute);margin-left:6px}
+  .cbe-v{font:12px var(--sans);color:var(--ink-soft);margin:0 0 6px} .cbe-v b{color:var(--ink)} .cbe-v.bad b{color:var(--bad)} .cbe-v.ok b{color:var(--good)}
+  .cbe table{width:100%;border-collapse:collapse;font:11px var(--mono)} .cbe td{padding:2px 4px;border-top:1px solid var(--line2);white-space:nowrap} .cbe td.n{text-align:right}
+  .cbe tr.blk td{color:var(--bad)} .cbe td.gap.short{color:var(--warn);font-weight:700}
+  @media(max-width:700px){.cbe{grid-template-columns:1fr}}
   .cbo-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
   .cbo-t{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:11px 12px;box-shadow:var(--shadow)}
   .cbo-t .k{font-size:11px;color:var(--ink-mute)} .cbo-t .v{font:700 21px var(--mono);color:var(--ink);margin-top:3px}
@@ -3196,7 +3207,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: c8fe411 · built 2026-10-08 01:24 UTC</span>
+    <span id="verStamp" class="tnum">version: 16b1c2d · built 2026-10-08 04:08 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -5998,7 +6009,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-10-07T17:54:40-07:00",
+    at: "2026-10-07T19:39:39-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
     price: 4179.99,
@@ -6012,8 +6023,8 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
               "ssfairport", "stockton", "sunnyvale", "tracy", "vallejo"],
     // 8 of the 45. Stores whose rail rows were truncated were opened and
     // read from their own page this run, not carried forward.
-    soldOut: {gilroy:"2m", modesto:"1d", novato:"18d", ranchocordova:"15d",
-              rohnertpark:"2m", saccalexpo:"18d", vacaville:"20d", woodland:"today"}
+    soldOut: {gilroy:"2m", modesto:"1d", novato:"19d", ranchocordova:"15d",
+              rohnertpark:"2m", saccalexpo:"19d", vacaville:"20d", woodland:"1d"}
   };
 
   // Turn the snapshot into the same row shape wiRenderNow/wiRenderTable already
@@ -7699,7 +7710,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var M={paypal:["PayPal",24,.023],samsung:["Samsung Pay",168,.023],gpay:["GPay",168,.0213],applepay:["Apple Pay",168,.0213]};
   var ORDER=["paypal","samsung","gpay","applepay"];
   var MONTH_DAYS=365/12;
-  var STAGE={deposit:"Deposit to CB",withdraw_sent:"Withdraw sent",withdraw_landed:"Landed in bank",ach_sent:"ACH to Taekus sent",ach_landed:"Landed in Taekus",void:"Undo"};
+  var STAGE={deposit:"Deposit to CB",deposit_blocked:"\u26d4 Coinbase BLOCKED deposit",withdraw_sent:"Withdraw sent",withdraw_landed:"Landed in bank",ach_sent:"ACH to Taekus sent",ach_landed:"Landed in Taekus",void:"Undo"};
   function tzParts(d){var o={};new Intl.DateTimeFormat("en-US",{timeZone:TZ,hourCycle:"h23",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}).formatToParts(d).forEach(function(p){o[p.type]=p.value;});return o;}
   function fromLocalInput(v){
     if(!v)return null;var m=v.match(/^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d)/);if(!m)return null;
@@ -7827,7 +7838,8 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
       logo:ICON[k],name:({samsung:"Samsung",applepay:"Apple"}[k]||M[k][0])+(mute?' <em class="cbr-mute">\ud83d\udd15</em>':''),
       // Medi 09-29: bold green READY when the window is open, it's ours to do (alarm on), and 8010 can cover it.
       t1:open&&!mute&&!tkShort(k,lim)?'<b class="ready">\u2705 READY</b>':!last?'<b>\u2014</b>':open?'<b class="go">\u2713 open</b>':'<b>\u23f3 '+dur(left)+'</b>',
-      t2:last?RESET+' '+new Intl.DateTimeFormat("en-US",{timeZone:TZ,weekday:"short",hour:"numeric",minute:"2-digit"}).format(new Date(last+win)):'',
+      t2:(last?RESET+' '+new Intl.DateTimeFormat("en-US",{timeZone:TZ,weekday:"short",hour:"numeric",minute:"2-digit"}).format(new Date(last+win)):'')+
+         (mute?'':'<button type="button" class="cbo-blk" data-do="deposit_blocked" title="Coinbase refused this deposit \u2014 log it (amount + time) so we learn the real cooldown">\u26d4</button>'),
       bar:pbar(last?(Date.now()-last)/win:0,open&&last),
       amt:'<input type="text" inputmode="decimal" class="cb-money cbo-amt'+((open&&!mute&&tkShort(k,shown))?' short':'')+'" value="'+(shown?usd(shown):'')+'" placeholder="$"'+((open&&!mute&&tkShort(k,shown))?' title="8010 has only '+usd(S.tkBal)+'"':'')+'>',undo:e?undoBtn(e):''});
   }
@@ -7891,7 +7903,39 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
       tile("In Coinbase",agg.inCB,"all players")+tile("Withdrawing to banks",agg.wd,"sent, not landed")+
       tile("In bank accounts",agg.bank,"landed, not sent to Taekus")+tile("ACH to Taekus",agg.ach,"sent, not landed")+'</div>'+
       '<div class="cbo-sec">Taekus loads</div><div class="tkg">'+TK_CARDS.map(tkBar).join("")+'</div>'+
-      '<div class="cbo-sec">Players \u00b7 tap a box to log it (time + amount)</div><div class="cb-grid">'+S.people.map(function(p){return player(p,L);}).join("")+'</div>';
+      '<div class="cbo-sec">Players \u00b7 tap a box to log it (time + amount)</div><div class="cb-grid">'+S.people.map(function(p){return player(p,L);}).join("")+'</div>'+
+      '<div class="cbo-sec">Cooldown evidence \u00b7 is it really 7 days? (\u26d4 on a row = Coinbase refused it)</div>'+evidence(L);
+  }
+  /* ---- Cooldown evidence (Medi 2026-10-07) --------------------------------------------
+     Every accepted deposit and every ⛔ blocked attempt, per method, with the gap since that
+     person's previous ACCEPTED deposit on the same method and the $ they had put through
+     that method in the 7 days before. Reading it:
+       shortest ACCEPTED gap  -> the window is AT MOST this long
+       longest BLOCKED gap    -> the window is AT LEAST this long
+     If accepted gaps are far under the assumed window, it is not a 7-day timer at all -
+     look at the 7-day $ column: a rolling dollar limit would show up there. */
+  function evidence(L){
+    var out='<div class="cbe">';
+    ["gpay","applepay","samsung","paypal"].forEach(function(k){
+      var win=M[k][1],ev=L.ev.filter(function(e){return e.method===k&&(e.stage==="deposit"||e.stage==="deposit_blocked");})
+        .sort(function(a,b){return new Date(a.at)-new Date(b.at);});
+      var rows=[],minOk=null,maxBlk=null;
+      ev.forEach(function(e,i){
+        var t=new Date(e.at).getTime(),prev=null,sum7=0;
+        for(var j=i-1;j>=0;j--){var x=ev[j];if(x.code!==e.code)continue;var tx=new Date(x.at).getTime();
+          if(x.stage==="deposit"){if(prev==null)prev=tx;if(t-tx<7*DAY)sum7+=+x.amount||0;}}
+        var gap=prev!=null?(t-prev)/36e5:null,blk=e.stage==="deposit_blocked";
+        if(gap!=null){if(!blk&&(minOk==null||gap<minOk.h))minOk={h:gap,e:e};if(blk&&(maxBlk==null||gap>maxBlk.h))maxBlk={h:gap,e:e};}
+        rows.push({e:e,gap:gap,sum7:sum7,blk:blk});
+      });
+      var v='';
+      if(minOk)v+='<p class="cbe-v'+(minOk.h<win-1?' bad':' ok')+'">Shortest gap that still went through: <b>'+dur(minOk.h*36e5)+'</b> ('+minOk.e.code+' '+fmt(minOk.e.at).replace(/^\w+, /,'')+')'+(minOk.h<win-1?' \u2192 window is <b>shorter than the '+(win/24)+'-day</b> we assume, or it is a $ limit':' \u2192 consistent with '+(win/24)+' days')+'</p>';
+      else v+='<p class="cbe-v">No back-to-back accepted deposits logged yet.</p>';
+      v+='<p class="cbe-v">Longest gap that got \u26d4 blocked: <b>'+(maxBlk?dur(maxBlk.h*36e5)+'</b> ('+maxBlk.e.code+')':'none logged yet</b> \u2014 tap \u26d4 on the row when Coinbase refuses one')+'</p>';
+      var tb='<table>'+rows.slice(-8).reverse().map(function(r){return '<tr'+(r.blk?' class="blk"':'')+'><td>'+(r.blk?'\u26d4':'\u2713')+' '+r.e.code+'</td><td>'+fmt(r.e.at).replace(/^\w+, /,'')+'</td><td class="n">'+usd(r.e.amount)+'</td><td class="n gap'+(r.gap!=null&&r.gap<win-1&&!r.blk?' short':'')+'">'+(r.gap!=null?'+'+dur(r.gap*36e5):'first')+'</td><td class="n" title="$ through this method in the 7 days before">7d '+k$(r.sum7)+'</td></tr>';}).join('')+'</table>';
+      out+='<div class="cbe-c"><h6>'+M[k][0]+'<small>assumed '+(win/24)+'d \u00b7 '+ev.length+' logged</small></h6>'+v+(rows.length?tb:'')+'</div>';
+    });
+    return out+'</div>';
   }
 
   /* ---- Calculations sub-tab: money-made tiles + every player's math + month-by-month history ---- */
@@ -8121,7 +8165,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     delete S.when[n.closest(".cbo-p").dataset.p];render();
   });
   document.addEventListener("click",function(ev){
-    var b=ev.target.closest&&ev.target.closest(".cbo-box,.cbo-undo");if(!b||!b.closest("#cbOv"))return;
+    var b=ev.target.closest&&ev.target.closest(".cbo-box,.cbo-undo,.cbo-blk");if(!b||!b.closest("#cbOv"))return;
     var card=b.closest(".cbo-p"),code=card.dataset.p,rec={code:code,created_by:"medi"},p=S.people.filter(function(x){return x.code===code;})[0],undone=null;
     if(b.classList.contains("cbo-undo")){
       undone=S.events.filter(function(x){return String(x.id)===b.dataset.undo;})[0];if(!undone)return;
@@ -8137,6 +8181,8 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
         if(!(amt>0)){say(code,"\u26a0 type an amount",1);return;}
         rec.amount=amt;
         if(rec.stage==="deposit"){var k=b.closest(".cbr").dataset.m;rec.method=k;rec.note="prev_last="+(p&&p[k+"_last"]||"");}
+        if(rec.stage==="deposit_blocked"){var kb=b.closest(".cbr").dataset.m;rec.method=kb;rec.note="blocked; last accepted="+(p&&p[kb+"_last"]||"none");
+          if(!confirm(code+" "+M[kb][0]+": log that Coinbase BLOCKED a "+usd(amt)+" deposit just now?"))return;}
       }
     }
     b.disabled=true;b.classList.add("done");
@@ -8477,7 +8523,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "c8fe411 2026-10-08 01:24 UTC".indexOf("STAMP") >= 0 ? "dev" : "c8fe411 2026-10-08 01:24 UTC";
+  var GFH_BUILD = "16b1c2d 2026-10-08 04:08 UTC".indexOf("STAMP") >= 0 ? "dev" : "16b1c2d 2026-10-08 04:08 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
