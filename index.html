@@ -3196,7 +3196,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 92c9d35 · built 2026-10-09 04:50 UTC</span>
+    <span id="verStamp" class="tnum">version: 374fb04 · built 2026-10-09 05:26 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -5998,25 +5998,25 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-10-08T21:24:40-07:00",
+    at: "2026-10-08T22:24:40-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
     price: 4189.99,
     // Written by warehouse-inventory/daily_pull.py — see DAILY-PULL.md.
-    // 17 of the 45, keyed on the row carrying the SKU, never the store badge.
-    inStock: ["danville", "fostercity", "mountainview", "richmond", "riverbank",
-              "sacnatomas", "sacstockton", "sanleandro", "santaclara", "santacruz",
-              "santarosa", "sf", "sjsenter", "stockton", "sunnyvale", "tracy",
-              "vallejo"],
-    // 25 of the 45. Stores whose rail rows were truncated were opened and
+    // 13 of the 45, keyed on the row carrying the SKU, never the store badge.
+    inStock: ["danville", "mountainview", "richmond", "sacnatomas", "sanleandro",
+              "santaclara", "santacruz", "santarosa", "sjsenter", "stockton",
+              "sunnyvale", "tracy", "vallejo"],
+    // 29 of the 45. Stores whose rail rows were truncated were opened and
     // read from their own page this run, not carried forward.
-    soldOut: {antioch:"1d", brentwood:"today", concord:"today", fairfield:"1d",
-              fremont:"today", gilroy:"2m", hayward:"1d", livermore:"1d", lodi:"today",
-              manteca:"today", modesto:"2d", newark:"1d", novato:"20d",
-              pleasanton:"today", ranchocordova:"16d", redwoodcity:"1d",
-              rohnertpark:"2m", saccalexpo:"20d", sjalmaden:"today",
-              sjgreatoaks:"today", sjne:"today", ssf:"today", ssfairport:"today",
-              vacaville:"21d", woodland:"2d"}
+    soldOut: {antioch:"1d", brentwood:"today", concord:"1d", fairfield:"1d",
+              fostercity:"today", fremont:"today", gilroy:"2m", hayward:"1d",
+              livermore:"1d", lodi:"today", manteca:"today", modesto:"2d", newark:"1d",
+              novato:"20d", pleasanton:"today", ranchocordova:"16d", redwoodcity:"1d",
+              riverbank:"today", rohnertpark:"2m", saccalexpo:"20d",
+              sacstockton:"today", sf:"today", sjalmaden:"today", sjgreatoaks:"1d",
+              sjne:"today", ssf:"today", ssfairport:"1d", vacaville:"21d",
+              woodland:"2d"}
   };
 
   // Turn the snapshot into the same row shape wiRenderNow/wiRenderTable already
@@ -7840,7 +7840,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     var left=open?0:frees-now;
     var e=latest(p.code,function(x){return x.stage==="deposit"&&x.method===k&&now-new Date(x.at).getTime()<u.H;});
     var mute=p[k+"_alarm"]===false,part=open&&u.used>0;
-    var typed=S.typed[p.code+"|"+k],dflt=open?(lim>0?u.avail:lim):(first?first.a:lim),shown=typed>0?typed:dflt;
+    var typed=S.typed[p.code+"|"+k],dflt=open?(lim>0?u.avail:lim):(famt||lim),shown=typed>0?typed:dflt;
     var tf=function(ms){return new Intl.DateTimeFormat("en-US",{timeZone:TZ,weekday:"short",hour:"numeric",minute:"2-digit"}).format(new Date(ms));};
     var t1=!open?'<b>\u23f3 '+dur(left)+'</b>':
       (!mute&&!tkShort(k,dflt))?'<b class="ready">\u2705 '+(part?k$(u.avail)+' left':'READY')+'</b>':
@@ -8512,7 +8512,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "92c9d35 2026-10-09 04:50 UTC".indexOf("STAMP") >= 0 ? "dev" : "92c9d35 2026-10-09 04:50 UTC";
+  var GFH_BUILD = "374fb04 2026-10-09 05:26 UTC".indexOf("STAMP") >= 0 ? "dev" : "374fb04 2026-10-09 05:26 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
