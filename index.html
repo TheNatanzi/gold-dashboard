@@ -3196,7 +3196,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 374fb04 · built 2026-10-09 05:26 UTC</span>
+    <span id="verStamp" class="tnum">version: 4f6d2e0 · built 2026-10-09 05:29 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7830,13 +7830,15 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     if(!ds.length&&last&&now-last<H)ds.push({t:last,a:lim>0?lim:0});
     ds.sort(function(x,y){return x.t-y.t;});
     var used=ds.reduce(function(m,d){return m+d.a;},0);
-    return {H:H,lim:lim,ds:ds,used:used,avail:lim>0?Math.max(0,lim-used):(ds.length?0:null),last:last};
+    // Medi 10-08: they sometimes leave ~10% unused on purpose so the limit is never hit; 10% or less left = MAXED.
+    var av=lim>0?Math.max(0,lim-used):(ds.length?0:null);if(lim>0&&av<=lim*0.1+0.005)av=0;
+    return {H:H,lim:lim,ds:ds,used:used,avail:av,last:last};
   }
   function depRow(p,k){
     var u=winUse(p,k),lim=u.lim,now=Date.now(),first=u.ds[0],open=lim>0?u.avail>0:!first;
     // when shut: walk the window's deposits oldest-first until enough has aged out to open again (handles over-limit weeks)
     var frees=first?first.t+u.H:0,famt=first?first.a:0;
-    if(!open&&lim>0){var rem=u.used;for(var i=0;i<u.ds.length;i++){rem-=u.ds[i].a;if(lim-rem>0){frees=u.ds[i].t+u.H;famt=lim-rem;break;}}}
+    if(!open&&lim>0){var rem=u.used;for(var i=0;i<u.ds.length;i++){rem-=u.ds[i].a;if(lim-rem>lim*0.1+0.005){frees=u.ds[i].t+u.H;famt=lim-rem;break;}}}
     var left=open?0:frees-now;
     var e=latest(p.code,function(x){return x.stage==="deposit"&&x.method===k&&now-new Date(x.at).getTime()<u.H;});
     var mute=p[k+"_alarm"]===false,part=open&&u.used>0;
@@ -8512,7 +8514,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "374fb04 2026-10-09 05:26 UTC".indexOf("STAMP") >= 0 ? "dev" : "374fb04 2026-10-09 05:26 UTC";
+  var GFH_BUILD = "4f6d2e0 2026-10-09 05:29 UTC".indexOf("STAMP") >= 0 ? "dev" : "4f6d2e0 2026-10-09 05:29 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
