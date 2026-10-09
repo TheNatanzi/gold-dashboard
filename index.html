@@ -80,7 +80,7 @@
    NOTE: this is the date the sheet was last CONFIRMED, not a price. No money
    number lives here, which is why the task is allowed to write it unattended.
    ========================================================================= */
-var ELEM_SHEET_DATE = "2026-10-08";   /* GFH_SHEET_DATE */
+var ELEM_SHEET_DATE = "2026-10-09";   /* GFH_SHEET_DATE */
 </script>
 <style>
   /* ============ TOKENS ============ */
@@ -3196,7 +3196,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 4f6d2e0 · built 2026-10-09 05:29 UTC</span>
+    <span id="verStamp" class="tnum">version: d309470 · built 2026-10-09 14:53 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3239,8 +3239,8 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
 
   // Buyers (sell price = spot + offset). Elemetal is the default/preferred buyer.
   const BUYERS = [
-    {key:"elemetal_pamp",    name:"Elemetal · Pamp",    offset:-25,  note:"Verified 10/8 price sheet (GB1PAMPF Bid = spot −$25) + $10 call-in (working relationship) → net spot −$15. Must be Veriscan + green foot, else any-brand. Bid history: −$20 → −$30 (8/25) → −$35 (8/27, held 29 sheets) → −$25 (10/2).", t:ELEM_SHEET_DATE},
-    {key:"elemetal_generic", name:"Elemetal · Generic", offset:-35,  note:"Verified 10/8 price sheet (GB1C any-brand = spot −$35; was −$40 from 8/25 to 10/2) + $10 call-in → net spot −$25.", t:ELEM_SHEET_DATE},
+    {key:"elemetal_pamp",    name:"Elemetal · Pamp",    offset:-25,  note:"Verified 10/9 price sheet (GB1PAMPF Bid = spot −$25) + $10 call-in (working relationship) → net spot −$15. Must be Veriscan + green foot, else any-brand. Bid history: −$20 → −$30 (8/25) → −$35 (8/27, held 29 sheets) → −$25 (10/2).", t:ELEM_SHEET_DATE},
+    {key:"elemetal_generic", name:"Elemetal · Generic", offset:-33,  note:"Verified 10/9 price sheet (GB1C any-brand = spot −$33; bid history: −$40 8/25→10/1 → −$35 (10/2) → −$33 (10/9)) + $10 call-in → net spot −$23.", t:ELEM_SHEET_DATE},
     {key:"upstate",          name:"Upstate",            offset:7,    note:"Pays over spot; ship-in or drive.", t:"2026-07-24"},
     {key:"amark",            name:"AMARK",              offset:null, note:"Las Vegas; no price-pull yet.", t:null},
     {key:"collectpure",      name:"CollectPure",        offset:null, note:"Online marketplace; ship-in.", t:null},
@@ -5998,7 +5998,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-10-08T22:24:40-07:00",
+    at: "2026-10-08T22:54:39-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
     price: 4189.99,
@@ -8514,7 +8514,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "4f6d2e0 2026-10-09 05:29 UTC".indexOf("STAMP") >= 0 ? "dev" : "4f6d2e0 2026-10-09 05:29 UTC";
+  var GFH_BUILD = "d309470 2026-10-09 14:53 UTC".indexOf("STAMP") >= 0 ? "dev" : "d309470 2026-10-09 14:53 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
