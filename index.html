@@ -3196,7 +3196,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 39c0811 · built 2026-10-09 01:06 UTC</span>
+    <span id="verStamp" class="tnum">version: 92c9d35 · built 2026-10-09 04:50 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -5998,24 +5998,25 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-10-08T16:24:41-07:00",
+    at: "2026-10-08T21:24:40-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
     price: 4189.99,
     // Written by warehouse-inventory/daily_pull.py — see DAILY-PULL.md.
-    // 19 of the 45, keyed on the row carrying the SKU, never the store badge.
-    inStock: ["danville", "fostercity", "fremont", "manteca", "mountainview",
-              "richmond", "riverbank", "sacnatomas", "sacstockton", "sanleandro",
-              "santaclara", "santacruz", "santarosa", "sf", "sjsenter", "stockton",
-              "sunnyvale", "tracy", "vallejo"],
-    // 23 of the 45. Stores whose rail rows were truncated were opened and
+    // 17 of the 45, keyed on the row carrying the SKU, never the store badge.
+    inStock: ["danville", "fostercity", "mountainview", "richmond", "riverbank",
+              "sacnatomas", "sacstockton", "sanleandro", "santaclara", "santacruz",
+              "santarosa", "sf", "sjsenter", "stockton", "sunnyvale", "tracy",
+              "vallejo"],
+    // 25 of the 45. Stores whose rail rows were truncated were opened and
     // read from their own page this run, not carried forward.
-    soldOut: {antioch:"today", brentwood:"today", concord:"today", fairfield:"today",
-              gilroy:"2m", hayward:"today", livermore:"today", lodi:"today",
-              modesto:"2d", newark:"today", novato:"19d", pleasanton:"today",
-              ranchocordova:"16d", redwoodcity:"today", rohnertpark:"2m",
-              saccalexpo:"19d", sjalmaden:"today", sjgreatoaks:"today", sjne:"today",
-              ssf:"today", ssfairport:"today", vacaville:"21d", woodland:"1d"}
+    soldOut: {antioch:"1d", brentwood:"today", concord:"today", fairfield:"1d",
+              fremont:"today", gilroy:"2m", hayward:"1d", livermore:"1d", lodi:"today",
+              manteca:"today", modesto:"2d", newark:"1d", novato:"20d",
+              pleasanton:"today", ranchocordova:"16d", redwoodcity:"1d",
+              rohnertpark:"2m", saccalexpo:"20d", sjalmaden:"today",
+              sjgreatoaks:"today", sjne:"today", ssf:"today", ssfairport:"today",
+              vacaville:"21d", woodland:"2d"}
   };
 
   // Turn the snapshot into the same row shape wiRenderNow/wiRenderTable already
@@ -7818,19 +7819,38 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   }
   var RESET=String.fromCodePoint(0x1F504);
   function tkShort(k,amt){return (k==="gpay"||k==="applepay")&&S.tkBal!=null&&amt>0&&amt>S.tkBal+0.005;}
+  /* ROLLING window (Medi 10-08, option A): George's GPay won't take a full deposit, so deposits come in pieces.
+     Each method = limit per window; every deposit inside the last window uses part of it and frees again
+     exactly one window after it was made. Ticks are the evidence; <method>_last is only a fallback for an
+     untracked deposit (then the whole limit counts as used until it ages out). */
+  function winUse(p,k){
+    var H=M[k][1]*36e5,now=Date.now(),lim=+p[k+"_limit"],ds=[];
+    live().ev.forEach(function(e){if(e.code===p.code&&e.stage==="deposit"&&e.method===k){var t=new Date(e.at).getTime();if(now-t<H&&t<=now)ds.push({t:t,a:+e.amount||0});}});
+    var last=p[k+"_last"]?new Date(p[k+"_last"]).getTime():0;
+    if(!ds.length&&last&&now-last<H)ds.push({t:last,a:lim>0?lim:0});
+    ds.sort(function(x,y){return x.t-y.t;});
+    var used=ds.reduce(function(m,d){return m+d.a;},0);
+    return {H:H,lim:lim,ds:ds,used:used,avail:lim>0?Math.max(0,lim-used):(ds.length?0:null),last:last};
+  }
   function depRow(p,k){
-    var lim=+p[k+"_limit"],last=p[k+"_last"]?new Date(p[k+"_last"]).getTime():0,win=M[k][1]*36e5,left=last?last+win-Date.now():0,open=left<=0;
-    var e=latest(p.code,function(x){return x.stage==="deposit"&&x.method===k&&Date.now()-new Date(x.at).getTime()<win;});
-    var mute=p[k+"_alarm"]===false;
-    // Medi 10-07: a custom amount he typed survives every redraw until the deposit is logged.
-    var typed=S.typed[p.code+"|"+k],shown=typed>0?typed:lim;
-    return rowHtml({row:"deposit",m:k,cls:(open?'':' wait')+(mute?' mute':''),title:mute?'Alarm off '+'\u2014'+' they deposit this themselves':'',
+    var u=winUse(p,k),lim=u.lim,now=Date.now(),first=u.ds[0],open=lim>0?u.avail>0:!first;
+    // when shut: walk the window's deposits oldest-first until enough has aged out to open again (handles over-limit weeks)
+    var frees=first?first.t+u.H:0,famt=first?first.a:0;
+    if(!open&&lim>0){var rem=u.used;for(var i=0;i<u.ds.length;i++){rem-=u.ds[i].a;if(lim-rem>0){frees=u.ds[i].t+u.H;famt=lim-rem;break;}}}
+    var left=open?0:frees-now;
+    var e=latest(p.code,function(x){return x.stage==="deposit"&&x.method===k&&now-new Date(x.at).getTime()<u.H;});
+    var mute=p[k+"_alarm"]===false,part=open&&u.used>0;
+    var typed=S.typed[p.code+"|"+k],dflt=open?(lim>0?u.avail:lim):(first?first.a:lim),shown=typed>0?typed:dflt;
+    var tf=function(ms){return new Intl.DateTimeFormat("en-US",{timeZone:TZ,weekday:"short",hour:"numeric",minute:"2-digit"}).format(new Date(ms));};
+    var t1=!open?'<b>\u23f3 '+dur(left)+'</b>':
+      (!mute&&!tkShort(k,dflt))?'<b class="ready">\u2705 '+(part?k$(u.avail)+' left':'READY')+'</b>':
+      (!first&&!u.last)?'<b>\u2014</b>':'<b class="go">\u2713 '+(part?k$(u.avail)+' left':'open')+'</b>';
+    var t2=!first?'':open?'\u23f3 +'+k$(first.a)+' '+tf(frees):RESET+' +'+k$(famt)+' '+tf(frees);
+    return rowHtml({row:"deposit",m:k,cls:(open?'':' wait')+(mute?' mute':''),title:(mute?'Alarm off \u2014 they deposit this themselves. ':'')+(u.ds.length?'Used this window: '+u.ds.map(function(d){return usd(d.a)+' '+tf(d.t);}).join(', '):''),
       box:mute?'<span class="cbo-box0"></span>':'<button type="button" class="cbo-box" data-do="deposit" aria-label="Deposit '+M[k][0]+'"></button>',
       logo:ICON[k],name:({samsung:"Samsung",applepay:"Apple"}[k]||M[k][0])+(mute?' <em class="cbr-mute">\ud83d\udd15</em>':''),
-      // Medi 09-29: bold green READY when the window is open, it's ours to do (alarm on), and 8010 can cover it.
-      t1:open&&!mute&&!tkShort(k,lim)?'<b class="ready">\u2705 READY</b>':!last?'<b>\u2014</b>':open?'<b class="go">\u2713 open</b>':'<b>\u23f3 '+dur(left)+'</b>',
-      t2:last?RESET+' '+new Intl.DateTimeFormat("en-US",{timeZone:TZ,weekday:"short",hour:"numeric",minute:"2-digit"}).format(new Date(last+win)):'',
-      bar:pbar(last?(Date.now()-last)/win:0,open&&last),
+      t1:t1,t2:t2,
+      bar:pbar(lim>0?(u.avail||0)/lim:(open?1:0),open&&!part),
       amt:'<input type="text" inputmode="decimal" class="cb-money cbo-amt'+((open&&!mute&&tkShort(k,shown))?' short':'')+'" value="'+(shown?usd(shown):'')+'" placeholder="$"'+((open&&!mute&&tkShort(k,shown))?' title="8010 has only '+usd(S.tkBal)+'"':'')+'>',undo:e?undoBtn(e):''});
   }
   function moveRow(stage,icon,label,amt,p,sentStage,st){
@@ -8013,8 +8033,10 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     var wins=[];
     S.people.forEach(function(p){c.methods.forEach(function(k){
       if(p[k+"_on"]===false)return;var lim=+p[k+"_limit"];if(!(lim>0))return;
-      var h=M[k][1]*36e5,last=p[k+"_last"]?new Date(p[k+"_last"]).getTime():0,at=last?last+h:now;if(at<now)at=now;
-      for(;at<now+7*DAY;at+=h)wins.push({at:at,amt:lim,who:p.code,k:k,by:loadBy(at,lag)});
+      // rolling (Medi 10-08): what's free now, then each window deposit frees again one window later, repeating.
+      var u=winUse(p,k),h=u.H,slots=[];if(u.avail>0)slots.push({at:now,amt:u.avail});
+      u.ds.forEach(function(d){slots.push({at:Math.max(now,d.t+h),amt:d.a});});
+      slots.forEach(function(sl){for(var at=sl.at;at<now+7*DAY;at+=h)if(sl.amt>0)wins.push({at:at,amt:sl.amt,who:p.code,k:k,by:loadBy(at,lag)});});
     });});
     wins.sort(function(a,b){return a.at-b.at;});
     var have=c.bal?Math.max(0,total||0)+transit:0,need=0,next=null;
@@ -8490,7 +8512,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "39c0811 2026-10-09 01:06 UTC".indexOf("STAMP") >= 0 ? "dev" : "39c0811 2026-10-09 01:06 UTC";
+  var GFH_BUILD = "92c9d35 2026-10-09 04:50 UTC".indexOf("STAMP") >= 0 ? "dev" : "92c9d35 2026-10-09 04:50 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
