@@ -1768,7 +1768,7 @@ var ELEM_SHEET_DATE = "2026-10-13";   /* GFH_SHEET_DATE */
           <tr><td><b>PayPal Debit</b></td><td>MC</td><td class="n tot">5% <span style="font-weight:400">(Groceries = Costco)</span></td><td>$1,000 spend/mo (=$50) · rewards redeem at PayPal checkout since 8/1</td><td>re-pick category EVERY month · gold test #4</td><td><span class="stc ok">✅ VERIFIED</span></td></tr>
           <tr><td><b>Fold+</b></td><td>Visa</td><td class="n tot">1.5% BTC <span style="font-weight:400">(+ bill-pay earn?)</span></td><td>$10k rewards wallet · 30-day lock</td><td>$10/mo Fold+ · bill-pay test #5 (Taekus successor?)</td><td><span class="stc chk">🟡 VERIFY</span></td></tr>
           <tr><td><b>Krak Card</b> (Kraken)</td><td>Visa</td><td class="n tot">0.5–2% USD/BTC</td><td>NO caps</td><td>2% needs $50k avg Kraken balance · brand-new 8/18</td><td><span class="stc chk">🟡 VERIFY</span></td></tr>
-          <tr><td><b>X Money</b></td><td>Visa</td><td class="n tot">3.00%</td><td>none · limited by debit balance</td><td>invite + X sub · MCC 5094-only exclusion (5300 passes) · patch risk</td><td><span class="stc chk">🟡 VERIFY</span></td></tr>
+          <tr><td><b>X Money</b></td><td>Visa</td><td class="n tot">0%</td><td>—</td><td>stopped paying rewards on Costco (Medi 10-13) · was 3% 9/18–10/13</td><td><span class="stc deny">❌ DENIED</span></td></tr>
           <tr><td><b>ether.fi Cash</b></td><td>Visa</td><td class="n tot">3% <span style="font-weight:400">(SCR token)</span></td><td>full rate on first $2k/mo, then 1%</td><td>USDC-funded · confirm CA on state list</td><td><span class="stc chk">🟡 VERIFY</span></td></tr>
           <tr><td><b>Bluevine Business</b></td><td>MC</td><td class="n tot">1.5%</td><td>UNCAPPED</td><td>free biz checking · needs a biz-debit use-case</td><td><span class="stc chk">🟡 VERIFY</span></td></tr>
         </table></div>
@@ -3196,7 +3196,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: e4fa3a4 · built 2026-10-13 14:53 UTC</span>
+    <span id="verStamp" class="tnum">version: 609b214 · built 2026-10-13 18:11 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3260,10 +3260,9 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     {name:"U.S. Bank Smartly (4% / 2%)", biller:"U.S. Bank", net:"visa", card:4.0, tk:0, type:"Personal", order:4, limit:10000, lc:"4037",
      alt:{card:2.0, label:"after $10k"},
      catch:"Needs ~$100k parked at U.S. Bancorp. 4% on the first $10k each cycle, then 2%. In-store OK."},
-    // X Money debit (Medi 2026-09-18): 5% = 3% X cashback + 2% the Smartly card earns loading it.
-    // Spends its live balance (no credit line).
-    {name:"X Money Debit", biller:"X", net:"visa", card:5.0, tk:0, type:"Debit", order:5, limit:0, lc:"8783", debit:true,
-     catch:"Debit card: 3% X cashback + 2% on the Smartly load = 5%. Spends the live X Money balance."},
+    // X Money debit REMOVED (Medi 2026-10-13): X no longer pays rewards on Costco. It sat here
+    // 9/18 -> 10/13 as 5% (3% X + 2% Smartly load). The Sabz feed for ··8783 still exists; the
+    // Smartly period line still shows loads to it because Smartly itself still pays 2% on them.
     {name:"Citi Double Cash", biller:"Citi", net:"mc", card:2.0, tk:0, type:"Personal", order:6, limit:8300,
      catch:"Personal MC → no Taekus (2% only). Mastercard = Costco.com online only."},
   ];
@@ -3350,12 +3349,6 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     if (n.includes("x money")) return `<svg class="clogo" viewBox="0 0 24 24" width="${h}" height="${h}" aria-label="X Money"><rect width="24" height="24" rx="5" fill="#000"/><path d="M6 5.5h3.4l3 4.1 3.4-4.1H18l-4.7 5.6L18.4 18.5h-3.4l-3.2-4.4-3.6 4.4H6l5-6z" fill="#fff"/></svg>`;
     if (n.includes("chase")) return `<svg class="clogo" viewBox="0 0 24 24" width="${h}" height="${h}" aria-label="Chase"><rect width="24" height="24" rx="5" fill="#117ACA"/><path d="M9 5h7l3 3H9zM19 9v7l-3 3V9zM15 19H8l-3-3h10zM5 15V8l3-3v10z" fill="#fff"/></svg>`;
     return "";
-  }
-  function xMoneyRowHTML(){
-    const r = lcRow("8783");
-    return `<div class="ch"><span class="cl">${cardLogo({name:"X Money"})}</span><div class="cn">X Money Debit<small>debit · not in buying power</small></div><div class="chs" data-lc="8783">${lcHeadHTML('8783')}</div></div>
-      <div class="cline2"><span class="l"><span class="spend">${r ? lcMoney(r.big_amount) : "—"}<small class="lab">balance${r && r.feed_broken ? " · ⚠️ link broken" : " · live"}</small></span></span><span class="r math"><span class="eq">debit · not counted</span></span></div>
-      <div class="lcx" data-lc="8783">${lcExtraHTML('8783')}</div>`;
   }
   // Spendable credit for Buying power. Live cards: the bank's available credit, except a used Venmo
   // (once per statement period) = $0. Cards without a live feed (Chase Ink, Double Cash) keep their limit.
@@ -5998,7 +5991,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-10-12T21:54:37-07:00",
+    at: "2026-10-13T11:01:42-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
     price: 4239.99,
@@ -6007,15 +6000,15 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     inStock: [],
     // 42 of the 45. Stores whose rail rows were truncated were opened and
     // read from their own page this run, not carried forward.
-    soldOut: {antioch:"2d", brentwood:"4d", concord:"4d", danville:"3d",
-              fairfield:"5d", fostercity:"3d", fremont:"4d", gilroy:"2m", hayward:"3d",
-              livermore:"5d", lodi:"4d", manteca:"4d", modesto:"2d", mountainview:"3d",
+    soldOut: {antioch:"2d", brentwood:"4d", concord:"5d", danville:"3d",
+              fairfield:"5d", fostercity:"4d", fremont:"4d", gilroy:"2m", hayward:"3d",
+              livermore:"5d", lodi:"5d", manteca:"4d", modesto:"2d", mountainview:"4d",
               newark:"3d", novato:"24d", pleasanton:"4d", ranchocordova:"20d",
-              redwoodcity:"5d", richmond:"3d", riverbank:"3d", rohnertpark:"2m",
-              saccalexpo:"24d", sacnatomas:"3d", sacstockton:"3d", sanleandro:"3d",
-              santaclara:"3d", santacruz:"1d", santarosa:"3d", sf:"3d", sjalmaden:"4d",
-              sjgreatoaks:"4d", sjne:"4d", sjsenter:"3d", ssf:"4d", ssfairport:"2d",
-              stockton:"3d", sunnyvale:"3d", tracy:"3d", vacaville:"25d", vallejo:"2d",
+              redwoodcity:"5d", richmond:"3d", riverbank:"4d", rohnertpark:"2m",
+              saccalexpo:"24d", sacnatomas:"4d", sacstockton:"4d", sanleandro:"3d",
+              santaclara:"4d", santacruz:"2d", santarosa:"3d", sf:"4d", sjalmaden:"4d",
+              sjgreatoaks:"5d", sjne:"4d", sjsenter:"4d", ssf:"4d", ssfairport:"2d",
+              stockton:"3d", sunnyvale:"3d", tracy:"4d", vacaville:"25d", vallejo:"2d",
               woodland:"6d"}
   };
 
@@ -8514,7 +8507,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "e4fa3a4 2026-10-13 14:53 UTC".indexOf("STAMP") >= 0 ? "dev" : "e4fa3a4 2026-10-13 14:53 UTC";
+  var GFH_BUILD = "609b214 2026-10-13 18:11 UTC".indexOf("STAMP") >= 0 ? "dev" : "609b214 2026-10-13 18:11 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
