@@ -3196,7 +3196,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 660ad26 · built 2026-10-13 23:35 UTC</span>
+    <span id="verStamp" class="tnum">version: 9e4280a · built 2026-10-13 23:41 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7819,7 +7819,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
      exactly one window after it was made. Ticks are the evidence; <method>_last is only a fallback for an
      untracked deposit (then the whole limit counts as used until it ages out). */
   function winUse(p,k){
-    var H=M[k][1]*36e5,now=Date.now(),lim=+p[k+"_limit"],ds=[],rs=p[k+"_reset_at"]?new Date(p[k+"_reset_at"]).getTime():0; // Medi 10-13: a limit raise resets the window
+    var H=M[k][1]*36e5,now=Date.now(),lim=+p[k+"_limit"],ds=[],rs=p[k+"_reset_at"]?new Date(p[k+"_reset_at"]).getTime()-2*36e5:0; // 2h grace: the deposit that USED the new limit is often ticked just before the Max is raised // Medi 10-13: a limit raise resets the window
     live().ev.forEach(function(e){if(e.code===p.code&&e.stage==="deposit"&&e.method===k){var t=new Date(e.at).getTime();if(now-t<H&&t<=now&&t>=rs)ds.push({t:t,a:+e.amount||0});}});
     var last=p[k+"_last"]?new Date(p[k+"_last"]).getTime():0;
     if(!ds.length&&last&&now-last<H&&last>=rs)ds.push({t:last,a:lim>0?lim:0});
@@ -8517,7 +8517,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "660ad26 2026-10-13 23:35 UTC".indexOf("STAMP") >= 0 ? "dev" : "660ad26 2026-10-13 23:35 UTC";
+  var GFH_BUILD = "9e4280a 2026-10-13 23:41 UTC".indexOf("STAMP") >= 0 ? "dev" : "9e4280a 2026-10-13 23:41 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
