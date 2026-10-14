@@ -3196,7 +3196,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 5e701bf · built 2026-10-14 14:54 UTC</span>
+    <span id="verStamp" class="tnum">version: 4b4fbaa · built 2026-10-14 20:15 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -5991,25 +5991,24 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-10-13T11:01:42-07:00",
+    at: "2026-10-14T11:01:40-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
-    price: 4239.99,
+    price: 4199.99,
     // Written by warehouse-inventory/daily_pull.py — see DAILY-PULL.md.
-    // 0 of the 45, keyed on the row carrying the SKU, never the store badge.
-    inStock: [],
-    // 42 of the 45. Stores whose rail rows were truncated were opened and
+    // 10 of the 45, keyed on the row carrying the SKU, never the store badge.
+    inStock: ["antioch", "concord", "danville", "hayward", "livermore", "pleasanton",
+              "richmond", "sanleandro", "sf", "vallejo"],
+    // 32 of the 45. Stores whose rail rows were truncated were opened and
     // read from their own page this run, not carried forward.
-    soldOut: {antioch:"2d", brentwood:"4d", concord:"5d", danville:"3d",
-              fairfield:"5d", fostercity:"4d", fremont:"4d", gilroy:"2m", hayward:"3d",
-              livermore:"5d", lodi:"5d", manteca:"4d", modesto:"2d", mountainview:"4d",
-              newark:"3d", novato:"24d", pleasanton:"4d", ranchocordova:"20d",
-              redwoodcity:"5d", richmond:"3d", riverbank:"4d", rohnertpark:"2m",
-              saccalexpo:"24d", sacnatomas:"4d", sacstockton:"4d", sanleandro:"3d",
-              santaclara:"4d", santacruz:"2d", santarosa:"3d", sf:"4d", sjalmaden:"4d",
-              sjgreatoaks:"5d", sjne:"4d", sjsenter:"4d", ssf:"4d", ssfairport:"2d",
-              stockton:"3d", sunnyvale:"3d", tracy:"4d", vacaville:"25d", vallejo:"2d",
-              woodland:"6d"}
+    soldOut: {brentwood:"5d", fairfield:"6d", fostercity:"5d", fremont:"5d",
+              gilroy:"2m", lodi:"6d", manteca:"5d", modesto:"3d", mountainview:"5d",
+              newark:"4d", novato:"25d", ranchocordova:"21d", redwoodcity:"6d",
+              riverbank:"5d", rohnertpark:"2m", saccalexpo:"25d", sacnatomas:"5d",
+              sacstockton:"5d", santaclara:"5d", santacruz:"3d", santarosa:"4d",
+              sjalmaden:"5d", sjgreatoaks:"6d", sjne:"5d", sjsenter:"5d", ssf:"5d",
+              ssfairport:"3d", stockton:"4d", sunnyvale:"4d", tracy:"5d",
+              vacaville:"26d", woodland:"7d"}
   };
 
   // Turn the snapshot into the same row shape wiRenderNow/wiRenderTable already
@@ -7865,9 +7864,9 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     for(var x=t,n=0;n<3;){x+=864e5;var w=new Date(new Date(x).toLocaleString("en-US",{timeZone:TZ})).getDay();if(w!==0&&w!==6)n++;}
     return (Date.now()>x?'\u26a0 overdue ':'max ')+f(x);
   }
-  function openRow(e,stage,icon,label,t2){
+  function openRow(e,stage,icon,label,t2,nobox){
     return rowHtml({row:stage,cls:' cbr-sub',t2:t2||'',
-      box:'<button type="button" class="cbo-box" data-do="'+stage+'" data-ref="'+e.id+'" data-amt="'+e.amount+'" aria-label="'+label+'"></button>',
+      box:nobox?'<span class="cbo-box0"></span>':'<button type="button" class="cbo-box" data-do="'+stage+'" data-ref="'+e.id+'" data-amt="'+e.amount+'" aria-label="'+label+'"></button>',
       logo:icon,name:label,t1:'<b>\u23f1 '+dur(Date.now()-new Date(e.at).getTime())+'</b>',
       amt:'<div class="amt">'+usd(e.amount)+'</div>'});
   }
@@ -7891,7 +7890,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     // Medi 10-13: Smartly pulls take a few days — measure it. Every sent->landed pair (all players) is evidence;
     // show the usual (median) and slowest, in business days, next to each pending payment.
     st.openAch.forEach(function(e){var g=achLag(),el=bizDays(new Date(e.at).getTime(),Date.now());
-      h+=openRow(e,"ach_landed","\u2705","landed?",g?'usual '+g.med.toFixed(1)+' bd \u00b7 max '+g.max.toFixed(1)+' ('+g.n+')'+(el>g.max?' \u26a0 slower than ever':''):'first one \u2014 tick \u2705 when it lands');});
+      h+=openRow(e,"ach_landed","\u2705","waiting for Plaid",g?'usual '+g.med.toFixed(1)+' bd \u00b7 max '+g.max.toFixed(1)+' ('+g.n+')'+(el>g.max?' \u26a0 slower than ever':''):'first one \u2014 lands by itself when Plaid sees it',1);});
     var mg=S.msg[c]&&Date.now()-S.msg[c].t<12e4?S.msg[c]:null;
     h+='<div class="cbo-msg'+(mg?' '+(mg.bad?'bad':'ok'):'')+'">'+(mg?mg.text:'')+'</div>';
     var mine=S.events.filter(function(e){return e.code===c&&e.stage!=="void"&&!L.voided[e.id];}).slice(-4).reverse();   // Medi 09-29: hide undone rows
@@ -8517,7 +8516,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "5e701bf 2026-10-14 14:54 UTC".indexOf("STAMP") >= 0 ? "dev" : "5e701bf 2026-10-14 14:54 UTC";
+  var GFH_BUILD = "4b4fbaa 2026-10-14 20:15 UTC".indexOf("STAMP") >= 0 ? "dev" : "4b4fbaa 2026-10-14 20:15 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
