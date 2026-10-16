@@ -1253,6 +1253,18 @@ var ELEM_SHEET_DATE = "2026-10-15";   /* GFH_SHEET_DATE */
   .cb-row{display:flex;gap:8px;align-items:center;margin-top:10px}
   .cb-save{background:var(--gold);color:#1a1405;border:0;border-radius:9px;padding:8px 16px;font-weight:700;font-size:13px;cursor:pointer}
   .cb-save:disabled{opacity:.45;cursor:default}
+  /* Add / hide players (Medi 2026-10-15) */
+  .cb-add{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0 0;padding:10px 12px;border:1px dashed var(--line2);border-radius:var(--r);background:var(--panel)}
+  .cb-add b{font-size:13px;color:var(--ink)}
+  .cb-add input{width:92px;box-sizing:border-box;background:var(--bg2);border:1px solid var(--line2);color:var(--ink);border-radius:8px;padding:7px 8px;font:14px var(--mono);letter-spacing:.12em;text-transform:uppercase}
+  .cb-add input.cb-bad{border-color:var(--bad);outline:2px solid var(--bad)}
+  .cb-add i{font-style:normal;font-size:11px;color:var(--ink-mute)}
+  .cb-hide{margin-left:auto;background:none;border:1px solid var(--line2);color:var(--ink-mute);border-radius:9px;padding:7px 10px;font-size:12px;cursor:pointer}
+  .cb-hide:hover{color:var(--ink);border-color:var(--ink-mute)}
+  .cb-hid{margin-top:12px;font-size:12.5px;color:var(--ink-mute)}
+  .cb-hid summary{cursor:pointer}
+  .cb-hid .cb-hr{display:flex;gap:10px;align-items:center;margin:8px 0 0;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+  .cb-hid .cb-hr b{font-family:var(--mono);letter-spacing:.08em;color:var(--ink)}
   .cb-msg{font-size:11.5px;color:var(--ink-mute)}
   .cb-msg.ok{color:var(--good)} .cb-msg.bad{color:var(--bad)}
   .cb-m{border:1px solid var(--line);border-radius:12px;padding:9px 10px;margin:0 0 8px;background:var(--panel2)}
@@ -1986,7 +1998,13 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
       <h4>CB tracker &mdash; settings per person</h4>
       <p class="md"><b>On/Off</b> = does it count toward the numbers. <b>Alarm</b> = does it ping you (e.g. RIN deposits PayPal &amp; Apple Pay herself: on, alarm off). Type each <b>max</b> and when it was <b>last used</b> so every window syncs. PayPal resets <b>24h</b> after a buy &middot; Samsung, GPay &amp; Apple Pay reset <b>7 days</b> after. Floor = USDC always left in Coinbase. Coinbase One = <b>we pay</b> monthly. All times <b>Pacific</b>. Leave blank if you don't know yet.</p>
     </div></div>
+    <div class="cb-add" id="cbAdd"><b>&#10133; Add person</b>
+      <input type="text" id="cbAddCode" maxlength="4" autocomplete="off" spellcheck="false" placeholder="ABC" aria-label="New player initials">
+      <button class="cb-save" type="button" id="cbAddBtn">Add</button>
+      <i>initials only, 2&ndash;4 letters &middot; starts with every method OFF, alarms off, $6,000 floor, no fee</i>
+      <span class="cb-msg" id="cbAddMsg"></span></div>
     <div class="cb-grid" id="cbGrid"><div class="cb-soon">Loading&hellip;</div></div>
+    <details class="cb-hid" id="cbHidden" hidden><summary></summary><div id="cbHiddenList"></div></details>
     <div class="cb-soon">Coming next on this tab: our Taekus balance at the top (from Sabz) &middot; stuck-step timers &middot; ntfy alarms (quiet 12&ndash;8 AM).</div>
     </div>
   </div>
@@ -3196,7 +3214,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: f0b839a · built 2026-10-15 18:30 UTC</span>
+    <span id="verStamp" class="tnum">version: 3f4336a · built 2026-10-16 05:11 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -5995,23 +6013,23 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-10-15T11:01:42-07:00",
+    at: "2026-10-15T21:39:40-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
     price: 4219.99,
     // Written by warehouse-inventory/daily_pull.py — see DAILY-PULL.md.
-    // 30 of the 45, keyed on the row carrying the SKU, never the store badge.
-    inStock: ["antioch", "brentwood", "danville", "fairfield", "fostercity", "fremont",
-              "livermore", "lodi", "manteca", "modesto", "mountainview", "pleasanton",
-              "richmond", "riverbank", "sacnatomas", "sacstockton", "sanleandro",
+    // 22 of the 45, keyed on the row carrying the SKU, never the store badge.
+    inStock: ["antioch", "danville", "fairfield", "fostercity", "lodi", "manteca",
+              "modesto", "riverbank", "sacnatomas", "sacstockton", "sanleandro",
               "santaclara", "santacruz", "santarosa", "sjalmaden", "sjgreatoaks",
-              "sjne", "ssf", "ssfairport", "stockton", "sunnyvale", "tracy", "vallejo",
-              "woodland"],
-    // 12 of the 45. Stores whose rail rows were truncated were opened and
+              "sjne", "ssfairport", "stockton", "sunnyvale", "vallejo", "woodland"],
+    // 20 of the 45. Stores whose rail rows were truncated were opened and
     // read from their own page this run, not carried forward.
-    soldOut: {concord:"today", gilroy:"2m", hayward:"today", newark:"today",
-              novato:"26d", ranchocordova:"22d", redwoodcity:"today", rohnertpark:"2m",
-              saccalexpo:"26d", sf:"today", sjsenter:"today", vacaville:"27d"}
+    soldOut: {brentwood:"today", concord:"1d", fremont:"today", gilroy:"2m",
+              hayward:"1d", livermore:"today", mountainview:"today", newark:"today",
+              novato:"27d", pleasanton:"today", ranchocordova:"23d", redwoodcity:"1d",
+              richmond:"today", rohnertpark:"2m", saccalexpo:"27d", sf:"today",
+              sjsenter:"1d", ssf:"today", tracy:"today", vacaville:"28d"}
   };
 
   // Turn the snapshot into the same row shape wiRenderNow/wiRenderTable already
@@ -7551,15 +7569,26 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
        row('cb_'+c+'_cb1_monthly','Coinbase One / month','we pay it',inp('cb_'+c+'_cb1_monthly','cb1_monthly',dollars(r.cb1_monthly),"$"))+
        row('cb_'+c+'_cb1_start','Coinbase One started','Pacific time',inp('cb_'+c+'_cb1_start','cb1_start',toLocalInput(r.cb1_start),"dt"))+
        '<p class="cb-nx cb-c1">'+nxHtml(r.cb1_start)+'</p></div>';
-    h+='<div class="cb-row"><button class="cb-save" type="button">Save '+c+'</button><span class="cb-msg"></span></div></div>';
+    h+='<div class="cb-row"><button class="cb-save" type="button">Save '+c+'</button><span class="cb-msg"></span><button class="cb-hide" type="button" data-hide="'+c+'" title="Hide from every view - history is kept">&#128584; Hide</button></div></div>';
     return h;
   }
-  var loaded=false;
+  var loaded=false,ALL=[];
+  function hiddenList(rows){
+    var box=document.getElementById("cbHidden"),list=document.getElementById("cbHiddenList");if(!box||!list)return;
+    box.hidden=!rows.length;box.querySelector("summary").textContent="Hidden players ("+rows.length+") · history kept";
+    list.innerHTML=rows.map(function(r){return '<div class="cb-hr"><b>'+esc(r.code)+'</b><span>hidden '+fmt(new Date(r.hidden_at))+'</span><button class="cb-hide" type="button" data-unhide="'+esc(r.code)+'">&#128064; Un-hide</button><span class="cb-msg"></span></div>';}).join("");
+  }
   function load(){
     var g=document.getElementById("cbGrid");if(!g)return;loaded=true;
     fetch(URL_+"/rest/v1/cb_people?select=*&order=sort_order",{headers:H()}).then(function(r){
       if(!r.ok)throw new Error(r.status);return r.json();
-    }).then(function(rows){g.innerHTML=rows.map(card).join("");feeChip();}).catch(function(){
+    }).then(function(rows){
+      ALL=rows;
+      // Medi 10-15: hidden players leave every view; their rows + history stay in the database.
+      var vis=rows.filter(function(r){return !r.hidden_at;});
+      g.innerHTML=vis.length?vis.map(card).join(""):'<div class="cb-soon">No players yet &mdash; add one above.</div>';
+      hiddenList(rows.filter(function(r){return r.hidden_at;}));feeChip();
+    }).catch(function(){
       loaded=false;g.innerHTML='<div class="cb-soon">Couldn\'t reach the database. Check your connection and reload.</div>';
     });
   }
@@ -7679,6 +7708,46 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     }).catch(function(){b.disabled=false;b.textContent="Not saved — tap again";});
   });
   setInterval(function(){document.querySelectorAll("#cbGrid .cb-card").forEach(refreshFee);},60000);
+  /* ➕ Add person (Medi 2026-10-15): initials only; every other field = the defaults a new
+     player starts with (methods OFF, alarms off, $6,000 USDC floor, no fee). Plain INSERT -
+     never an upsert, so it can't overwrite an existing player. Logged like every edit. */
+  function addPerson(){
+    var i=document.getElementById("cbAddCode"),b=document.getElementById("cbAddBtn"),msg=document.getElementById("cbAddMsg");
+    var code=i.value.trim().toUpperCase();i.value=code;i.classList.remove("cb-bad");
+    function stop(t){i.classList.add("cb-bad");msg.className="cb-msg bad";msg.textContent="⚠ NOT ADDED — "+t;i.focus();}
+    if(!/^[A-Z]{2,4}$/.test(code)){stop("initials only: 2 to 4 letters (e.g. ABC).");return;}
+    var dup=ALL.filter(function(r){return r.code===code;})[0];
+    if(dup){stop(code+" already exists"+(dup.hidden_at?" (hidden) — un-hide it below.":"."));return;}
+    var rec={code:code,sort_order:ALL.reduce(function(m,r){return Math.max(m,+r.sort_order||0);},0)+1,
+      usdc_floor:6000,cb1_monthly:300,fee_on:false,fee_alarm:false,updated_at:new Date().toISOString(),updated_by:"medi"};
+    METHODS.forEach(function(m){rec[m[0]+"_on"]=false;rec[m[0]+"_alarm"]=false;});
+    b.disabled=true;msg.className="cb-msg";msg.textContent="Adding…";
+    fetch(URL_+"/rest/v1/cb_people",{method:"POST",headers:H({Prefer:"return=minimal"}),body:JSON.stringify(rec)})
+    .then(function(r){
+      if(r.status===409)throw new Error("dup");if(!r.ok)throw new Error(r.status);
+      var log={};for(var k in rec)if(k!=="sort_order")log[k]=rec[k];log.note="person added";  // log has no sort_order column
+      fetch(URL_+"/rest/v1/cb_people_log",{method:"POST",headers:H({Prefer:"return=minimal"}),body:JSON.stringify(log)}).catch(function(){});
+      i.value="";msg.className="cb-msg ok";msg.textContent="✓ "+code+" added — turn on their methods below and type each max.";
+      load();document.dispatchEvent(new CustomEvent("cb:changed"));
+    }).catch(function(e){stop(e.message==="dup"?code+" already exists.":"couldn't reach the database — try again.");})
+    .then(function(){b.disabled=false;});
+  }
+  var ab=document.getElementById("cbAddBtn");if(ab)ab.addEventListener("click",addPerson);
+  var ai=document.getElementById("cbAddCode");if(ai)ai.addEventListener("keydown",function(ev){if(ev.key==="Enter"){ev.preventDefault();addPerson();}});
+  /* 🙈 Hide / 👀 Un-hide: PATCH hidden_at only (never touches unsaved edits), logged. */
+  document.addEventListener("click",function(ev){
+    var b=ev.target.closest&&ev.target.closest("[data-hide],[data-unhide]");if(!b||!b.closest("#tab-cb"))return;
+    var hide=b.hasAttribute("data-hide"),code=b.getAttribute(hide?"data-hide":"data-unhide"),msg=b.parentNode.querySelector(".cb-msg");
+    if(hide&&!confirm("Hide "+code+"?\n\nThey disappear from Overview, Calculations and the Taekus load list. Nothing is deleted — every past deposit and fee stays, and you can un-hide anytime (bottom of Settings)."))return;
+    var at=hide?new Date().toISOString():null;
+    b.disabled=true;
+    fetch(URL_+"/rest/v1/cb_people?code=eq."+encodeURIComponent(code),{method:"PATCH",headers:H({Prefer:"return=minimal"}),body:JSON.stringify({hidden_at:at,updated_at:new Date().toISOString(),updated_by:"medi"})})
+    .then(function(r){
+      if(!r.ok)throw new Error(r.status);
+      fetch(URL_+"/rest/v1/cb_people_log",{method:"POST",headers:H({Prefer:"return=minimal"}),body:JSON.stringify({code:code,hidden_at:at,note:hide?"person hidden":"person un-hidden",updated_by:"medi"})}).catch(function(){});
+      load();document.dispatchEvent(new CustomEvent("cb:changed"));
+    }).catch(function(){b.disabled=false;if(msg){msg.className="cb-msg bad";msg.textContent="Not saved — try again.";}});
+  });
   var btn=document.getElementById("tabBtnCb");
   if(btn)btn.addEventListener("click",function(){if(!loaded)load();});
   // Load on page open (not just on tab click) so the fee chip shows from any tab.
@@ -7721,7 +7790,8 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   function load(){
     return Promise.all([get("cb_people?select=*&order=sort_order"),get("cb_events?select=*&order=at.asc,id.asc"),get("cb_rewards_history?select=*&order=swipe_at"),get("cb_taekus?select=*&order=at.asc,id.asc"),get("cb_people_log?select=code,fee_paid_for&note=eq.fee%20marked%20paid&order=id"),
         get("cb_taekus_feed?select=card,balance,as_of,created_at,txns,source&order=id.desc&limit=40").catch(function(){return [];})])
-    .then(function(a){S.people=a[0];S.events=a[1];S.hist=a[2];S.tk=a[3];S.feePaid=a[4]||[];S.feed=a[5]||[];render();})
+    // Medi 10-15: hidden players (hidden_at) leave every view + projection; S.all keeps them for past costs.
+    .then(function(a){S.all=a[0];S.people=a[0].filter(function(p){return !p.hidden_at;});S.events=a[1];S.hist=a[2];S.tk=a[3];S.feePaid=a[4]||[];S.feed=a[5]||[];render();})
     .catch(function(){var o=document.getElementById("cbOv");if(o)o.innerHTML='<div class="cb-soon">Couldn’t reach the database. Check your connection and reload.</div>';});
   }
 
@@ -7784,8 +7854,11 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     var r={total:0,ytd:0,last:0,taekus:0,hamed:0,tick8010:0,cb1:0,cb1ytd:0,cb1last:0,L:L,rw:rw,nowMs:nowMs};
     rw.forEach(function(x){var t=new Date(x.at).getTime();if(t>nowMs)return;r.total+=x.amt;if(t>=yStart)r.ytd+=x.amt;if(t>=lmStart&&t<mStart)r.last+=x.amt;r[x.src]+=x.amt;});
     var proj={gross:0,cost:0,net:0,missing:[]};
-    S.people.forEach(function(p){
-      r.cb1+=cb1Charges(p,0,nowMs)+feeSum(p,0,nowMs);r.cb1ytd+=cb1Charges(p,yStart,nowMs)+feeSum(p,yStart,nowMs);r.cb1last+=cb1Charges(p,lmStart,mStart-1)+feeSum(p,lmStart,mStart-1);
+    (S.all||S.people).forEach(function(p){
+      // A hidden player's Coinbase One stops counting the day they were hidden; past charges stay.
+      var end=p.hidden_at?Math.min(nowMs,new Date(p.hidden_at).getTime()):nowMs,lmEnd=Math.min(mStart-1,end);
+      r.cb1+=cb1Charges(p,0,end)+feeSum(p,0,end);r.cb1ytd+=cb1Charges(p,yStart,end)+feeSum(p,yStart,end);r.cb1last+=cb1Charges(p,lmStart,lmEnd)+feeSum(p,lmStart,lmEnd);
+      if(p.hidden_at)return;
       var c=ceiling(p);proj.gross+=c.gross;proj.cost+=c.cost;proj.net+=c.net;c.missing.forEach(function(m){proj.missing.push(p.code+" "+m);});
     });
     r.proj=proj;r.lastName=new Intl.DateTimeFormat("en-US",{month:"long",timeZone:"UTC"}).format(new Date(Date.UTC(ly[0],ly[1]-1,15)));
@@ -8519,7 +8592,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "f0b839a 2026-10-15 18:30 UTC".indexOf("STAMP") >= 0 ? "dev" : "f0b839a 2026-10-15 18:30 UTC";
+  var GFH_BUILD = "3f4336a 2026-10-16 05:11 UTC".indexOf("STAMP") >= 0 ? "dev" : "3f4336a 2026-10-16 05:11 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
