@@ -3214,7 +3214,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 3f4336a · built 2026-10-16 05:11 UTC</span>
+    <span id="verStamp" class="tnum">version: d834815 · built 2026-10-16 05:24 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7505,7 +7505,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   function parseDollars(v){v=String(v||"").replace(/[$,\s]/g,"");if(v==="")return null;return isNaN(+v)||+v<0?NaN:+v;}
   function dur(ms){var m=Math.round(ms/6e4),h=Math.floor(m/60),d=Math.floor(h/24);return d?d+"d "+(h%24)+"h":h?h+"h "+(m%60)+"m":m+"m";}
   function reopenHtml(lastIso,hours){
-    if(!lastIso)return '<span class="cb-st none">No last-used time &mdash; enter it to sync</span>';
+    if(!lastIso)return '<span class="cb-st none">Never used yet</span> &middot; optional &mdash; your first tick in Overview sets it';  // Medi 10-15: last used is optional
     var at=new Date(new Date(lastIso).getTime()+hours*36e5),left=at.getTime()-Date.now();
     return left<=0?'<span class="cb-st open">OPEN NOW</span> since '+fmt(at)
                   :'<span class="cb-st wait">opens in '+dur(left)+'</span> &middot; '+fmt(at);
@@ -7550,7 +7550,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
          '<label class="cb-sw"><input type="checkbox" data-f="'+k+'_on"'+(on?' checked':'')+'><span class="tr"></span><b>'+m[1]+'</b><em>'+(on?'on':'off')+'</em></label>'+
          '<div class="cb-mb">'+alarmSw(k+'_alarm',r[k+'_alarm']!==false)+
            row('cb_'+c+'_'+k+'_limit','Max',m[3],inp('cb_'+c+'_'+k+'_limit',k+'_limit',dollars(r[k+"_limit"]),"$"))+
-           row('cb_'+c+'_'+k+'_last','Last used','Pacific time',inp('cb_'+c+'_'+k+'_last',k+'_last',toLocalInput(r[k+"_last"]),"dt"))+
+           row('cb_'+c+'_'+k+'_last','Last used','optional &middot; Pacific',inp('cb_'+c+'_'+k+'_last',k+'_last',toLocalInput(r[k+"_last"]),"dt"))+
            '<p class="cb-nx cb-re">'+reopenHtml(r[k+"_last"],m[2])+'</p>'+
          '</div></div>';
     });
@@ -7593,7 +7593,8 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     });
   }
   // Remember that a date box was typed in; a complete value clears the flag.
-  document.addEventListener("keydown",function(ev){var t=ev.target;if(t.type==="datetime-local"&&t.closest&&t.closest("#cbGrid"))t.dataset.typed="1";});
+  // Only keys that EDIT count (Tab/arrows passing through an empty box must not block Save - Medi 10-15).
+  document.addEventListener("keydown",function(ev){var t=ev.target;if(t.type==="datetime-local"&&t.closest&&t.closest("#cbGrid")&&(ev.key.length===1||ev.key==="Backspace"||ev.key==="Delete"))t.dataset.typed="1";});
   document.addEventListener("input",function(ev){var t=ev.target;if(t.type==="datetime-local"&&t.value){t.dataset.typed="";t.classList.remove("cb-bad");}});
   // Live "$6,500" formatting as you type (keeps the caret at the end - simple + safe).
   document.addEventListener("input",function(ev){
@@ -7636,7 +7637,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
         // saving it would wipe the stored date. Refuse and point at the box instead.
         // badInput is not reliable across browsers, so also treat "you typed in it
         // but it reads empty" as half-finished. Never silently wipe a stored date.
-        if(i.value===""&&((i.validity&&i.validity.badInput)||i.dataset.typed==="1")){partial.push(i);return;}
+        if(i.value===""&&((i.validity&&i.validity.badInput)||(i.dataset.typed==="1"&&i.dataset.orig))){partial.push(i);return;}  // empty + nothing stored = optional, save blank
         if(i.value===""&&i.dataset.orig&&!confirm(c.dataset.code+": clear this date? (Cancel keeps "+fmt(new Date(i.dataset.orig))+")")){rec[f]=i.dataset.orig;return;}
         rec[f]=fromLocalInput(i.value);
       }
@@ -8592,7 +8593,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "3f4336a 2026-10-16 05:11 UTC".indexOf("STAMP") >= 0 ? "dev" : "3f4336a 2026-10-16 05:11 UTC";
+  var GFH_BUILD = "d834815 2026-10-16 05:24 UTC".indexOf("STAMP") >= 0 ? "dev" : "d834815 2026-10-16 05:24 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
