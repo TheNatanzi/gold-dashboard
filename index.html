@@ -1434,6 +1434,12 @@ var ELEM_SHEET_DATE = "2026-10-17";   /* GFH_SHEET_DATE */
   .tkw .cbo-box{width:30px;height:30px;padding:0;justify-content:center} .tkw .cbo-box::before{width:15px;height:15px}
   .tkw input{width:100%;box-sizing:border-box;background:var(--bg2);border:1px solid var(--line2);color:var(--ink);border-radius:8px;padding:6px 7px;font:13px var(--mono);text-align:right}
   .tkw .cbr-bar{margin:0}
+  .cbo-pend{border:2px solid var(--bad);border-radius:var(--r);padding:10px 12px;margin:8px 0 4px;background:var(--panel)}
+  .cbo-pend b{color:var(--bad);font-size:13.5px}
+  .cbo-pr{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px;font-size:12.5px;color:var(--ink)}
+  .cbo-pr span{flex:1 1 220px}
+  .cbo-psave{background:var(--bad);color:#fff;border:0;border-radius:8px;padding:7px 12px;font-weight:700;cursor:pointer}
+  .cbo-pdrop{background:none;border:1px solid var(--line2);color:var(--ink-mute);border-radius:8px;padding:6px 10px;cursor:pointer}
   .cbo-amt.short,.cbo-amt.short:disabled{color:var(--bad)!important;border-color:var(--bad)!important;font-weight:700}
   .cbr.wait .cbo-amt.short{opacity:1!important}
   .tkc-sec{font:700 10px var(--mono);letter-spacing:.08em;color:var(--ink-mute);text-transform:uppercase;margin:8px 0 2px}
@@ -3214,7 +3220,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 4dacd89 · built 2026-10-17 20:45 UTC</span>
+    <span id="verStamp" class="tnum">version: e161db2 · built 2026-10-17 20:46 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7985,7 +7991,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     // Medi 09-29: GPay/Apple Pay spend from HIS 8010 -> amounts over its balance show red.
     S.tkBal=null;TK_CARDS.forEach(function(c){if(c.bal){var t=tkState(c).total;if(t!=null)S.tkBal=t;}});
     renderCalc(r);
-    o.innerHTML='<div class="cbo-sec">Where the money is now</div><div class="cbo-tiles">'+
+    o.innerHTML=pendBar()+'<div class="cbo-sec">Where the money is now</div><div class="cbo-tiles">'+
       tile("In Coinbase",agg.inCB,"all players")+tile("Withdrawing to banks",agg.wd,"sent, not landed")+
       tile("In bank accounts",agg.bank,"landed, not sent to Taekus")+tile("ACH to Taekus",agg.ach,"sent, not landed")+'</div>'+
       '<div class="cbo-sec">Taekus loads</div><div class="tkg">'+TK_CARDS.map(tkBar).join("")+'</div>'+
@@ -8225,6 +8231,38 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     }).catch(function(){});
   }
   function say(code,text,bad){S.msg[code]={t:Date.now(),text:text,bad:!!bad};render();}
+  /* SAFETY NET (Medi 10-17: a MED GPay tick vanished - the phone reloaded before it was sent).
+     Every tick is kept on THIS device until the database confirms it. Anything still waiting
+     shows as a red bar on Overview with Save now / Discard - a tick can never vanish silently. */
+  var PEND_KEY="alchemy_cb_pending";
+  function pendGet(){try{return JSON.parse(localStorage.getItem(PEND_KEY)||"[]")||[];}catch(e){return [];}}
+  function pendSet(a){try{a.length?localStorage.setItem(PEND_KEY,JSON.stringify(a)):localStorage.removeItem(PEND_KEY);}catch(e){}}
+  function pendAdd(rec){var a=pendGet();rec.pid=Date.now()+"-"+Math.random().toString(36).slice(2,7);a.push(rec);pendSet(a);return rec.pid;}
+  function pendDrop(pid){pendSet(pendGet().filter(function(x){return x.pid!==pid;}));}
+  // Already in the database (saved, but the answer never came back)? Same who/what/amount/time = drop it.
+  function pendClean(){
+    var a=pendGet(),b=a.filter(function(x){return !S.events.some(function(e){return e.code===x.code&&e.stage===x.stage&&(e.method||null)===(x.method||null)&&Math.abs((+e.amount||0)-(+x.amount||0))<0.005&&new Date(e.at).getTime()===new Date(x.at).getTime();});});
+    if(b.length!==a.length)pendSet(b);return b;
+  }
+  function pendBar(){
+    var a=pendClean();if(!a.length)return '';
+    return '<div class="cbo-pend"><b>⚠ '+a.length+' tick'+(a.length>1?'s':'')+' never reached the database</b>'+a.map(function(x){
+      return '<div class="cbo-pr"><span>'+x.code+' · '+(STAGE[x.stage]||x.stage)+(x.method&&M[x.method]?' · '+M[x.method][0]:'')+' · '+usd(x.amount)+' · '+fmt(x.at)+'</span>'+
+        '<button type="button" class="cbo-psave" data-pid="'+x.pid+'">Save now</button><button type="button" class="cbo-pdrop" data-pid="'+x.pid+'">Discard</button></div>';}).join("")+'</div>';
+  }
+  document.addEventListener("click",function(ev){
+    var b=ev.target.closest&&ev.target.closest(".cbo-psave,.cbo-pdrop");if(!b)return;
+    var x=pendGet().filter(function(y){return y.pid===b.dataset.pid;})[0];if(!x){render();return;}
+    if(b.classList.contains("cbo-pdrop")){if(confirm("Discard "+x.code+" "+(STAGE[x.stage]||x.stage)+" "+usd(x.amount)+"? It was never saved."))pendDrop(x.pid);render();return;}
+    b.disabled=true;b.textContent="Saving…";
+    var rec={};for(var k in x)if(k!=="pid")rec[k]=x[k];
+    post(rec).then(function(rows){
+      pendDrop(x.pid);S.events=S.events.concat(rows);
+      var p=S.people.filter(function(y){return y.code===rec.code;})[0];
+      if(rec.stage==="deposit"&&p&&(!p[rec.method+"_last"]||new Date(p[rec.method+"_last"]).getTime()<new Date(rec.at).getTime()))setLast(rec.code,rec.method,rec.at);
+      say(rec.code,"✓ saved "+STAGE[rec.stage]+" "+usd(rec.amount));
+    }).catch(function(){b.disabled=false;b.textContent="Save now";alert("Still can't reach the database — check your signal and try again.");});
+  });
   document.addEventListener("input",function(ev){
     var t=ev.target,row=t.closest&&t.closest(".cbr[data-row=deposit]"),any=t.closest&&t.closest(".cbr");
     if(any&&t.classList.contains("cbo-amt")){var card0=any.closest(".cbo-p");if(card0){var v0=parseDollars(t.value),key=card0.dataset.p+"|"+(any.dataset.m||any.dataset.row);if(v0>0)S.typed[key]=v0;else delete S.typed[key];}}
@@ -8256,7 +8294,9 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
       }
     }
     b.disabled=true;b.classList.add("done");
+    var pid=rec.stage==="void"?null:pendAdd(JSON.parse(JSON.stringify(rec)));
     post(rec).then(function(rows){
+      if(pid)pendDrop(pid);
       S.events=S.events.concat(rows);delete S.when[code];
       if(rec.stage!=="void")delete S.typed[code+"|"+(rec.method||rec.stage)];
       say(code,rec.stage==="void"?"\u21b6 undone":"\u2713 "+STAGE[rec.stage]+" "+usd(rec.amount)+" \u00b7 "+fmt(rec.at).replace(/^\w+, /,""));
@@ -8265,7 +8305,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
       if(undone&&undone.stage==="deposit"&&p&&p[undone.method+"_last"]&&new Date(p[undone.method+"_last"]).getTime()===new Date(undone.at).getTime()){
         var m=/^prev_last=(.*)$/.exec(undone.note||"");if(m)setLast(code,undone.method,m[1]||null);
       }
-    }).catch(function(){b.disabled=false;b.classList.remove("done");say(code,"\u26a0 not saved \u2014 tap again",1);});
+    }).catch(function(){if(pid)pendDrop(pid);b.disabled=false;b.classList.remove("done");say(code,"\u26a0 not saved \u2014 tap again",1);});
   });
 
   /* ---- sub-tabs (scoped to #tab-cb; own storage key) ---- */
@@ -8293,7 +8333,8 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   document.addEventListener("cb:changed",load);
   var tb=document.getElementById("tabBtnCb");if(tb)tb.addEventListener("click",function(){var pn=document.getElementById("cbsub-ov"),pc=document.getElementById("cbsub-calc");if((pn&&!pn.hidden)||(pc&&!pc.hidden))load();});
   // Keep countdowns / "x ago" honest (skip while Medi is typing in a box).
-  setInterval(function(){var a=document.activeElement;if(a&&a.closest&&a.closest("#cbOv"))return;var pn=document.getElementById("cbsub-ov"),pc=document.getElementById("cbsub-calc");if(((pn&&!pn.hidden)||(pc&&!pc.hidden))&&S.people.length)render();},60000);
+  var lastTouch=0;document.addEventListener("pointerdown",function(ev){if(ev.target.closest&&ev.target.closest("#cbOv"))lastTouch=Date.now();},true);
+  setInterval(function(){var a=document.activeElement;if(a&&a.closest&&a.closest("#cbOv"))return;if(Date.now()-lastTouch<4000)return;var pn=document.getElementById("cbsub-ov"),pc=document.getElementById("cbsub-calc");if(((pn&&!pn.hidden)||(pc&&!pc.hidden))&&S.people.length)render();},60000);
   window.__cbOv={tkState:tkState,S:S,money:money,stages:stages,live:live,ceiling:ceiling,render:render,load:load};
 }();
 </script>
@@ -8593,7 +8634,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "4dacd89 2026-10-17 20:45 UTC".indexOf("STAMP") >= 0 ? "dev" : "4dacd89 2026-10-17 20:45 UTC";
+  var GFH_BUILD = "e161db2 2026-10-17 20:46 UTC".indexOf("STAMP") >= 0 ? "dev" : "e161db2 2026-10-17 20:46 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
