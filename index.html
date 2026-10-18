@@ -1362,7 +1362,7 @@ var ELEM_SHEET_DATE = "2026-10-17";   /* GFH_SHEET_DATE */
   .cbr .amt{font:13px var(--mono);text-align:right;color:var(--ink);padding-right:9px}
   .cbr .cbr-u,.cbr .cbr-u0{grid-area:undo}
   .cbr-u{background:none;border:1px solid var(--line2);color:var(--ink-soft);border-radius:8px;width:30px;height:30px;padding:0;font-size:15px;cursor:pointer}
-  .cbr.dim{opacity:.4} .cbr.mute{opacity:.45}
+  .cbr.dim{opacity:.4} .cbr.mute>*:not(.cbo-box){opacity:.45}
   /* Medi 09-29: window not reset yet = row grayed, but the bar + ⏳ timer stay full color. */
   .cbr.wait:not(.mute)>*:not(.cbr-t):not(.cbr-bar),.cbr.wait:not(.mute) .cbr-t>span{opacity:.4}
   .cbr.dim .cbr-n{align-self:center} .cbr.dim .cbr-nobar,.cbr-sub .cbr-nobar{display:none}
@@ -3220,7 +3220,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: e161db2 · built 2026-10-17 20:46 UTC</span>
+    <span id="verStamp" class="tnum">version: d52f790 · built 2026-10-18 00:04 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7926,7 +7926,8 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
       (!first&&!u.last)?'<b>\u2014</b>':'<b class="go">\u2713 '+(part?k$(u.avail)+' left':'open')+'</b>';
     var t2=!first?'':open?'\u23f3 +'+k$(first.a)+' '+tf(frees):RESET+' +'+k$(famt)+' '+tf(frees);
     return rowHtml({row:"deposit",m:k,cls:(open?'':' wait')+(mute?' mute':''),title:(mute?'Alarm off \u2014 they deposit this themselves. ':'')+(u.ds.length?'Used this window: '+u.ds.map(function(d){return usd(d.a)+' '+tf(d.t);}).join(', '):''),
-      box:mute?'<span class="cbo-box0"></span>':'<button type="button" class="cbo-box" data-do="deposit" aria-label="Deposit '+M[k][0]+'"></button>',
+      // Medi 10-17: alarm OFF only stops the ping - he still ticks when they deposit themselves (RIN Apple Pay).
+      box:'<button type="button" class="cbo-box" data-do="deposit" aria-label="Deposit '+M[k][0]+'"></button>',
       logo:ICON[k],name:({samsung:"Samsung",applepay:"Apple"}[k]||M[k][0])+(mute?' <em class="cbr-mute">\ud83d\udd15</em>':''),
       t1:t1,t2:t2,
       bar:pbar(lim>0?(u.avail||0)/lim:(open?1:0),open&&!part),
@@ -8634,7 +8635,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "e161db2 2026-10-17 20:46 UTC".indexOf("STAMP") >= 0 ? "dev" : "e161db2 2026-10-17 20:46 UTC";
+  var GFH_BUILD = "d52f790 2026-10-18 00:04 UTC".indexOf("STAMP") >= 0 ? "dev" : "d52f790 2026-10-18 00:04 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
