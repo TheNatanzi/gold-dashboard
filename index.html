@@ -1465,6 +1465,16 @@ var ELEM_SHEET_DATE = "2026-10-17";   /* GFH_SHEET_DATE */
     .tkw>:nth-child(1){grid-area:x}.tkw>:nth-child(2){grid-area:lg}.tkw>:nth-child(3){grid-area:nm}
     .tkw>:nth-child(4){grid-area:t1;text-align:left}.tkw>:nth-child(5){grid-area:t2}.tkw>:nth-child(6){display:none}
     .tkw>:nth-child(7){grid-area:a}.tkw>:nth-child(8){grid-area:u}.tkw.hd{display:none}
+    /* Medi 10-18: opens + load-by ran into each other on the phone -> two lines per window:
+       logo | who ........ amount  /  opens -> load by .... timer */
+    .tkn{grid-template-columns:22px auto auto minmax(0,1fr);grid-template-areas:"lg nm nm a" "lg o b t";row-gap:1px;padding:5px 0}
+    .tkn>:nth-child(1){grid-area:lg;align-self:start}.tkn>:nth-child(2){grid-area:nm}
+    .tkn>:nth-child(3){grid-area:o;text-align:left}.tkn>:nth-child(4){grid-area:b;text-align:left}
+    .tkn>:nth-child(4)::before{content:"\2192  ";color:var(--ink-mute)}
+    .tkn>:nth-child(5){grid-area:t}.tkn>:nth-child(6){grid-area:a}
+    .tkn>:only-child,.tkn>:nth-child(2):last-child{grid-area:nm}
+    /* Balance + its edit/undo buttons poked into "Next load" -> 2 stats per line on the phone. */
+    .tkg .tkc-h{grid-template-columns:repeat(2,minmax(0,1fr))}
   }
   .cbo-msg{font-size:11.5px;color:var(--ink-mute);min-height:14px} .cbo-msg.bad{color:var(--bad)} .cbo-msg.ok{color:var(--good)}
   .cb-gen{border-top:1px solid var(--line);margin-top:6px;padding-top:6px}
@@ -3220,7 +3230,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: d52f790 · built 2026-10-18 00:04 UTC</span>
+    <span id="verStamp" class="tnum">version: 3c63e3c · built 2026-10-18 08:24 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -8635,7 +8645,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "d52f790 2026-10-18 00:04 UTC".indexOf("STAMP") >= 0 ? "dev" : "d52f790 2026-10-18 00:04 UTC";
+  var GFH_BUILD = "3c63e3c 2026-10-18 08:24 UTC".indexOf("STAMP") >= 0 ? "dev" : "3c63e3c 2026-10-18 08:24 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
