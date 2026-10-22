@@ -3232,7 +3232,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 00d3821 · built 2026-10-22 21:42 UTC</span>
+    <span id="verStamp" class="tnum">version: df15473 · built 2026-10-22 21:45 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -8173,24 +8173,6 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   function tkState(c){
     var T=tkLive(c.id),bal=null,t0=0,now=Date.now(),lag=loadLag();
     var balRow=null;T.rows.forEach(function(r){if(r.kind==="balance"){bal=+r.amount;t0=new Date(r.at).getTime();balRow=r;}});
-    var landedRows=T.rows.filter(function(r){return r.kind==="load_landed";}).slice(-3);
-    var landedAmt=0,swipes=0,open=[],transit=0;
-    T.rows.forEach(function(r){var t=new Date(r.at).getTime();
-      if(r.kind==="load_landed"&&t>=t0)landedAmt+=+r.amount||0;
-      if(r.kind==="load_sent"&&!T.landed[r.id]){open.push(r);transit+=+r.amount||0;}});
-    live().ev.forEach(function(e){if(e.stage==="deposit"&&c.methods.indexOf(e.method)>=0&&new Date(e.at).getTime()>=t0)swipes+=+e.amount||0;});
-    var total=c.bal&&bal!=null?bal+landedAmt-swipes:null;
-    var wins=[];
-    S.people.forEach(function(p){c.methods.forEach(function(k){
-      if(p[k+"_on"]===false)return;var lim=+p[k+"_limit"];if(!(lim>0))return;
-      // rolling (Medi 10-08): what's free now, then each window deposit frees again one window later, repeating.
-      var u=winUse(p,k),h=u.H,slots=[];if(u.avail>0)slots.push({at:now,amt:u.avail});
-      u.ds.forEach(function(d){slots.push({at:Math.max(now,d.t+h),amt:d.a});});
-      slots.forEach(function(sl){for(var at=sl.at;at<now+7*DAY;at+=h)if(sl.amt>0)wins.push({at:at,amt:sl.amt,who:p.code,k:k,by:loadBy(at,lag)});});
-    });});
-    wins.sort(function(a,b){return a.at-b.at;});
-    var have=c.bal?Math.max(0,total||0)+transit:0,need=0,next=null;
-    wins.forEach(function(w){var cover=Math.min(have,w.amt);have-=cover;w.short=w.amt-cover;need+=w.short;if(w.short>0&&!next)next=w;});
     // Auto-check (Medi 09-29): SimpleFIN's 8010 balance vs our math at the same moment. A gap = money that
     // moved without a tick (e.g. RIN's alarm-off Apple Pay). Only when the typed balance is older than the snapshot.
     var feed=null,f=c.bal&&(S.feed||[]).filter(function(x){return x.card===c.id;})[0];
@@ -8210,7 +8192,30 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
       live().ev.forEach(function(e){var t=new Date(e.at).getTime();if(e.stage==="deposit"&&c.methods.indexOf(e.method)>=0&&t>since&&t<cut)miss+=+e.amount||0;});
       T.rows.forEach(function(r){var t=new Date(r.at).getTime();if(r.kind==="load_sent"&&t>since&&t<cut)miss+=+r.amount||0;});
       if(miss>0)feed={src:f.source,stuck:1,since:since,miss:miss,bal:+f.balance,at:fa};}
-    return {balRow:balRow,landedRows:landedRows,total:total,t0:t0,open:open,transit:transit,need:need,next:next,wins:wins,lag:lag,feed:feed};
+    // ONE source for the balance (2026-10-22): the bank feed (cb_taekus_feed, pushed from the money DB) is the
+    // anchor whenever its snapshot is newer than the last typed balance and it is not STUCK. A typed balance
+    // only anchors when it is newer than the feed, or the feed is stuck/missing (offline fallback).
+    var anchor="typed";
+    if(f&&!(feed&&feed.stuck)&&new Date(f.as_of).getTime()>t0){bal=+f.balance;t0=new Date(f.as_of).getTime();anchor="feed";}
+    var landedRows=T.rows.filter(function(r){return r.kind==="load_landed";}).slice(-3);
+    var landedAmt=0,swipes=0,open=[],transit=0;
+    T.rows.forEach(function(r){var t=new Date(r.at).getTime();
+      if(r.kind==="load_landed"&&t>=t0)landedAmt+=+r.amount||0;
+      if(r.kind==="load_sent"&&!T.landed[r.id]){open.push(r);transit+=+r.amount||0;}});
+    live().ev.forEach(function(e){if(e.stage==="deposit"&&c.methods.indexOf(e.method)>=0&&new Date(e.at).getTime()>=t0)swipes+=+e.amount||0;});
+    var total=c.bal&&bal!=null?bal+landedAmt-swipes:null;
+    var wins=[];
+    S.people.forEach(function(p){c.methods.forEach(function(k){
+      if(p[k+"_on"]===false)return;var lim=+p[k+"_limit"];if(!(lim>0))return;
+      // rolling (Medi 10-08): what's free now, then each window deposit frees again one window later, repeating.
+      var u=winUse(p,k),h=u.H,slots=[];if(u.avail>0)slots.push({at:now,amt:u.avail});
+      u.ds.forEach(function(d){slots.push({at:Math.max(now,d.t+h),amt:d.a});});
+      slots.forEach(function(sl){for(var at=sl.at;at<now+7*DAY;at+=h)if(sl.amt>0)wins.push({at:at,amt:sl.amt,who:p.code,k:k,by:loadBy(at,lag)});});
+    });});
+    wins.sort(function(a,b){return a.at-b.at;});
+    var have=c.bal?Math.max(0,total||0)+transit:0,need=0,next=null;
+    wins.forEach(function(w){var cover=Math.min(have,w.amt);have-=cover;w.short=w.amt-cover;need+=w.short;if(w.short>0&&!next)next=w;});
+    return {balRow:balRow,anchor:anchor,landedRows:landedRows,total:total,t0:t0,open:open,transit:transit,need:need,next:next,wins:wins,lag:lag,feed:feed};
   }
   function fmtS(ms){return new Intl.DateTimeFormat("en-US",{timeZone:TZ,weekday:"short",hour:"numeric",minute:"2-digit"}).format(new Date(ms));}
   function tkUndo(r){return '<button type="button" class="cbr-u tk-undo" data-undo="'+r.id+'" title="Undo">\u21b6</button>';}
@@ -8233,7 +8238,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     // header strip: id | balance or "no balance" | next load | 7-day total
     h+='<div class="tkc-h"><div class="tkc-id">'+logo("taekus")+'<div>'+c.who+' \u00b7 '+c.name+'<small>'+c.methods.map(function(k){return M[k][0];}).join(" + ")+'</small></div></div>';
     var fsrc=st.feed&&st.feed.src==='plaid'?'Plaid':'SimpleFIN';
-    if(c.bal)h+=stat('Balance',(st.total==null?'\u2014':usd(st.total))+' <button type="button" class="tk-edit tk-bal" title="Type the real Taekus balance">\u270e</button>'+(st.balRow?' '+tkUndo(st.balRow):''),(st.t0?'typed '+fmtS(st.t0)+' \u00b7 \u23f1 '+dur(Date.now()-st.t0)+' ago'+(st.transit?' \u00b7 +'+k$(st.transit)+' on the way':''):'tap \u270e to type it')+
+    if(c.bal)h+=stat('Balance',(st.total==null?'\u2014':usd(st.total))+' <button type="button" class="tk-edit tk-bal" title="Type the real Taekus balance">\u270e</button>'+(st.balRow?' '+tkUndo(st.balRow):''),(st.t0?(st.anchor==='feed'?fsrc+' ':'typed ')+fmtS(st.t0)+' \u00b7 \u23f1 '+dur(Date.now()-st.t0)+' ago'+(st.transit?' \u00b7 +'+k$(st.transit)+' on the way':''):'tap \u270e to type it')+
       (st.feed?'<br>'+(st.feed.stuck?'<span class="late">\u26a0 '+fsrc+' STUCK \u00b7 no change since '+fmtS(st.feed.since)+' ('+dur(Date.now()-st.feed.since)+' ago) though '+usd(st.feed.miss)+' moved since \u00b7 can\u2019t check \u2014 re-link '+(st.feed.src==='plaid'?'Taekus at ganjsta-owner.pages.dev/owner/relink':'at beta-bridge.simplefin.org')+'</span>':Math.abs(st.feed.gap)<1?'<span class="ok">\u2713 matches '+fsrc+' '+fmtS(st.feed.at)+' \u00b7 '+dur(Date.now()-st.feed.at)+' ago</span>':
         '<span class="late">\u26a0 '+usd(Math.abs(st.feed.gap))+(st.feed.gap<0?' spent':' arrived')+' with no tick \u00b7 '+fsrc+' '+usd(st.feed.bal)+' '+fmtS(st.feed.at)+' \u00b7 '+dur(Date.now()-st.feed.at)+' ago</span>'):''));
     if(st.next){
@@ -8722,7 +8727,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "00d3821 2026-10-22 21:42 UTC".indexOf("STAMP") >= 0 ? "dev" : "00d3821 2026-10-22 21:42 UTC";
+  var GFH_BUILD = "df15473 2026-10-22 21:45 UTC".indexOf("STAMP") >= 0 ? "dev" : "df15473 2026-10-22 21:45 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window

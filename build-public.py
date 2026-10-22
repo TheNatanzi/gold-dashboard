@@ -135,4 +135,23 @@ if os.environ.get("GFH_ALLOW_DIRTY") != "1" and _commit != "unknown":
             print("build register: dash_build = %s %s" % (_commit, _built))
         except Exception as _e:
             print("build register FAILED (%s) - 4-day rule still applies" % _e)
+        # ONE home for the constants Sabz used to hand-copy (2026-10-22, migration 032):
+        # parse them from the dashboard source just built and upsert alchemy_constants.
+        try:
+            import alchemy_constants as _ac
+            _consts = _ac.parse(dash)
+            _sql = ("insert into public.alchemy_constants (id, consts, build) values (1, %s::jsonb, %s) "
+                    "on conflict (id) do update set consts = excluded.consts, build = excluded.build, set_at = now()"
+                    % ("'" + json.dumps(_consts).replace("'", "''") + "'",
+                       "'" + ("%s %s" % (_commit, _built)).replace("'", "''") + "'"))
+            _req = urllib.request.Request(
+                "https://api.supabase.com/v1/projects/cuubqcxzvyiryxcygadh/database/query",
+                data=json.dumps({"query": _sql}).encode("utf-8"),
+                headers={"Authorization": "Bearer " + _tok, "Content-Type": "application/json"})
+            urllib.request.urlopen(_req, timeout=20).read()
+            print("constants: pamp %s generic %s call-in %s online prem %s sheet %s cards %d" % (
+                _consts["elemetal_pamp"], _consts["elemetal_generic"], _consts["call_in_bonus"],
+                _consts["online_prem"], _consts["sheet_date"], len(_consts["cards"])))
+        except Exception as _e:
+            print("constants FAILED (%s) - Sabz keeps its fallback copies" % _e)
 print("Hook injected before char offset %d (of %d)." % (idx, len(dash)))
