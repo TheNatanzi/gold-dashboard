@@ -1330,6 +1330,9 @@ var ELEM_SHEET_DATE = "2026-10-22";   /* GFH_SHEET_DATE */
   .cbv-stats i .cbl{width:26px;height:26px}
   .cbl.cb0{background:none}
   .cbl.cb0 svg{width:24px;height:24px}
+  .cbv-feed{font-size:12px;margin:-4px 0 10px;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--panel2)}
+  .cbv-feed.ok{color:var(--good)} .cbv-feed.late{color:var(--bad);border-color:var(--bad);background:var(--bad-bg)}
+  .cbv-feed b{font-weight:700} .cbv-feed ul{margin:4px 0 0;padding-left:16px;color:var(--ink)} .cbv-feed small{color:var(--ink-soft)}
   .cbv-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:0 0 10px}
   .cbv-stats div{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:5px 2px;text-align:center}
   .cbv-stats i{display:block;font-style:normal;font-size:15px;line-height:1.1}
@@ -3229,7 +3232,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 3cf4fb5 · built 2026-10-22 17:12 UTC</span>
+    <span id="verStamp" class="tnum">version: 85c7208 · built 2026-10-22 20:21 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -6028,7 +6031,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-10-22T10:01:53-07:00",
+    at: "2026-10-22T11:01:54-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
     price: 4189.99,
@@ -7805,9 +7808,10 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   function get(path){return fetch(URL_+"/rest/v1/"+path,{headers:H()}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();});}
   function load(){
     return Promise.all([get("cb_people?select=*&order=sort_order"),get("cb_events?select=*&order=at.asc,id.asc"),get("cb_rewards_history?select=*&order=swipe_at"),get("cb_taekus?select=*&order=at.asc,id.asc"),get("cb_people_log?select=code,fee_paid_for&note=eq.fee%20marked%20paid&order=id"),
-        get("cb_taekus_feed?select=card,balance,as_of,created_at,txns,source&order=id.desc&limit=40").catch(function(){return [];})])
+        get("cb_taekus_feed?select=card,balance,as_of,created_at,txns,source&order=id.desc&limit=40").catch(function(){return [];}),
+        get("cb_coinbase_feed?select=code,usdc,as_of,txns,txns_through,source&order=id.desc&limit=10").catch(function(){return [];})])
     // Medi 10-15: hidden players (hidden_at) leave every view + projection; S.all keeps them for past costs.
-    .then(function(a){S.all=a[0];S.people=a[0].filter(function(p){return !p.hidden_at;});S.events=a[1];S.hist=a[2];S.tk=a[3];S.feePaid=a[4]||[];S.feed=a[5]||[];render();})
+    .then(function(a){S.all=a[0];S.people=a[0].filter(function(p){return !p.hidden_at;});S.events=a[1];S.hist=a[2];S.tk=a[3];S.feePaid=a[4]||[];S.feed=a[5]||[];S.cbf=a[6]||[];render();})
     .catch(function(){var o=document.getElementById("cbOv");if(o)o.innerHTML='<div class="cb-soon">Couldn’t reach the database. Check your connection and reload.</div>';});
   }
 
@@ -7850,10 +7854,10 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     return {gross:g,cost:cost,net:g-cost,missing:missing};
   }
   // Balances count ticks at/after "balance as of"; in-process boxes = every open item.
-  function stages(p,L){
+  function stages(p,L,upto){  // upto (ms) = only events at/before it (Coinbase feed check)
     var asof=p.bal_as_of?new Date(p.bal_as_of).getTime():0,o={dep:0,inCB:+p.cb_start||0,wd:0,bank:0,ach:0,taekus:0,openWd:[],openAch:[],held:0,unlock:0},now=Date.now();
     L.ev.forEach(function(e){
-      if(e.code!==p.code)return;var a=+e.amount||0,t=new Date(e.at).getTime(),after=t>=asof;
+      if(e.code!==p.code)return;var a=+e.amount||0,t=new Date(e.at).getTime(),after=t>=asof;if(upto&&t>upto)return;
       // Spec: a deposit must sit in Coinbase 24h before it can be withdrawn (Medi 09-29 "these need to stay for 24hrs").
       if(e.stage==="deposit"){o.dep+=a;if(after)o.inCB+=a;if(after&&t+864e5>now){o.held+=a;if(!o.unlock||t+864e5<o.unlock)o.unlock=t+864e5;}}
       else if(e.stage==="withdraw_sent"){if(after)o.inCB-=a;if(!L.landed[e.id]){o.wd+=a;o.openWd.push(e);}}
@@ -7963,6 +7967,32 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
       logo:icon,name:label,t1:'<b>\u23f1 '+dur(Date.now()-new Date(e.at).getTime())+'</b>',
       amt:'<div class="amt">'+usd(e.amount)+'</div>'});
   }
+  // Coinbase auto-check (Medi 10-22): SnapTrade's real USDC (cb_coinbase_feed, pushed from the money DB after each
+  // snaptrade-sync) vs the tick math at the same moment. Interest/rewards in Coinbase's list count as money in.
+  // SnapTrade withdrawals with no withdraw_sent tick (same amount, within 3 days) are listed; what's left of the gap
+  // is money that moved after Coinbase's activity list stops (txns_through). Read-only: never writes cb_events.
+  function cbCheck(p,L){
+    var f=(S.cbf||[]).filter(function(x){return x.code===p.code;})[0];if(!f)return null;
+    var fa=new Date(f.as_of).getTime(),asof=p.bal_as_of?new Date(p.bal_as_of).getTime():0,earn=0,wds=[],buys=[];
+    (f.txns||[]).forEach(function(t){var ta=new Date(t.at).getTime(),a=+t.amount||0,d=String(t.description||"").toLowerCase();
+      if(ta<asof||ta>fa)return;
+      if(/interest|reward/.test(d))earn+=a;else if(a<0&&/withdraw/.test(d))wds.push({at:ta,amt:-a});else if(a>0&&/buy [\d.]+ usdc/.test(d))buys.push({at:ta,amt:a});});
+    var used={},mine=L.ev.filter(function(e){return e.code===p.code;});
+    function match(r,stage,win){var hit=mine.filter(function(e){return e.stage===stage&&!used[e.id]&&Math.abs(+e.amount-r.amt)<0.01&&Math.abs(new Date(e.at).getTime()-r.at)<=win;})[0];if(hit)used[hit.id]=1;return !!hit;}
+    var unWd=wds.filter(function(r){return !match(r,"withdraw_sent",3*864e5);}),unBuy=buys.filter(function(r){return !match(r,"deposit",864e5);});
+    var ticks=stages(p,L,fa).inCB,gap=Math.round((+f.usdc-ticks-earn)*100)/100,sum=function(a){return a.reduce(function(m,r){return m+r.amt;},0);};
+    return {usdc:+f.usdc,at:fa,thru:f.txns_through?new Date(f.txns_through).getTime():0,ticks:ticks,earn:earn,gap:gap,unWd:unWd,unBuy:unBuy,
+            rest:Math.round((gap+sum(unWd)-sum(unBuy))*100)/100};
+  }
+  function cbCheckHtml(k){
+    if(!k)return "";var when=' \u00b7 '+fmtS(k.at)+' \u00b7 '+dur(Date.now()-k.at)+' ago';
+    if(Math.abs(k.gap)<1)return '<div class="cbv-feed ok">\u2713 matches Coinbase <b>'+usd(k.usdc)+'</b>'+when+'</div>';
+    var h='<div class="cbv-feed late">\u26a0 <b>'+usd(Math.abs(k.gap))+'</b> '+(k.gap<0?'left Coinbase':'arrived in Coinbase')+' with no tick<br><small>Coinbase '+usd(k.usdc)+' vs ticks '+usd(k.ticks)+(k.earn?' + '+usd(k.earn)+' interest':'')+when+'</small><ul>';
+    k.unWd.forEach(function(r){h+='<li>\u2b06\ufe0f '+usd(r.amt)+' withdrawal '+fmt(r.at).replace(/^\w+, /,"")+' \u00b7 no tick</li>';});
+    k.unBuy.forEach(function(r){h+='<li>\u2b07\ufe0f '+usd(r.amt)+' buy '+fmt(r.at).replace(/^\w+, /,"")+' \u00b7 no tick</li>';});
+    if(Math.abs(k.rest)>=1)h+='<li>\u2753 '+usd(Math.abs(k.rest))+' more '+(k.rest<0?'left':'arrived')+' \u2014 not in Coinbase\u2019s list yet'+(k.thru?' (list ends '+fmtS(k.thru)+')':'')+'</li>';
+    return h+'</ul></div>';
+  }
   function player(p,L){
     var st=stages(p,L),c=p.code,floor=+p.usdc_floor||0,ce=ceiling(p);
         // Medi 09-29: header = total FLOAT (every stage before Taekus: in CB + withdrawing + in bank + ACH), not /mo max.
@@ -7973,6 +8003,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
        '<div><i>\ud83d\udcb0</i><b>'+k$(st.bank)+'</b><em>in bank</em></div>'+
        '<div><i>\u27a1\ufe0f</i><b>'+k$(st.ach)+'</b><em>ACH</em></div>'+
        '<div><i>\u2705</i><b>'+k$(st.taekus)+'</b><em>Taekus</em></div></div>';
+    h+=cbCheckHtml(cbCheck(p,L));
     var wv=S.when[c]||toLocalInput(new Date().toISOString());
     h+='<div class="cbv-when">\ud83d\udd52<input type="datetime-local" class="cbo-when" value="'+wv+'"'+(S.when[c]?' data-edited="1"':'')+'>'+(S.when[c]?'<button type="button" class="cbv-now">now</button>':'')+'</div>';
     onMethods(p).forEach(function(k){h+=depRow(p,k);});
@@ -8345,7 +8376,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   // Keep countdowns / "x ago" honest (skip while Medi is typing in a box).
   var lastTouch=0;document.addEventListener("pointerdown",function(ev){if(ev.target.closest&&ev.target.closest("#cbOv"))lastTouch=Date.now();},true);
   setInterval(function(){var a=document.activeElement;if(a&&a.closest&&a.closest("#cbOv"))return;if(Date.now()-lastTouch<4000)return;var pn=document.getElementById("cbsub-ov"),pc=document.getElementById("cbsub-calc");if(((pn&&!pn.hidden)||(pc&&!pc.hidden))&&S.people.length)render();},60000);
-  window.__cbOv={tkState:tkState,S:S,money:money,stages:stages,live:live,ceiling:ceiling,render:render,load:load};
+  window.__cbOv={cbCheck:cbCheck,tkState:tkState,S:S,money:money,stages:stages,live:live,ceiling:ceiling,render:render,load:load};
 }();
 </script>
 
@@ -8644,7 +8675,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "3cf4fb5 2026-10-22 17:12 UTC".indexOf("STAMP") >= 0 ? "dev" : "3cf4fb5 2026-10-22 17:12 UTC";
+  var GFH_BUILD = "85c7208 2026-10-22 20:21 UTC".indexOf("STAMP") >= 0 ? "dev" : "85c7208 2026-10-22 20:21 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
