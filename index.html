@@ -3232,7 +3232,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 03aa733 · built 2026-10-22 21:21 UTC</span>
+    <span id="verStamp" class="tnum">version: 00d3821 · built 2026-10-22 21:42 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3392,9 +3392,16 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   }
   // Spendable credit for Buying power. Live cards: the bank's available credit, except a used Venmo
   // (once per statement period) = $0. Cards without a live feed (Chase Ink, Double Cash) keep their limit.
+  // The card's limit: the hub's live credit_limit (v_card_status, via card-status) when the card has a
+  // bank row, else the OWNED copy (cards with no feed, or the feed unreachable). Sabz: limitOf().
+  function cardLimit(c){
+    const r = c.lc && lcRow(c.lc);
+    const v = r && r.credit_limit!=null ? Number(r.credit_limit) : NaN;
+    return (isFinite(v) && v>0) ? v : c.limit;
+  }
   function lcSpendable(c){
     const r = c.lc && lcRow(c.lc);
-    if(!r || r.available==null) return {amt:c.limit, live:false};
+    if(!r || r.available==null) return {amt:cardLimit(c), live:false};
     if(r.status==="unavailable") return {amt:0, live:true, why:r.unavailable_reason==="venmo_used" ? "used this period" : "held"};
     // Medi 2026-09-22: credit is usable ONLY once the payment has fully POSTED (Citi hands it back at pending).
     if(r.status==="payment_pending") return {amt:0, live:true, why:"payment not posted"};
@@ -3562,7 +3569,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     const sp = L.sp, r4037 = L.r4037, tierLow = L.tierLow, perBar = L.perBar;
     const bars = Math.max(0, Math.floor(sp.amt / buy));
     const cycle = bars * perBar;
-    const limK = "$"+(c.limit/1000)+"k";
+    const limK = "$"+(cardLimit(c)/1000)+"k";
     const profitable = barP>0;
     const check = mcLocked(c)
       ? `<label class="avail off" title="Costco.com sold out"><input type="checkbox" disabled></label>`
@@ -3581,7 +3588,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     const spTxt = sp.live
       ? (c.debit
           ? `${money(sp.amt)}<small class="lab">balance · live</small>`
-          : `<span>${money(sp.amt)} <span class="lim">/ ${money(c.limit)}</span></span><small class="lab">${
+          : `<span>${money(sp.amt)} <span class="lim">/ ${money(cardLimit(c))}</span></span><small class="lab">${
               r4037 && r4037.period_used!=null ? `USED THIS PERIOD ${lcMoney(r4037.period_used)}` : `available${sp.why?` · ${sp.why}`:""} · live`}</small>`)
       : `${money(sp.amt)}<small class="lab">limit · no bank link</small>`;
     // Medi 2026-09-18: "I want the % for all of them" — share of a bar (split-tender makes partial bars real),
@@ -8580,8 +8587,8 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     var spot = null, online = null, june = null;
     rows.forEach(function(r){ if(r.id === "spot") spot = r; else if(r.id === "online") online = r; else if(r.id === "june") june = r; });
     var map = {};
-    if(june && june.price != null)
-      map.june_price = { v: String(june.price), t: june.fetched_at ? fmtT(june.fetched_at) : "" };
+    // gold_prices.june is NOT read (2026-10-22): June's price has ONE home, alchemy_price (her
+    // phone writes it; the dashboard reads it). The gold_prices 'june' row froze on 2026-07-27.
     if(spot && spot.price != null)
       map.gold_spot = { v: String(spot.price), t: spot.fetched_at ? fmtT(spot.fetched_at) : "" };
     if(online){
@@ -8610,7 +8617,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     var failures = guardIngest(map);                  // refuse anything whose unit is not declared
     var before = snapNums();                          // snapshot every displayed number
     if(window.__gfhIngest) window.__gfhIngest(map);   // recompute via the dashboard's own tested path
-    var buyErr = checkBuyPrice(online, june);         // and re-check BUY after the engine has run
+    var buyErr = checkBuyPrice(online, null);         // re-check BUY; June's legal value comes from the engine's basis (alchemy_price)
     if(buyErr) failures.push(buyErr);
     showGuardFailures(failures);
     pulseDiff(before);                                // flash whatever the update moved
@@ -8715,7 +8722,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "03aa733 2026-10-22 21:21 UTC".indexOf("STAMP") >= 0 ? "dev" : "03aa733 2026-10-22 21:21 UTC";
+  var GFH_BUILD = "00d3821 2026-10-22 21:42 UTC".indexOf("STAMP") >= 0 ? "dev" : "00d3821 2026-10-22 21:42 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window

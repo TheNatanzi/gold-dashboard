@@ -92,6 +92,10 @@ t("accepts June's price", checkBuyPrice(online, june) === null);
 mBuyText = "$4,200.00";
 t("catches an out-of-nowhere BUY", checkBuyPrice(online, june) !== null);
 
+console.log("\n--- 6. June's price has one home: alchemy_price, never gold_prices.june ---");
+t("apply() no longer maps gold_prices.june", !/map\.june_price\s*=/.test(src));
+t("BUY re-check passes no gold_prices.june value", /checkBuyPrice\(online, null\)/.test(src));
+
 console.log("\n=======================================");
 console.log(fail === 0 ? `ALL ${pass} CHECKS PASSED` : `${pass} passed, ${fail} FAILED`);
 console.log("=======================================");

@@ -158,8 +158,8 @@
     var spot = null, online = null, june = null;
     rows.forEach(function(r){ if(r.id === "spot") spot = r; else if(r.id === "online") online = r; else if(r.id === "june") june = r; });
     var map = {};
-    if(june && june.price != null)
-      map.june_price = { v: String(june.price), t: june.fetched_at ? fmtT(june.fetched_at) : "" };
+    // gold_prices.june is NOT read (2026-10-22): June's price has ONE home, alchemy_price (her
+    // phone writes it; the dashboard reads it). The gold_prices 'june' row froze on 2026-07-27.
     if(spot && spot.price != null)
       map.gold_spot = { v: String(spot.price), t: spot.fetched_at ? fmtT(spot.fetched_at) : "" };
     if(online){
@@ -188,7 +188,7 @@
     var failures = guardIngest(map);                  // refuse anything whose unit is not declared
     var before = snapNums();                          // snapshot every displayed number
     if(window.__gfhIngest) window.__gfhIngest(map);   // recompute via the dashboard's own tested path
-    var buyErr = checkBuyPrice(online, june);         // and re-check BUY after the engine has run
+    var buyErr = checkBuyPrice(online, null);         // re-check BUY; June's legal value comes from the engine's basis (alchemy_price)
     if(buyErr) failures.push(buyErr);
     showGuardFailures(failures);
     pulseDiff(before);                                // flash whatever the update moved
