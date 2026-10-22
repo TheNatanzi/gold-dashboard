@@ -86,6 +86,9 @@
   .tile .tk{color:var(--mut);font-size:11px;letter-spacing:.04em;text-transform:uppercase}
   .tile .tv{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:3px;letter-spacing:-.01em}
   .tile .tv.small{font-size:18px}
+  .tile .ts{color:var(--mut);font-size:12px;margin-top:3px;font-variant-numeric:tabular-nums}
+  .tile.ath{border-color:rgba(224,167,43,.45)}
+  .tile.ath .tk{color:var(--gold,#e0a72b)}
   .tile.amber{border-color:rgba(224,167,43,.5);background:rgba(224,167,43,.06)}
   .tile.bad .tv{color:var(--death)}
   .tile.good .tv{color:var(--ok)}
@@ -157,6 +160,11 @@
     <div class="tiles" style="margin-top:10px">
       <div class="tile"><div class="tk">Grace ends in</div><div class="tv small" id="tGrace">—</div></div>
       <div class="tile"><div class="tk">Sell line</div><div class="tv small" id="tSell">—</div></div>
+    </div>
+    <!-- 2026-10-22 (Medi): the SESSION high = highest price since START, even when older than 15 min.
+         Reference only — the lock still uses the last-15-min shots. -->
+    <div class="tiles" style="margin-top:10px;grid-template-columns:1fr">
+      <div class="tile ath" id="tAthWrap"><div class="tk">All-time high (session)</div><div class="tv small" id="tAth">—</div><div class="ts" id="tAthSub">—</div></div>
     </div>
   </div>
 
@@ -569,6 +577,26 @@
     $('tHigh').textContent  = fmt$(high);
     $('tPrice').textContent = fmt$(price);
     $('tSell').textContent  = fmt$(sell);
+
+    // All-time high (session): price + PT clock + age. Prefers the watcher's kept high shot (migration 003),
+    // else the session anchor high. Live → "38m 05s ago"; finished → how long before the lock/end.
+    {
+      const athP = (dSess && dSess.high_shot_price!=null) ? Number(dSess.high_shot_price) : high;
+      const athIso = (dSess && dSess.high_shot_on_page_ts) ? dSess.high_shot_on_page_ts
+                   : (dSess && dSess.high_on_page_ts) ? dSess.high_on_page_ts
+                   : (dTicks.length ? dTicks.reduce((a,b)=>b.price>a.price?b:a).iso : null);
+      const athMs = athIso ? new Date(athIso).getTime() : null;
+      const ptClock = (ms)=> new Date(ms).toLocaleTimeString('en-US',{timeZone:'America/Los_Angeles',hour:'numeric',minute:'2-digit',second:'2-digit',hour12:true,timeZoneName:'short'});
+      const durW = (ms)=>{ const s=Math.max(0,Math.round(ms/1000)); return s<3600 ? Math.floor(s/60)+'m '+String(s%60).padStart(2,'0')+'s' : Math.floor(s/3600)+'h '+String(Math.floor(s%3600/60)).padStart(2,'0')+'m'; };
+      $('tAth').textContent = fmt$(athP);
+      if(athP!=null && athMs!=null && isFinite(athMs)){
+        const endIso = over ? (sess.sent_at || (latest && latest.iso)) : null;
+        const age = active ? durW(now-athMs)+' ago'
+                  : endIso ? durW(new Date(endIso).getTime()-athMs)+' before '+(sess.status==='sent'?'the lock':'the end')
+                  : '';
+        $('tAthSub').textContent = ptClock(athMs) + (age ? ' · '+age : '');
+      } else $('tAthSub').textContent = '—';
+    }
 
     // Cushion to sell = price − (high − 10). Live sessions only — a finished session has no cushion.
     const cWrap=$('tCushionWrap'), cEl=$('tCushion');
