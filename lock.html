@@ -89,6 +89,11 @@
   .tile .ts{color:var(--mut);font-size:12px;margin-top:3px;font-variant-numeric:tabular-nums}
   .tile.ath{border-color:rgba(224,167,43,.45)}
   .tile.ath .tk{color:var(--gold,#e0a72b)}
+  .tile.ath .athimg{display:none;margin-top:9px;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+  .tile.ath .athimg.on{display:block}
+  /* Show the bottom ~55% of the shot (Live Gold Price + date/NY time + Bid/Ask + chart); the top is Kitco's
+     ad banner + nav. Tap opens the full shot. */
+  .tile.ath .athimg img{display:block;width:100%;aspect-ratio:640/250;object-fit:cover;object-position:50% 100%}
   .tile.amber{border-color:rgba(224,167,43,.5);background:rgba(224,167,43,.06)}
   .tile.bad .tv{color:var(--death)}
   .tile.good .tv{color:var(--ok)}
@@ -164,7 +169,7 @@
     <!-- 2026-10-22 (Medi): the SESSION high = highest price since START, even when older than 15 min.
          Reference only — the lock still uses the last-15-min shots. -->
     <div class="tiles" style="margin-top:10px;grid-template-columns:1fr">
-      <div class="tile ath" id="tAthWrap"><div class="tk">All-time high (session)</div><div class="tv small" id="tAth">—</div><div class="ts" id="tAthSub">—</div></div>
+      <div class="tile ath" id="tAthWrap"><div class="tk">All-time high (session)</div><div class="tv small" id="tAth">—</div><div class="ts" id="tAthSub">—</div><a class="athimg" id="tAthLink" target="_blank" rel="noopener"><img id="tAthImg" alt="Kitco screenshot at the session high" loading="lazy"></a></div>
     </div>
   </div>
 
@@ -596,6 +601,12 @@
                   : '';
         $('tAthSub').textContent = ptClock(athMs) + (age ? ' · '+age : '');
       } else $('tAthSub').textContent = '—';
+      // Thumbnail (migration 004): a signed link the watcher stores once the high has held a poll. Only set
+      // src when the link changes, so the browser fetches each picture once (Supabase egress is tight).
+      const url = (dSess && dSess.high_shot_url) || null;
+      const box = $('tAthLink'), img = $('tAthImg');
+      if(url){ if(img.dataset.src!==url){ img.dataset.src=url; img.src=url; box.href=url; } box.classList.add('on'); }
+      else { box.classList.remove('on'); img.removeAttribute('src'); img.dataset.src=''; box.removeAttribute('href'); }
     }
 
     // Cushion to sell = price − (high − 10). Live sessions only — a finished session has no cushion.
