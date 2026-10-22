@@ -3232,7 +3232,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 85c7208 · built 2026-10-22 20:21 UTC</span>
+    <span id="verStamp" class="tnum">version: 70a1c4f · built 2026-10-22 20:25 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7809,9 +7809,10 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   function load(){
     return Promise.all([get("cb_people?select=*&order=sort_order"),get("cb_events?select=*&order=at.asc,id.asc"),get("cb_rewards_history?select=*&order=swipe_at"),get("cb_taekus?select=*&order=at.asc,id.asc"),get("cb_people_log?select=code,fee_paid_for&note=eq.fee%20marked%20paid&order=id"),
         get("cb_taekus_feed?select=card,balance,as_of,created_at,txns,source&order=id.desc&limit=40").catch(function(){return [];}),
-        get("cb_coinbase_feed?select=code,usdc,as_of,txns,txns_through,source&order=id.desc&limit=10").catch(function(){return [];})])
+        get("cb_coinbase_feed?select=code,usdc,as_of,txns,txns_through,source&order=id.desc&limit=10").catch(function(){return [];}),
+        get("cb_sms_log?select=sent_at,to_label,kind,status,phone_proof,error&to_label=eq.MED&kind=in.(daily,safety)&order=id.desc&limit=10").catch(function(){return [];})])
     // Medi 10-15: hidden players (hidden_at) leave every view + projection; S.all keeps them for past costs.
-    .then(function(a){S.all=a[0];S.people=a[0].filter(function(p){return !p.hidden_at;});S.events=a[1];S.hist=a[2];S.tk=a[3];S.feePaid=a[4]||[];S.feed=a[5]||[];S.cbf=a[6]||[];render();})
+    .then(function(a){S.all=a[0];S.people=a[0].filter(function(p){return !p.hidden_at;});S.events=a[1];S.hist=a[2];S.tk=a[3];S.feePaid=a[4]||[];S.feed=a[5]||[];S.cbf=a[6]||[];S.sms=a[7]||[];render();})
     .catch(function(){var o=document.getElementById("cbOv");if(o)o.innerHTML='<div class="cb-soon">Couldn’t reach the database. Check your connection and reload.</div>';});
   }
 
@@ -8193,6 +8194,19 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   function fmtS(ms){return new Intl.DateTimeFormat("en-US",{timeZone:TZ,weekday:"short",hour:"numeric",minute:"2-digit"}).format(new Date(ms));}
   function tkUndo(r){return '<button type="button" class="cbr-u tk-undo" data-undo="'+r.id+'" title="Undo">\u21b6</button>';}
   function stat(lbl,val,sub,cls,bar){return '<div class="tkc-s"><i>'+lbl+'</i><b class="'+(cls||'')+'">'+val+'</b>'+(sub?'<em>'+sub+'</em>':'')+(bar||'')+'</div>';}
+  // 8 AM Taekus-load text (Medi 10-22, tools/cb_taekus_sms): today's row in cb_sms_log, red after 8:30 AM PT if none.
+  function smsBadge(now){
+    var day=function(ms){return new Intl.DateTimeFormat("en-CA",{timeZone:TZ}).format(new Date(ms));},today=day(now);
+    var rows=(S.sms||[]).filter(function(r){return day(new Date(r.sent_at).getTime())===today;});
+    var ok=rows.filter(function(r){return r.status==="sent"||r.status==="skipped_nothing_needed";})[0];
+    var p=tzParts(new Date(now)),mins=+p.hour*60+ +p.minute;
+    if(ok){var t=fmtS(new Date(ok.sent_at).getTime()).replace(/^\w+ /,"");
+      return stat('Text','<span class="ok">\ud83d\udcf1 '+(ok.status==="sent"?'SMS today '+t+' \u2713':'nothing needed \u2713')+'</span>',ok.status==="sent"?(ok.phone_proof||'').replace(/ \(.*$/,''):'checked '+t,'ok');}
+    if(!(S.sms||[]).length)return stat('Text','📱 8:00 AM','first daily text · nothing logged yet');   // before the first 8 AM run ever
+    if(mins>=510){var f=rows[0];
+      return stat('Text','<span class="late">\ud83d\udcf1 SMS not sent today</span>',f?'\u26a0 '+(f.error||f.status).slice(0,60):(mins>=750?'no 8 AM or 12:00 run logged \u00b7 is the PC on?':'no 8 AM run logged \u00b7 12:00 re-run will try'),'late');}
+    return stat('Text','\ud83d\udcf1 8:00 AM','today\u2019s text not due yet');
+  }
   function tkBar(c){
     var st=tkState(c),now=Date.now(),h='<div class="tkc" data-card="'+c.id+'">';
     // header strip: id | balance or "no balance" | next load | 7-day total
@@ -8207,6 +8221,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
               pbar(late?1:1-left/(7*DAY),false).replace('<i class="','<i class="'+(late?'red ':'')));
     }else h+=stat('Next load','\u2713 $0','covered for 7 days','ok');
     h+=stat('Needed \u00b7 7 days',usd(st.need),'lead = '+st.lag.n+' bd + 1 day');
+    if(c.bal)h+=smsBadge(now);
     h+='</div>';
     // window rows
     // Medi 09-29 "compress": one short title, no header row, slim rows (logo | who | opens | load by | timer | amount).
@@ -8675,7 +8690,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "85c7208 2026-10-22 20:21 UTC".indexOf("STAMP") >= 0 ? "dev" : "85c7208 2026-10-22 20:21 UTC";
+  var GFH_BUILD = "70a1c4f 2026-10-22 20:25 UTC".indexOf("STAMP") >= 0 ? "dev" : "70a1c4f 2026-10-22 20:25 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
