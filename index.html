@@ -3232,7 +3232,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 70a1c4f · built 2026-10-22 20:25 UTC</span>
+    <span id="verStamp" class="tnum">version: 68edf0f · built 2026-10-22 20:30 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7956,6 +7956,16 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
       t1:st&&st.held>0?'<b>\ud83d\udd12 '+k$(st.held)+' \u2192 '+new Intl.DateTimeFormat("en-US",{timeZone:TZ,weekday:"short",hour:"numeric",minute:"2-digit"}).format(new Date(st.unlock))+'</b>':'',
       amt:'<input type="text" inputmode="decimal" class="cb-money cbo-amt" value="'+(off?'$0':usd(amt))+'"'+(off?' disabled':'')+'>',undo:e?undoBtn(e):''});
   }
+  function hamedRow(p,st){
+    // Always tappable: Hamed's pulls are often the FIRST evidence (the withdrawal behind them may be unticked),
+    // so the in-bank number can read $0 when it isn't. Prefill it when there is one, else blank.
+    var amt=Math.max(0,st.bank),typed=S.typed[p.code+"|ach_hamed"];if(typed>0)amt=typed;
+    return rowHtml({row:"ach_hamed",
+      box:'<button type="button" class="cbo-box" data-do="ach_hamed" aria-label="Pull to Hamed\u2019s card"></button>',
+      logo:'\ud83d\udc64',name:'Hamed pull',t2:'to his card \u00b7 lands at once',
+      amt:'<input type="text" inputmode="decimal" class="cb-money cbo-amt" value="'+(amt>0?usd(amt):'')+'" placeholder="$ amount">'});
+  }
+  function isHamed(e){return !!e&&/^to Hamed's card/.test(e.note||"");}
   function wdEta(at){
     var t=new Date(at).getTime(),f=function(ms){return new Intl.DateTimeFormat("en-US",{timeZone:TZ,weekday:"short",hour:"numeric",minute:"2-digit"}).format(new Date(ms));};
     if(Date.now()<t+864e5)return 'exp '+f(t+864e5);
@@ -8012,6 +8022,9 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     // Medi 09-29: Coinbase says 1-3 business days, almost always lands within 24h -> show the 24h ETA, then the 3-day max.
     st.openWd.forEach(function(e){h+=openRow(e,"withdraw_landed","\ud83d\udcb0","CB withdrawal pending",wdEta(e.at));});
     h+=moveRow("ach_sent",logo("taekus"),"ACH",Math.max(0,st.bank),p,"ach_sent");
+    // Medi 10-22: Hamed pulls from a player's bank into HIS OWN card. No feed can see Hamed's cards, so this
+    // one tick logs ach_sent + ach_landed together (never "waiting for Plaid"). Same in-bank prefill as ACH.
+    h+=hamedRow(p,st);
     // Medi 10-13: Smartly pulls take a few days — measure it. Every sent->landed pair (all players) is evidence;
     // show the usual (median) and slowest, in business days, next to each pending payment.
     st.openAch.forEach(function(e){var g=achLag(),el=bizDays(new Date(e.at).getTime(),Date.now());
@@ -8341,6 +8354,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
       var when=card.querySelector(".cbo-when");
       if(when.value===""&&when.validity&&when.validity.badInput){say(code,"\u26a0 finish the \ud83d\udd52 time (AM/PM)",1);return;}
       rec.stage=b.dataset.do;rec.at=when.value?fromLocalInput(when.value):new Date().toISOString();
+      var hamed=rec.stage==="ach_hamed";if(hamed){rec.stage="ach_sent";rec.note="Pull by Hamed from "+code+" bank into HAMED's card (Overview)";}
       if(b.dataset.ref){rec.ref_id=+b.dataset.ref;rec.amount=+b.dataset.amt;}
       else{
         var amt=parseDollars(b.closest(".cbr").querySelector(".cbo-amt").value);
@@ -8351,17 +8365,27 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     }
     b.disabled=true;b.classList.add("done");
     var pid=rec.stage==="void"?null:pendAdd(JSON.parse(JSON.stringify(rec)));
+    // the other half of a Hamed pull (undo either half -> both go)
+    var L0=live(),pair=null;
+    if(undone&&undone.stage==="ach_sent"&&isHamed(L0.landed[undone.id]))pair=L0.landed[undone.id];
+    if(undone&&undone.stage==="ach_landed"&&isHamed(undone))pair=S.events.filter(function(x){return x.id===undone.ref_id;})[0]||null;
     post(rec).then(function(rows){
       if(pid)pendDrop(pid);
+      if(hamed&&rows[0])return post({code:code,stage:"ach_landed",amount:rec.amount,at:rec.at,ref_id:rows[0].id,note:"to Hamed's card - landed same tap (no feed sees his cards)",created_by:"medi"})
+        .then(function(r2){return rows.concat(r2);},function(){S.events=S.events.concat(rows);render();throw new Error("landed");});
+      if(pair)return post({code:code,stage:"void",ref_id:pair.id,amount:pair.amount,note:"undo "+pair.stage+" (Hamed pull pair)",created_by:"medi"}).then(function(r2){return rows.concat(r2);});
+      return rows;
+    }).then(function(rows){
       S.events=S.events.concat(rows);delete S.when[code];
-      if(rec.stage!=="void")delete S.typed[code+"|"+(rec.method||rec.stage)];
-      say(code,rec.stage==="void"?"\u21b6 undone":"\u2713 "+STAGE[rec.stage]+" "+usd(rec.amount)+" \u00b7 "+fmt(rec.at).replace(/^\w+, /,""));
+      if(rec.stage!=="void")delete S.typed[code+"|"+(hamed?"ach_hamed":rec.method||rec.stage)];
+      say(code,rec.stage==="void"?"\u21b6 undone":"\u2713 "+(hamed?"Hamed pull (landed)":STAGE[rec.stage])+" "+usd(rec.amount)+" \u00b7 "+fmt(rec.at).replace(/^\w+, /,""));
       if(rec.stage==="deposit"&&p&&(!p[rec.method+"_last"]||new Date(p[rec.method+"_last"]).getTime()<new Date(rec.at).getTime()))setLast(code,rec.method,rec.at);
       // Undo a deposit that set the window -> put the window back where it was.
       if(undone&&undone.stage==="deposit"&&p&&p[undone.method+"_last"]&&new Date(p[undone.method+"_last"]).getTime()===new Date(undone.at).getTime()){
         var m=/^prev_last=(.*)$/.exec(undone.note||"");if(m)setLast(code,undone.method,m[1]||null);
       }
-    }).catch(function(){if(pid)pendDrop(pid);b.disabled=false;b.classList.remove("done");say(code,"\u26a0 not saved \u2014 tap again",1);});
+    }).catch(function(e){if(pid)pendDrop(pid);b.disabled=false;b.classList.remove("done");
+      say(code,e&&e.message==="landed"?"\u26a0 Hamed pull saved as SENT but not landed \u2014 undo it and tap again":"\u26a0 not saved \u2014 tap again",1);});
   });
 
   /* ---- sub-tabs (scoped to #tab-cb; own storage key) ---- */
@@ -8690,7 +8714,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "70a1c4f 2026-10-22 20:25 UTC".indexOf("STAMP") >= 0 ? "dev" : "70a1c4f 2026-10-22 20:25 UTC";
+  var GFH_BUILD = "68edf0f 2026-10-22 20:30 UTC".indexOf("STAMP") >= 0 ? "dev" : "68edf0f 2026-10-22 20:30 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
