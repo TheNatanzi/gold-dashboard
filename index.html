@@ -3232,7 +3232,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: df15473 · built 2026-10-22 21:45 UTC</span>
+    <span id="verStamp" class="tnum">version: d01d859 · built 2026-10-22 21:49 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7814,7 +7814,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var S={people:[],events:[],hist:[],tk:[],msg:{},when:{},typed:{}};  // typed = custom amounts (Medi 10-07: a redraw must never revert them to the max)
   function get(path){return fetch(URL_+"/rest/v1/"+path,{headers:H()}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();});}
   function load(){
-    return Promise.all([get("cb_people?select=*&order=sort_order"),get("cb_events?select=*&order=at.asc,id.asc"),get("cb_rewards_history?select=*&order=swipe_at"),get("cb_taekus?select=*&order=at.asc,id.asc"),get("cb_people_log?select=code,fee_paid_for&note=eq.fee%20marked%20paid&order=id"),
+    return Promise.all([get("cb_people?select=*&order=sort_order"),get("cb_events?select=*&order=at.asc,id.asc"),get("cb_rewards_history?select=*&before_tracker=is.false&order=swipe_at"),get("cb_taekus?select=*&order=at.asc,id.asc"),get("cb_people_log?select=code,fee_paid_for&note=eq.fee%20marked%20paid&order=id"),
         get("cb_taekus_feed?select=card,balance,as_of,created_at,txns,source&order=id.desc&limit=40").catch(function(){return [];}),
         get("cb_coinbase_feed?select=code,usdc,as_of,txns,txns_through,source&order=id.desc&limit=10").catch(function(){return [];}),
         get("cb_sms_log?select=sent_at,to_label,kind,status,phone_proof,error&to_label=eq.MED&kind=in.(daily,safety)&order=id.desc&limit=10").catch(function(){return [];})])
@@ -8727,7 +8727,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "df15473 2026-10-22 21:45 UTC".indexOf("STAMP") >= 0 ? "dev" : "df15473 2026-10-22 21:45 UTC";
+  var GFH_BUILD = "d01d859 2026-10-22 21:49 UTC".indexOf("STAMP") >= 0 ? "dev" : "d01d859 2026-10-22 21:49 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
