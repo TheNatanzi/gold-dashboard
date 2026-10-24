@@ -3232,7 +3232,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: de483f9 · built 2026-10-23 22:53 UTC</span>
+    <span id="verStamp" class="tnum">version: b649791 · built 2026-10-24 18:08 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -6086,23 +6086,23 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-10-23T11:01:54-07:00",
+    at: "2026-10-24T11:01:51-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
-    price: 4139.99,
+    price: 4109.99,
     // Written by warehouse-inventory/daily_pull.py — see DAILY-PULL.md.
-    // 21 of the 45, keyed on the row carrying the SKU, never the store badge.
-    inStock: ["antioch", "danville", "fairfield", "fostercity", "lodi", "manteca",
-              "modesto", "riverbank", "sacnatomas", "sacstockton", "sanleandro",
-              "santaclara", "santacruz", "santarosa", "sjalmaden", "sjgreatoaks",
-              "ssfairport", "stockton", "sunnyvale", "vallejo", "woodland"],
-    // 20 of the 45. Stores whose rail rows were truncated were opened and
+    // 27 of the 45, keyed on the row carrying the SKU, never the store badge.
+    inStock: ["concord", "danville", "fairfield", "fostercity", "fremont", "hayward",
+              "livermore", "manteca", "mountainview", "novato", "pleasanton",
+              "redwoodcity", "riverbank", "sacnatomas", "sacstockton", "santaclara",
+              "sf", "sjalmaden", "sjgreatoaks", "sjne", "sjsenter", "ssf",
+              "ssfairport", "stockton", "sunnyvale", "tracy", "vallejo"],
+    // 14 of the 45. Stores whose rail rows were truncated were opened and
     // read from their own page this run, not carried forward.
-    soldOut: {brentwood:"7d", concord:"8d", fremont:"7d", gilroy:"2m", hayward:"8d",
-              livermore:"7d", mountainview:"7d", newark:"8d", novato:"1m",
-              pleasanton:"7d", ranchocordova:"1m", redwoodcity:"8d", richmond:"7d",
-              saccalexpo:"1m", sf:"8d", sjne:"7d", sjsenter:"8d", ssf:"7d", tracy:"7d",
-              vacaville:"1m"}
+    soldOut: {antioch:"today", brentwood:"8d", gilroy:"3m", lodi:"today",
+              modesto:"today", newark:"9d", ranchocordova:"1m", richmond:"8d",
+              saccalexpo:"1m", sanleandro:"today", santacruz:"today",
+              santarosa:"today", vacaville:"1m", woodland:"today"}
   };
 
   // Turn the snapshot into the same row shape wiRenderNow/wiRenderTable already
@@ -8047,8 +8047,15 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     function match(r,stage,win){var hit=mine.filter(function(e){return e.stage===stage&&!used[e.id]&&Math.abs(+e.amount-r.amt)<0.01&&Math.abs(new Date(e.at).getTime()-r.at)<=win;})[0];if(hit)used[hit.id]=1;return !!hit;}
     var unWd=wds.filter(function(r){return !match(r,"withdraw_sent",3*864e5);}),unBuy=buys.filter(function(r){return !match(r,"deposit",864e5);});
     var ticks=stages(p,L,fa).inCB,gap=Math.round((+f.usdc-ticks-earn)*100)/100,sum=function(a){return a.reduce(function(m,r){return m+r.amt;},0);};
+    // Medi 10-24 ("third time it disappears"): a mistyped STARTING balance (cb_start) shows up as a permanent
+    // "$X arrived with no tick" that no tick can clear. Coinbase's own list says what the balance was at
+    // bal_as_of (balance now - every listed move since), so name that case instead of blaming a missing tick.
+    var listed=0;(f.txns||[]).forEach(function(t){var ta=new Date(t.at).getTime();if(ta>asof&&ta<=fa)listed+=+t.amount||0;});
+    var startReal=Math.round((+f.usdc-listed)*100)/100,startOff=asof&&f.txns&&f.txns.length?Math.round((startReal-(+p.cb_start||0))*100)/100:0;
+    if(Math.abs(startOff)<1)startOff=0;
     return {usdc:+f.usdc,at:fa,thru:f.txns_through?new Date(f.txns_through).getTime():0,ticks:ticks,earn:earn,gap:gap,unWd:unWd,unBuy:unBuy,
-            rest:Math.round((gap+sum(unWd)-sum(unBuy))*100)/100};
+            startOff:startOff,startReal:startReal,startTyped:+p.cb_start||0,asof:asof,
+            rest:Math.round((gap+sum(unWd)-sum(unBuy)-startOff)*100)/100};
   }
   function cbCheckHtml(k){
     if(!k)return "";var when=' \u00b7 '+fmtS(k.at)+' \u00b7 '+dur(Date.now()-k.at)+' ago';
@@ -8056,6 +8063,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     var h='<div class="cbv-feed late">\u26a0 <b>'+usd(Math.abs(k.gap))+'</b> '+(k.gap<0?'left Coinbase':'arrived in Coinbase')+' with no tick<br><small>Coinbase '+usd(k.usdc)+' vs ticks '+usd(k.ticks)+(k.earn?' + '+usd(k.earn)+' interest':'')+when+'</small><ul>';
     k.unWd.forEach(function(r){h+='<li>\u2b06\ufe0f '+usd(r.amt)+' withdrawal '+fmt(r.at).replace(/^\w+, /,"")+' \u00b7 no tick</li>';});
     k.unBuy.forEach(function(r){h+='<li>\u2b07\ufe0f '+usd(r.amt)+' buy '+fmt(r.at).replace(/^\w+, /,"")+' \u00b7 no tick</li>';});
+    if(k.startOff)h+='<li>\ud83e\uddfe Starting balance typed <b>'+usd(k.startTyped)+'</b> but Coinbase had <b>'+usd(k.startReal)+'</b> on '+fmtS(k.asof)+' \u2014 fix it in Settings (not a missing tick)</li>';
     if(Math.abs(k.rest)>=1)h+='<li>\u2753 '+usd(Math.abs(k.rest))+' more '+(k.rest<0?'left':'arrived')+' \u2014 not in Coinbase\u2019s list yet'+(k.thru?' (list ends '+fmtS(k.thru)+')':'')+'</li>';
     return h+'</ul></div>';
   }
@@ -8775,7 +8783,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "de483f9 2026-10-23 22:53 UTC".indexOf("STAMP") >= 0 ? "dev" : "de483f9 2026-10-23 22:53 UTC";
+  var GFH_BUILD = "b649791 2026-10-24 18:08 UTC".indexOf("STAMP") >= 0 ? "dev" : "b649791 2026-10-24 18:08 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
