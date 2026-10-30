@@ -24,6 +24,8 @@ t("Smartly 4037: 4% then 2%, limit 10k", sm["card"] == 4.0 and sm["alt_card"] ==
 t("Rinad's 6584 carries owner Rinad", [x for x in c["cards"] if x["lc"] == "6584"][0]["owner"] == "Rinad")
 t("Costco Visa: 2% + Taekus 1.8%", [x for x in c["cards"] if x["lc"] == "6848"][0]["tk"] == 1.8)
 t("no card has a number longer than last-4", all(x["lc"] is None or len(x["lc"]) == 4 for x in c["cards"]))
+t("Smartly 4037 carries its closing date", sm["closed"] == "2026-10-27")
+t("every other card is open", all(x["closed"] is None for x in c["cards"] if x["lc"] != "4037"))
 try:
     ac.parse("nothing here"); t("missing source raises", False)
 except ValueError:

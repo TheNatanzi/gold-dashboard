@@ -49,6 +49,7 @@ def _owned(s):
             "type": f("type", str),
             "limit": f("limit"),
             "owner": owner,
+            "closed": f("closed", str, False),   # closing date (YYYY-MM-DD) or None
         })
     if not cards:
         raise ValueError("alchemy_constants: OWNED parsed empty")

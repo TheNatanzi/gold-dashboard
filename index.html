@@ -886,6 +886,7 @@ var ELEM_SHEET_DATE = "2026-10-29";   /* GFH_SHEET_DATE */
   .card:hover{border-color:var(--line2);transform:translateX(2px)}
   .card.pinned{border-color:var(--gold-deep);background:linear-gradient(180deg,var(--panel2),var(--panel))}
   .card.win{border-color:rgba(75,214,160,.32)}
+  .card.closed{opacity:.45;filter:grayscale(1)}
   .colhead{display:grid;grid-template-columns:22px 1.55fr .78fr .95fr .95fr;gap:13px;
     padding:0 15px 2px;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;
     text-transform:uppercase;color:var(--ink-mute)}
@@ -2834,7 +2835,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
           <div class="rx-grp">
             <h6>The gold card rotation</h6>
             <div class="rx-srow"><span class="st biz">BUSINESS</span><span class="tx"><b>Citi Costco 6848</b> — Visa, in person or online. Multiple runs OK. Limit <b>$15,000.</b></span></div>
-            <div class="rx-srow"><span class="st pers">PERSONAL</span><span class="tx"><b>U.S. Bank Smartly 4037</b> — one run per statement. Limit <b>$10,000.</b> <b>4% only on the first $10k</b> of posted spend each cycle, then drops to 2% (CC5).</span></div>
+            <div class="rx-srow"><span class="st deny">CLOSED</span><span class="tx"><b>U.S. Bank Smartly 4037 — CLOSED 2026-10-27</b> (bank shut it; 67,531 pts ≈ $675.31 forfeited at closure, pending Medi's call). Was: one run per statement. Limit <b>$10,000.</b> <b>4% only on the first $10k</b> of posted spend each cycle, then drops to 2% (CC5).</span></div>
             <div class="rx-srow"><span class="st pers">PERSONAL</span><span class="tx"><b>Venmo 4334</b> — one run per statement. Limit <b>$20,000.</b></span></div>
             <div class="rx-srow"><span class="st pers">PERSONAL</span><span class="tx"><b>Citi Double Cash 2486</b> — Mastercard = <b>ONLINE only.</b> One run per statement. Limit <b>$8,300.</b></span></div>
             <div class="rx-srow"><span class="st unk">NOT IN</span><span class="tx"><b>Chime 5316</b> — secured, $0 credit line. <b>Not</b> part of the gold rotation.</span></div>
@@ -3232,7 +3233,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: ed6f68e · built 2026-10-29 14:54 UTC</span>
+    <span id="verStamp" class="tnum">version: 818ec6a · built 2026-10-30 01:48 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3293,7 +3294,10 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
      catch:"Verified 3% at Costco + Synchrony Taekus — your best per-bar card. In-store OK."},
     // alt = the SAME card's second tier, shown inside its box (Medi 2026-09-18): 4% on the first $10k
     // of posted spend each cycle, 2% after that (CC5). The headline + buying power stay at 4%.
+    // CLOSED (Medi 2026-10-29: "mark 4037 closed"): U.S. Bank shut it, paid to $0. Closed date 2026-10-27 = last
+    // Plaid read (hub migration 054). Kept here for history; closed = $0 buying power, no checkbox, greyed box.
     {name:"U.S. Bank Smartly (4% / 2%)", biller:"U.S. Bank", net:"visa", card:4.0, tk:0, type:"Personal", order:4, limit:10000, lc:"4037",
+     closed:"2026-10-27",
      alt:{card:2.0, label:"after $10k"},
      catch:"Needs ~$100k parked at U.S. Bancorp. 4% on the first $10k each cycle, then 2%. In-store OK."},
     // Rinad's Smartly (Medi 2026-10-15): own box, own live feed (Plaid, hub 049). Limit $25k per Plaid.
@@ -3400,6 +3404,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     return (isFinite(v) && v>0) ? v : c.limit;
   }
   function lcSpendable(c){
+    if(c.closed) return {amt:0, live:false, why:"closed"};
     const r = c.lc && lcRow(c.lc);
     if(!r || r.available==null) return {amt:cardLimit(c), live:false};
     if(r.status==="unavailable") return {amt:0, live:true, why:r.unavailable_reason==="venmo_used" ? "used this period" : "held"};
@@ -3534,7 +3539,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     return {sp, r4037, tierLow, perBar, share, profit: share*perBar};
   }
   function computeBP(rows, buy, lossP, prem){
-    const pool=rows.filter(x=>x.barP>0 && avail[x.c.name] && !mcLocked(x.c)).sort((a,b)=>b.eff-a.eff);
+    const pool=rows.filter(x=>x.barP>0 && avail[x.c.name] && !mcLocked(x.c) && !x.c.closed).sort((a,b)=>b.eff-a.eff);
     // ONE BAR IS ONE TRANSACTION, so it is bought in ONE place. A Mastercard in the pool
     // means the split-tender is happening on Costco.com, and Costco.com charges $10 more
     // per bar -- which every card in that basket then pays, not just the Mastercard. An
@@ -3777,6 +3782,13 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
         mx.appendChild(d); mcDone=true;
       }
       const el=document.createElement("div");
+      if(x.c.closed){
+        el.className="card closed";
+        el.innerHTML=`<div class="ch"><label class="avail off" title="Closed"><input type="checkbox" disabled></label><span class="cl">${cardLogo(x.c)}</span>
+          <div class="cn">${x.c.name}<small>Closed ${x.c.closed} · not offered for new buys · history kept</small></div></div>`;
+        mx.appendChild(el);
+        return;
+      }
       const spW=lcSpendable(x.c);
       const win=(barType==="pamp"?x.barP:x.barG)>=0 && !(spW.live && spW.amt < x.buy);
       el.className="card "+(x.c.hero?"pinned ":"")+(win?"win":"");
@@ -4468,6 +4480,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
       td[3].innerHTML='<span class="stc '+(r.status==="capped"?'deny':'ok')+'">'+r.status.toUpperCase()+'</span>';
       td[4].textContent=usd(r.reward_now); td[5].textContent=usd0(room(r));
       td[6].textContent=md(r.since); td[7].textContent=md(r.expires); td[8].textContent=md(r.renewable);
+      if(td[9] && (r.auto_renew || r.auto_renew_note)) td[9].textContent=[String(r.auto_renew||"").toUpperCase(), r.auto_renew_note].filter(Boolean).join(" \u00b7 ");
     });
     var badge=panel.querySelector(".rx-mhead .rx-badge");
     var newest=rows.reduce(function(m,r){ return r.updated_at>m?r.updated_at:m; },"");
@@ -6086,23 +6099,24 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-10-28T18:24:52-07:00",
+    at: "2026-10-29T11:01:54-07:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
-    price: 4149.99,
+    price: 4129.99,
     // Written by warehouse-inventory/daily_pull.py — see DAILY-PULL.md.
-    // 24 of the 45, keyed on the row carrying the SKU, never the store badge.
-    inStock: ["brentwood", "danville", "fairfield", "fremont", "lodi", "manteca",
-              "modesto", "mountainview", "newark", "novato", "redwoodcity", "richmond",
-              "riverbank", "sacnatomas", "sacstockton", "santaclara", "sjgreatoaks",
-              "sjne", "ssf", "stockton", "sunnyvale", "tracy", "vallejo", "woodland"],
-    // 16 of the 45. Stores whose rail rows were truncated were opened and
+    // 19 of the 45, keyed on the row carrying the SKU, never the store badge.
+    inStock: ["brentwood", "danville", "fairfield", "lodi", "manteca", "modesto",
+              "novato", "richmond", "riverbank", "sacnatomas", "sacstockton",
+              "santaclara", "sjgreatoaks", "sjne", "ssf", "stockton", "sunnyvale",
+              "vallejo", "woodland"],
+    // 21 of the 45. Stores whose rail rows were truncated were opened and
     // read from their own page this run, not carried forward.
-    soldOut: {antioch:"today", concord:"1d", fostercity:"1d", hayward:"1d",
-              livermore:"today", pleasanton:"today", ranchocordova:"1m",
-              saccalexpo:"1m", sanleandro:"today", santacruz:"4d", santarosa:"4d",
-              sf:"today", sjalmaden:"2d", sjsenter:"today", ssfairport:"today",
-              vacaville:"1m"}
+    soldOut: {antioch:"today", concord:"2d", fostercity:"1d", fremont:"today",
+              hayward:"2d", livermore:"today", mountainview:"today", newark:"today",
+              pleasanton:"today", ranchocordova:"1m", redwoodcity:"today",
+              saccalexpo:"1m", sanleandro:"today", santacruz:"5d", santarosa:"5d",
+              sf:"today", sjalmaden:"2d", sjsenter:"today", ssfairport:"1d",
+              tracy:"today", vacaville:"1m"}
   };
 
   // Turn the snapshot into the same row shape wiRenderNow/wiRenderTable already
@@ -8793,7 +8807,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "ed6f68e 2026-10-29 14:54 UTC".indexOf("STAMP") >= 0 ? "dev" : "ed6f68e 2026-10-29 14:54 UTC";
+  var GFH_BUILD = "818ec6a 2026-10-30 01:48 UTC".indexOf("STAMP") >= 0 ? "dev" : "818ec6a 2026-10-30 01:48 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
