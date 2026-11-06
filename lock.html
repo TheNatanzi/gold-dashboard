@@ -554,8 +554,8 @@
     else if(endPendingSince!=null){ mEl.textContent='Ending — waiting for the PC to lock…'; }
     else if(startPendingSince!=null){ mEl.textContent='START sent — waiting for the PC to pick it up…'; }
     else if(stopPendingSince!=null){ mEl.textContent='STOP sent — waiting for the PC to cancel…'; }
-    else if(active && watcherAlive && sess.sent_at){ mEl.textContent='SELL sent '+ptHm(sess.sent_at)+' · still watching — tap STOP when you are done.'; mEl.classList.add('ok'); }
-    else if(active && watcherAlive){ mEl.textContent='PC is watching ✓ — texts every 5 min. Walk away.'; mEl.classList.add('ok'); }
+    else if(active && watcherAlive && sess.sent_at){ mEl.textContent='SELL sent '+ptHm(sess.sent_at)+' · still watching — tap STOP when done (auto-stops 9 PM).'; mEl.classList.add('ok'); }
+    else if(active && watcherAlive){ mEl.textContent='PC is watching ✓ — texts every 5 min · auto-stops 9 PM. Walk away.'; mEl.classList.add('ok'); }
     else if(dSess && dSess.status==='cancelled' && !heartbeatStale){ mEl.textContent='Stopped ✓ — session cancelled, no email.'; }
     else if(dSess && dSess.status==='sent'){ mEl.textContent='🔒 Locked ✓ — email sent'+(dSess.sms_stop_at?' · stopped '+ptHm(dSess.sms_stop_at):'')+'.'; mEl.classList.add('ok'); }
     else { mEl.textContent='Tap START LOCK when you buy · it texts you every 5 min · STOP when you\'re done'; }
