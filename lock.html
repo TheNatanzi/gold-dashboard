@@ -13,6 +13,7 @@
 <!-- /ALCHEMY-FAVICON -->
 <!-- ALCHEMY-LOCK-HONESTY v4 · 2026-08-18 · STOP resolves cleanly when there's nothing to cancel -->
 <!-- richmail-v1 · 2026-08-19 · END NOW button (two-tap confirm) + rich multi-shot lock email -->
+<!-- texts-v1 · 2026-11-06 · NO AUTO-STOP: a sold session keeps watching until STOP (button back, two-tap) + phone texts row -->
 <!-- session-over-v1 · 2026-08-24 · finished sessions freeze their counters (no ticking age),
      drop live-only tiles to dashes, and the whole panel resets to a clean IDLE after 1 hour -->
 <meta name="alchemy-build" content="session-over-v1-2026-08-24" />
@@ -52,6 +53,13 @@
   .badge.sudden_death{background:rgba(224,83,58,.16);color:var(--death)}
   .badge.sent{background:rgba(47,191,113,.16);color:var(--ok)}
   .badge.stopped{background:#20262f;color:var(--mut)}
+  .badge.sold{background:rgba(229,72,77,.18);color:var(--death)}
+  .soldbar{display:none;margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(229,72,77,.10);border:1px solid rgba(229,72,77,.45);font-weight:800;font-size:15px;text-align:center}
+  .soldbar.on{display:block}
+  .texts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;justify-content:center}
+  .texts span{font-size:12px;padding:4px 9px;border-radius:999px;background:#20262f;color:var(--mut)}
+  .texts span.on{background:rgba(47,191,113,.16);color:var(--ok)}
+  .stop.armed{animation:pulse 1s ease-in-out infinite}
   .badge.error{background:rgba(224,83,58,.16);color:var(--death)}
 
   .price{font-size:54px;font-weight:800;letter-spacing:-.02em;margin:8px 0 0;line-height:1;font-variant-numeric:tabular-nums}
@@ -134,6 +142,8 @@
     <span id="badge" class="badge idle">IDLE</span>
     <div class="price" id="price">$—<span class="arrow" id="arrow"></span></div>
     <div class="sub"><span class="dot" id="statusDot"></span><span id="updated">no active session</span></div>
+    <!-- 2026-11-06: a SOLD session keeps watching until STOP — say so loudly. -->
+    <div class="soldbar" id="soldBar">🔴 SELL sent —:— · still watching</div>
     <!-- Prominent 12-minute grace countdown (headline timer). -->
     <div class="gracebar" id="graceBar">
       <div class="grow"><span class="glabel">Grace ends in</span><span class="gbig" id="graceBig">12:00</span></div>
@@ -175,17 +185,20 @@
 
   <!-- 1 · Controls -->
   <div class="card">
-    <!-- STOP removed 2026-09-04 (Medi): only START LOCK + END NOW & LOCK. The watcher still honors a
-         'stop' command written to lock_control (kept as the emergency path from the PC / SQL). -->
-    <div class="btns3">
+    <!-- STOP is BACK (2026-11-06): the session no longer ends by itself after the SELL — it keeps watching and
+         texting every 5 min until STOP. Two-tap confirm like END NOW, so a stray tap never ends a watch. -->
+    <div class="btns">
       <button class="start" id="startBtn">START LOCK</button>
+      <button class="stop" id="stopBtn" disabled>STOP</button>
     </div>
     <div class="btns3">
       <!-- END NOW — lock + email the best still-valid shot right now. Enabled only during an active
            session. Two-tap confirm so an accidental tap NEVER sends. -->
       <button class="end" id="endBtn" disabled>END NOW &amp; LOCK</button>
     </div>
-    <div class="msg" id="msg">Tap START LOCK when you buy · END NOW &amp; LOCK to finish early</div>
+    <div class="msg" id="msg">Tap START LOCK when you buy · it texts you every 5 min · STOP when you're done</div>
+    <!-- Phone texts (Medi + Hamed): which ones the PC has queued this session. -->
+    <div class="texts" id="texts"><span id="txStart">🟢 start</span><span id="txStatus">⏱ 5-min · 0</span><span id="txSell">🔴 sell</span><span id="txStop">⏹ stop</span></div>
   </div>
 
   <div class="card">
@@ -228,6 +241,8 @@
   let startPendingSince = null, stopPendingSince = null, endPendingSince = null;
   let stopTargetId = null;   // which session STOP was aimed at (so we confirm THAT one cancelled)
   let endArmed = false, endArmTimer = null;   // END NOW two-tap confirm state
+  let stopArmed = false, stopArmTimer = null; // STOP two-tap confirm state (2026-11-06)
+  const ptHm = (iso)=> new Date(iso).toLocaleTimeString('en-US',{timeZone:'America/Los_Angeles',hour:'numeric',minute:'2-digit',hour12:true});
 
   const $ = (id) => document.getElementById(id);
   const fmt$ = (n) => (n==null || !isFinite(n)) ? '—' : '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -265,9 +280,11 @@
     // Ticks for that session, oldest→newest, up to ~200.
     let ticks = [];
     if(sess){
-      const t = await sb.from('lock_ticks').select('on_page_ts,price,note').eq('session_id',sess.id).order('on_page_ts',{ascending:true}).limit(200);
+      // NEWEST 400 (≈1h40m), reversed to oldest→newest. Was ascending+limit(200) = the FIRST 50 min, which froze
+      // the chart/"last read" on any session past ~50 min — fatal now that sessions run until STOP.
+      const t = await sb.from('lock_ticks').select('on_page_ts,price,note').eq('session_id',sess.id).order('on_page_ts',{ascending:false}).limit(400);
       if(t.error) throw t.error;
-      ticks = (t.data||[]).filter(r=>r && r.price!=null).map(r=>({ ts:new Date(r.on_page_ts).getTime(), price:Number(r.price), note:r.note||'' , iso:r.on_page_ts})).filter(r=>isFinite(r.ts)&&isFinite(r.price));
+      ticks = (t.data||[]).slice().reverse().filter(r=>r && r.price!=null).map(r=>({ ts:new Date(r.on_page_ts).getTime(), price:Number(r.price), note:r.note||'' , iso:r.on_page_ts})).filter(r=>isFinite(r.ts)&&isFinite(r.price));
     }
 
     // Control row (health + we write command here). Select '*' so the page still works BEFORE the
@@ -321,6 +338,7 @@
     if(!sess) return { cls:'idle', label:'IDLE' };
     const st = sess.status, ph = sess.phase || 'grace';
     if(st==='sent')      return { cls:'sent',        label:'🔒 LOCK SENT' };
+    if(st==='active' && sess.sent_at) return { cls:'sold', label:'🔴 SOLD · WATCHING' };
     if(st==='cancelled') return { cls:'stopped',     label:'STOPPED' };
     if(st==='error')     return { cls:'error',       label:'ERROR' };
     if(ph==='sudden_death') return { cls:'sudden_death', label:'SUDDEN DEATH' };
@@ -478,8 +496,9 @@
     if(startPendingSince!=null && startPickedUp) startPendingSince = null;    // confirmed watching
     // STOP is confirmed when the targeted session actually cancels — OR when there's simply nothing
     // active to cancel (idle watcher / already ended), so STOP never hangs forever on a no-op.
+    // (2026-11-06) a SOLD session ends as 'sent' on STOP, an unsold one as 'cancelled' — any non-active counts.
     const stopConfirmed = stopPendingSince!=null && (
-      (sess && sess.id===stopTargetId && sess.status==='cancelled') || !active
+      (sess && sess.id===stopTargetId && sess.status!=='active') || !active
     );
     if(stopConfirmed){ stopPendingSince = null; stopTargetId = null; }
 
@@ -535,15 +554,30 @@
     else if(endPendingSince!=null){ mEl.textContent='Ending — waiting for the PC to lock…'; }
     else if(startPendingSince!=null){ mEl.textContent='START sent — waiting for the PC to pick it up…'; }
     else if(stopPendingSince!=null){ mEl.textContent='STOP sent — waiting for the PC to cancel…'; }
-    else if(active && watcherAlive){ mEl.textContent='PC is watching ✓ — walk away.'; mEl.classList.add('ok'); }
+    else if(active && watcherAlive && sess.sent_at){ mEl.textContent='SELL sent '+ptHm(sess.sent_at)+' · still watching — tap STOP when you are done.'; mEl.classList.add('ok'); }
+    else if(active && watcherAlive){ mEl.textContent='PC is watching ✓ — texts every 5 min. Walk away.'; mEl.classList.add('ok'); }
     else if(dSess && dSess.status==='cancelled' && !heartbeatStale){ mEl.textContent='Stopped ✓ — session cancelled, no email.'; }
-    else if(dSess && dSess.status==='sent'){ mEl.textContent='🔒 Locked ✓ — email sent.'; mEl.classList.add('ok'); }
-    else { mEl.textContent='Tap START LOCK when you buy · END NOW & LOCK to finish early'; }
+    else if(dSess && dSess.status==='sent'){ mEl.textContent='🔒 Locked ✓ — email sent'+(dSess.sms_stop_at?' · stopped '+ptHm(dSess.sms_stop_at):'')+'.'; mEl.classList.add('ok'); }
+    else { mEl.textContent='Tap START LOCK when you buy · it texts you every 5 min · STOP when you\'re done'; }
+
+    // SOLD-but-still-running banner + texts row.
+    const sb2=$('soldBar');
+    if(active && sess.sent_at){ sb2.textContent='🔴 SELL sent '+ptHm(sess.sent_at)+(sess.sent_price!=null?' · lock '+fmt$(Number(sess.sent_price)):'')+' · still watching'; sb2.classList.add('on'); }
+    else sb2.classList.remove('on');
+    const tx=(id,on,txt)=>{ const e=$(id); e.classList.toggle('on',!!on); if(txt) e.textContent=txt; };
+    tx('txStart', dSess && dSess.sms_start_at, '🟢 start'+(dSess&&dSess.sms_start_at?' '+ptHm(dSess.sms_start_at):''));
+    tx('txStatus', dSess && dSess.sms_status_n>0, '⏱ 5-min · '+((dSess&&dSess.sms_status_n)||0));
+    tx('txSell', dSess && dSess.sms_sell_at, '🔴 sell'+(dSess&&dSess.sms_sell_at?' '+ptHm(dSess.sms_sell_at):''));
+    tx('txStop', dSess && dSess.sms_stop_at, '⏹ stop'+(dSess&&dSess.sms_stop_at?' '+ptHm(dSess.sms_stop_at):''));
+
+    // STOP button: enabled only while a session is live (it ends it — no email).
+    const stopBtn=$('stopBtn');
+    if(!stopArmed){ stopBtn.disabled = !active || stopPendingSince!=null; stopBtn.textContent = stopPendingSince!=null ? 'Stopping…' : 'STOP'; }
 
     // ── END NOW button state: enabled ONLY during an active session; disabled while ending / when idle ──
     const endBtn=$('endBtn');
     if(!endArmed){
-      const canEnd = active;                       // nothing to end unless a session is live
+      const canEnd = active && !sess.sent_at;      // nothing to end unless live + not yet sold (after the SELL, STOP ends it)
       endBtn.disabled = !canEnd || endPendingSince!=null;
       endBtn.textContent = endPendingSince!=null ? 'Ending…' : 'END NOW & LOCK';
     }
@@ -638,6 +672,9 @@
       gBig.textContent = clock(rem);
       gFill.style.width = Math.max(0, Math.min(100, rem/GRACE_MS*100)) + '%';
       gBar.classList.add('on','grace');
+    } else if(active && sess.sent_at){
+      gEl.textContent = 'sold';
+      gBar.classList.remove('on');
     } else if(active && watcherAlive && ph==='sudden_death'){
       gEl.textContent = 'sudden death';
       gBig.textContent = 'SUDDEN DEATH';
@@ -685,7 +722,15 @@
     setTimeout(poll, 700); setTimeout(poll, 2500); setTimeout(poll, 5000); setTimeout(poll, 9000);
   }
   $('startBtn').onclick = ()=>sendCommand('start');
-  if($('stopBtn')) $('stopBtn').onclick = ()=>sendCommand('stop');   // button removed 2026-09-04; path kept
+  // STOP · two-tap confirm (2026-11-06) — ends the watch + texts "stopped"; never sends a lock email.
+  const stopBtn = $('stopBtn');
+  function disarmStop(){ stopArmed=false; if(stopArmTimer){ clearTimeout(stopArmTimer); stopArmTimer=null; } stopBtn.classList.remove('armed'); stopBtn.textContent = stopPendingSince!=null ? 'Stopping…' : 'STOP'; }
+  stopBtn.onclick = ()=>{
+    if(stopBtn.disabled) return;
+    if(!stopArmed){ stopArmed=true; stopBtn.classList.add('armed'); stopBtn.textContent='Tap again to STOP'; if(stopArmTimer) clearTimeout(stopArmTimer); stopArmTimer=setTimeout(disarmStop, END_ARM_MS); return; }
+    disarmStop();
+    sendCommand('stop');
+  };
 
   // ── END NOW · mandatory two-tap confirm (an accidental single tap must NEVER send an email) ─────────
   // First tap ARMS the button (turns red "Tap again to LOCK + email") and auto-cancels after ~4s.
