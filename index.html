@@ -3233,7 +3233,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 65521a5 · built 2026-11-06 23:53 UTC</span>
+    <span id="verStamp" class="tnum">version: 1f132f3 · built 2026-11-07 23:21 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -6099,7 +6099,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-11-06T14:09:47-08:00",
+    at: "2026-11-07T11:02:06-08:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
     price: 4169.90,
@@ -6108,16 +6108,16 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     inStock: [],
     // 40 of the 45. Stores whose rail rows were truncated were opened and
     // read from their own page this run, not carried forward.
-    soldOut: {antioch:"2d", brentwood:"1d", concord:"4d", danville:"1d",
-              fairfield:"1d", fostercity:"1d", fremont:"1d", hayward:"4d",
-              livermore:"2d", lodi:"1d", manteca:"1d", modesto:"1d", mountainview:"1d",
-              newark:"2d", novato:"1d", pleasanton:"1d", ranchocordova:"1m",
-              redwoodcity:"1d", richmond:"1d", riverbank:"1d", saccalexpo:"1m",
-              sacnatomas:"1d", sacstockton:"1d", sanleandro:"1d", santaclara:"1d",
-              santacruz:"13d", santarosa:"2d", sf:"1d", sjalmaden:"1d",
-              sjgreatoaks:"1d", sjne:"1d", sjsenter:"2d", ssf:"1d", ssfairport:"1d",
-              stockton:"1d", sunnyvale:"1d", tracy:"8d", vacaville:"1m", vallejo:"1d",
-              woodland:"1d"}
+    soldOut: {antioch:"2d", brentwood:"2d", concord:"5d", danville:"2d",
+              fairfield:"2d", fostercity:"2d", fremont:"2d", hayward:"5d",
+              livermore:"2d", lodi:"2d", manteca:"2d", modesto:"2d", mountainview:"2d",
+              newark:"2d", novato:"2d", pleasanton:"2d", ranchocordova:"1m",
+              redwoodcity:"2d", richmond:"2d", riverbank:"1d", saccalexpo:"1m",
+              sacnatomas:"2d", sacstockton:"2d", sanleandro:"2d", santaclara:"2d",
+              santacruz:"14d", santarosa:"3d", sf:"2d", sjalmaden:"2d",
+              sjgreatoaks:"2d", sjne:"2d", sjsenter:"2d", ssf:"2d", ssfairport:"2d",
+              stockton:"2d", sunnyvale:"2d", tracy:"9d", vacaville:"1m", vallejo:"2d",
+              woodland:"2d"}
   };
 
   // Turn the snapshot into the same row shape wiRenderNow/wiRenderTable already
@@ -7650,6 +7650,14 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
          row(fid+'day','Due day','day of the month (1&ndash;31)','<input type="text" inputmode="numeric" id="'+fid+'day" data-f="fee_day" data-kind="int" placeholder="&mdash;" value="'+(r.fee_day||"")+'">')+
          '<p class="cb-nx cb-fs" data-paid="'+(r.fee_paid_for||"")+'">'+feeHtml(r.fee_day,null,r.fee_paid_for)+'</p>'+
        '</div></div>';
+    // Medi 11-07: a player can take a % of PROFIT instead of a flat fee (GEO = half). Profit = rewards - Coinbase One.
+    var shp=r.share_pct!=null&&+r.share_pct>0,sid='cb_'+c+'_share_';
+    h+='<div class="cb-m cb-fee cb-share">'+
+       '<div class="cb-sw"><b>Profit share</b><em>'+(shp?(+r.share_pct)+'% to them':'off')+'</em></div>'+
+       '<div class="cb-mb">'+
+         row(sid+'pct','Their share','% of profit after Coinbase One &middot; blank = none','<input type="text" inputmode="decimal" id="'+sid+'pct" data-f="share_pct" data-kind="pct" placeholder="&mdash;" value="'+(r.share_pct!=null?(+r.share_pct):"")+'">')+
+         row(sid+'start','Starts','Pacific &middot; profit before this stays ours',inp(sid+'start','share_start',toLocalInput(r.share_start),"dt"))+
+       '</div></div>';
     h+='<div class="cb-gen">'+
        row('cb_'+c+'_cb_start','Coinbase balance','starting point for Overview',inp('cb_'+c+'_cb_start','cb_start',dollars(r.cb_start),"$"))+
        row('cb_'+c+'_bal_as_of','Balance as of','Pacific &middot; auto = now when balance changes',inp('cb_'+c+'_bal_as_of','bal_as_of',toLocalInput(r.bal_as_of),"dt"))+
@@ -7715,7 +7723,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   },60000);
   document.addEventListener("click",function(ev){
     var b=ev.target.closest&&ev.target.closest(".cb-save");if(!b)return;
-    var c=b.closest(".cb-card"),msg=c.querySelector(".cb-msg"),rec={code:c.dataset.code},bad=false,badDay=false,partial=[];
+    var c=b.closest(".cb-card"),msg=c.querySelector(".cb-msg"),rec={code:c.dataset.code},bad=false,badDay=false,badPct=false,partial=[];
     c.querySelectorAll(".cb-bad").forEach(function(x){x.classList.remove("cb-bad");});
     c.querySelectorAll("input[data-f]").forEach(function(i){
       var f=i.dataset.f;
@@ -7730,6 +7738,10 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
         rec[f]=fromLocalInput(i.value);
       }
       else if(i.dataset.kind==="text")rec[f]=i.value.trim()||null;
+      else if(i.dataset.kind==="pct"){
+        var q=i.value.trim().replace(/\s*%$/,"");
+        if(q==="")rec[f]=null;else if(!/^\d+(\.\d+)?$/.test(q)||+q>100){badPct=true;i.classList.add("cb-bad");}else rec[f]=+q;
+      }
       else if(i.dataset.kind==="int"){
         // Accept "1", "1st", or a date like "10/1" (= the 1st of every month).
         var n=i.value.trim(),md=n.match(/^\d{1,2}\s*[\/\-.]\s*(\d{1,2})(?:\s*[\/\-.]\s*\d{2,4})?$/);
@@ -7744,6 +7756,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     function stop(t){msg.className="cb-msg bad";msg.textContent="⚠ NOT SAVED — "+t;msg.scrollIntoView({block:"center",behavior:"smooth"});}
     if(bad){stop("dollar boxes take numbers only, 0 or more.");return;}
     if(partial.length){partial.forEach(function(x){x.classList.add("cb-bad");});partial[0].focus();stop("finish the red date box — it needs the time and AM/PM too.");return;}
+    if(badPct){stop("Their share is a percent, 0–100 (e.g. 50).");return;}
     if(badDay){stop("Due day is the day of the month, 1–31 (e.g. 1 or 10/1).");return;}
     // Balance changed but "as of" untouched -> the new balance is as of NOW.
     var asof=c.querySelector('[data-f="bal_as_of"]');
@@ -7913,6 +7926,13 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     for(var k=0;k<600;k++){var d=new Date(s);d.setUTCMonth(s.getUTCMonth()+k);var t=d.getTime();if(t>toMs)break;if(t>=fromMs)n++;}
     return n*(+p.cb1_monthly||0);
   }
+  function shareOf(p){var x=+p.share_pct;return x>0?Math.min(100,x)/100:0;}
+  // Profit share paid out in [a,b]: share x (their rewards - their Coinbase One), counted from share_start.
+  function sharePaid(p,rw,a,b){
+    var sh=shareOf(p);if(!sh)return 0;var lo=Math.max(a,p.share_start?new Date(p.share_start).getTime():0);if(lo>b)return 0;
+    var got=rw.reduce(function(t,x){var u=new Date(x.at).getTime();return x.code===p.code&&u>=lo&&u<=b?t+x.amt:t;},0);
+    return Math.max(0,got-cb1Charges(p,lo,b))*sh;
+  }
   // Ceiling $/month: every ON method's window hit every time (Medi: ceiling only).
   function ceiling(p){
     var g=0,missing=[];
@@ -7922,7 +7942,9 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
       g+=lim*(MONTH_DAYS*24/M[k][1])*M[k][2];
     });
     var cost=(+p.cb1_monthly||0)+(p.fee_on===true?(+p.fee_amount||0):0);
-    return {gross:g,cost:cost,net:g-cost,missing:missing};
+    // Profit share (Medi 11-07): their % of (rewards - Coinbase One), never below $0.
+    var share=shareOf(p)>0?Math.max(0,g-(+p.cb1_monthly||0))*shareOf(p):0;
+    return {gross:g,cost:cost+share,share:share,net:g-cost-share,missing:missing};
   }
   // Balances count ticks at/after "balance as of"; in-process boxes = every open item.
   function stages(p,L,upto){  // upto (ms) = only events at/before it (Coinbase feed check)
@@ -7948,7 +7970,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     (S.all||S.people).forEach(function(p){
       // A hidden player's Coinbase One stops counting the day they were hidden; past charges stay.
       var end=p.hidden_at?Math.min(nowMs,new Date(p.hidden_at).getTime()):nowMs,lmEnd=Math.min(mStart-1,end);
-      r.cb1+=cb1Charges(p,0,end)+feeSum(p,0,end);r.cb1ytd+=cb1Charges(p,yStart,end)+feeSum(p,yStart,end);r.cb1last+=cb1Charges(p,lmStart,lmEnd)+feeSum(p,lmStart,lmEnd);
+      r.cb1+=cb1Charges(p,0,end)+feeSum(p,0,end)+sharePaid(p,rw,0,end);r.cb1ytd+=cb1Charges(p,yStart,end)+feeSum(p,yStart,end)+sharePaid(p,rw,yStart,end);r.cb1last+=cb1Charges(p,lmStart,lmEnd)+feeSum(p,lmStart,lmEnd)+sharePaid(p,rw,lmStart,lmEnd);
       if(p.hidden_at)return;
       var c=ceiling(p);proj.gross+=c.gross;proj.cost+=c.cost;proj.net+=c.net;c.missing.forEach(function(m){proj.missing.push(p.code+" "+m);});
     });
@@ -8188,6 +8210,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     });
     h+=crow(logo("coinbase"),'Coinbase One','we pay',usd(-(+p.cb1_monthly||0)),'neg');
     h+=crow('\ud83e\uddfe','Monthly fee',p.fee_on===true?'due day '+(p.fee_day||'?'):'none',usd(-(p.fee_on===true?(+p.fee_amount||0):0)),p.fee_on===true?'neg':'off');
+    if(ce.share)h+=crow('\ud83e\udd1d','Profit share',pct(shareOf(p))+' of '+usd(ce.gross-(+p.cb1_monthly||0)),usd(-ce.share),'neg');
     h+=crow('','= per month','',usd(ce.net),'res')+crow('','\u00d7 12 = per year','',usd(ce.net*12),'res');
     var mine=r.rw.filter(function(x){return x.code===c&&new Date(x.at).getTime()<=r.nowMs;}),got=0;
     h+='<div class="cbc-h">\u2705 Made so far</div>';
@@ -8200,7 +8223,9 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     var ch=cb1List(p,r.nowMs),cost=ch.length*(+p.cb1_monthly||0),fl=feeList(p,r.nowMs),fcost=fl.reduce(function(t,x){return t+x.amt;},0);
     h+=crow(logo("coinbase"),'Coinbase One',ch.length?ch.length+' \u00d7 '+k$(p.cb1_monthly)+' \u00b7 '+ch.map(fmtDay).join(", "):'no start date',usd(-cost),'neg');
     h+=crow('\ud83e\uddfe','Monthly fee',fl.length?fl.length+' paid \u00b7 '+fl.map(function(x){return fmtDay(x.d);}).join(', '):(p.fee_on===true?'none paid yet':'none'),usd(-fcost),fcost?'neg':'off');
-    h+=crow('','= net so far','',usd(got-cost-fcost),'res');
+    var spd=sharePaid(p,r.rw,0,r.nowMs);
+    if(shareOf(p))h+=crow('\ud83e\udd1d','Profit share',pct(shareOf(p))+' since '+(p.share_start?fmtDay(new Date(p.share_start)):'start'),usd(-spd),spd?'neg':'off');
+    h+=crow('','= net so far','',usd(got-cost-fcost-spd),'res');
     h+='<div class="cbc-h">\ud83d\udcc5 By month</div>'+historyTable(mine,ch.map(function(d){return {d:d,amt:+p.cb1_monthly||0};}).concat(fl));
     return h+'</div>';
   }
@@ -8808,7 +8833,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "65521a5 2026-11-06 23:53 UTC".indexOf("STAMP") >= 0 ? "dev" : "65521a5 2026-11-06 23:53 UTC";
+  var GFH_BUILD = "1f132f3 2026-11-07 23:21 UTC".indexOf("STAMP") >= 0 ? "dev" : "1f132f3 2026-11-07 23:21 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
