@@ -46,6 +46,9 @@
       inp=document.getElementById('pgInput'),
       btn=document.getElementById('pgBtn'),
       err=document.getElementById('pgErr');
+  // One-time pass set by the page's own auto reload (new version live) -- skip the curtain once.
+  try{ var ar=+sessionStorage.getItem('gfhAutoReload')||0; sessionStorage.removeItem('gfhAutoReload');
+       if(ar && Date.now()-ar < 60000){ gate.classList.add('hidden'); return; } }catch(e){}
   document.documentElement.style.overflow='hidden';   // no scrolling the board behind the curtain
   function unlock(){
     if(inp.value===PIN){ gate.classList.add('hidden'); document.documentElement.style.overflow=''; }
@@ -3233,7 +3236,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 1f132f3 · built 2026-11-07 23:21 UTC</span>
+    <span id="verStamp" class="tnum">version: 45a2fbe · built 2026-11-08 01:53 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -7415,8 +7418,6 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   pullBarHist();
   pullOnlinePrev();
   setInterval(function(){ pullBarNow(); pullBarHist(); pullOnlinePrev(); }, 300000);  // recorder writes every ~8 min
-
-  window.__gfhIngest = applySheet;   // public-page ingest hook (build-injected; unused in the artifact)
 })();
 </script>
 
@@ -7508,8 +7509,11 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
 
    This asks the server for the page's Last-Modified header, cheaply, with
    cache:"no-store" so the answer is never the cached one. If it moves, a bar
-   offers a reload. It never reloads on its own -- a surprise reload mid-round
-   would throw away whatever June was typing.
+   reloads the page BY ITSELF (Medi 2026-11-07: "should be done automatically
+   without refresh") -- but only when it is safe: nobody is typing in a field and
+   there was no tap/key for 20 s. Otherwise it waits and tries again every 10 s.
+   Scroll position comes back, and a one-time pass skips the PIN curtain.
+   The bar stays only as a fallback if a reload keeps being unsafe for 10 min.
    ========================================================================= */
 !function(){
   "use strict";
@@ -7534,6 +7538,41 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     return b;
   }
 
+  // ---- auto reload, only when it can't eat anything (2026-11-07) ----
+  var lastTouch = Date.now();
+  ["keydown","input","pointerdown","touchstart","wheel"].forEach(function(ev){
+    document.addEventListener(ev, function(){ lastTouch = Date.now(); }, {passive:true, capture:true});
+  });
+  function busy(){
+    var a = document.activeElement;
+    if(a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) &&
+       a.id !== "pgInput") return true;                  // someone is mid-entry
+    return (Date.now() - lastTouch) < 20000;             // touched the page in the last 20 s
+  }
+  function goNow(){
+    try{
+      sessionStorage.setItem("gfhAutoReload", String(Date.now()));   // one-time PIN pass
+      sessionStorage.setItem("gfhScrollY", String(window.scrollY||0));
+    }catch(e){}
+    location.reload();
+  }
+  function autoReload(){
+    var t0 = Date.now();
+    (function tryIt(){
+      if(document.hidden || !busy()) return goNow();
+      if(Date.now() - t0 > 600000) bar().classList.add("on");      // fallback after 10 min
+      setTimeout(tryIt, 10000);
+    
+  window.__gfhIngest = applySheet;   // public-page ingest hook (build-injected; unused in the artifact)
+})();
+  }
+  // restore scroll after an auto reload
+  try{
+    var y = sessionStorage.getItem("gfhScrollY");
+    if(y !== null){ sessionStorage.removeItem("gfhScrollY");
+      window.addEventListener("load", function(){ setTimeout(function(){ window.scrollTo(0, +y); }, 300); }); }
+  }catch(e){}
+
   function probe(){
     // HEAD, not GET: we only want the header, not another copy of a 200 KB page.
     fetch(url, {method:"HEAD", cache:"no-store"}).then(function(r){
@@ -7541,7 +7580,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
       if(!v) return;                      // host does not send one -- give up quietly
       if(seen === null){ seen = v; return; }   // first probe just records the baseline
       if(v !== seen && !shown){
-        shown = true; bar().classList.add("on");
+        shown = true; autoReload();
         // Tell the live layer this tab is outdated so it stops RECORDING (buyzone_history);
         // it keeps displaying. A stale build must never write history (2026-10-05 audit).
         try{ window.__gfhStale = true; }catch(e){}
@@ -8160,7 +8199,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     o.innerHTML=pendBar()+'<div class="cbo-sec">Where the money is now</div><div class="cbo-tiles">'+
       tile("In Coinbase",agg.inCB,"all players")+tile("Withdrawing to banks",agg.wd,"sent, not landed")+
       tile("In bank accounts",agg.bank,"landed, not sent to Taekus")+tile("ACH to Taekus",agg.ach,"sent, not landed")+'</div>'+
-      '<div class="cbo-sec">Taekus loads</div><div class="tkg">'+TK_CARDS.map(tkBar).join("")+'</div>'+
+      '<div class="cbo-sec">Taekus loads</div><div class="tkg">'+TK_CARDS.filter(tkShown).map(tkBar).join("")+'</div>'+
       '<div class="cbo-sec">Players \u00b7 tap a box to log it (time + amount)</div><div class="cb-grid">'+S.people.map(function(p){return player(p,L);}).join("")+'</div>';
   }
 
@@ -8250,6 +8289,9 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
      2 business days (Medi) and switches to the slowest MEASURED load once loads are ticked landed. */
   var TK_CARDS=[{id:"medi8010",name:"Taekus \u00b7\u00b78010",who:"Medi",methods:["gpay","applepay"],bal:true},
                 {id:"brother",name:"Taekus",who:"Brother",methods:["samsung"],bal:false}];
+  // Medi 11-07: Coinbase = Samsung Pay only (GPay, Apple Pay, PayPal gone). A card shows only while some
+  // player still has one of its methods ON, so the 8010 box comes back by itself if GPay/Apple Pay return.
+  function tkShown(c){return S.people.some(function(p){return c.methods.some(function(k){return p[k+"_on"]!==false;});});}
   var DAY=864e5;
   function pacDow(ms){return new Date(new Date(ms).toLocaleString("en-US",{timeZone:TZ})).getDay();}
   function bdays(ms,n){var d=n<0?-1:1;for(var i=0;i<Math.abs(n);){ms+=d*DAY;var w=pacDow(ms);if(w!==0&&w!==6)i++;}return ms;}
@@ -8833,7 +8875,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "1f132f3 2026-11-07 23:21 UTC".indexOf("STAMP") >= 0 ? "dev" : "1f132f3 2026-11-07 23:21 UTC";
+  var GFH_BUILD = "45a2fbe 2026-11-08 01:53 UTC".indexOf("STAMP") >= 0 ? "dev" : "45a2fbe 2026-11-08 01:53 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
