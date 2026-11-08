@@ -39,6 +39,9 @@
       inp=document.getElementById('pgInput'),
       btn=document.getElementById('pgBtn'),
       err=document.getElementById('pgErr');
+  // One-time pass set by the page's own auto reload (new version live) -- skip the curtain once.
+  try{ var ar=+sessionStorage.getItem('gfhAutoReload')||0; sessionStorage.removeItem('gfhAutoReload');
+       if(ar && Date.now()-ar < 60000){ gate.classList.add('hidden'); return; } }catch(e){}
   document.documentElement.style.overflow='hidden';   // no scrolling the board behind the curtain
   function unlock(){
     if(inp.value===PIN){ gate.classList.add('hidden'); document.documentElement.style.overflow=''; }
