@@ -83,7 +83,7 @@
    NOTE: this is the date the sheet was last CONFIRMED, not a price. No money
    number lives here, which is why the task is allowed to write it unattended.
    ========================================================================= */
-var ELEM_SHEET_DATE = "2026-11-13";   /* GFH_SHEET_DATE */
+var ELEM_SHEET_DATE = "2026-11-14";   /* GFH_SHEET_DATE */
 </script>
 <style>
   /* ============ TOKENS ============ */
@@ -3236,7 +3236,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: 89f6ad5 · built 2026-11-13 15:53 UTC</span>
+    <span id="verStamp" class="tnum">version: 2d0f33d · built 2026-11-13 23:53 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -3279,8 +3279,8 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
 
   // Buyers (sell price = spot + offset). Elemetal is the default/preferred buyer.
   const BUYERS = [
-    {key:"elemetal_pamp",    name:"Elemetal · Pamp",    offset:-10,  note:"Verified 11/13 price sheet (GB1PAMPF Bid = spot −$10) + $10 call-in (working relationship) → net spot −$0. Must be Veriscan + green foot, else any-brand. Bid history: −$20 → −$30 (8/25) → −$35 (8/27, held 29 sheets) → −$25 (10/2) → −$20 (10/24) → −$15 (10/31) → −$10 (11/3).", t:ELEM_SHEET_DATE},
-    {key:"elemetal_generic", name:"Elemetal · Generic", offset:-25,  note:"Verified 11/13 price sheet (GB1C any-brand = spot −$25; bid history: −$40 8/25→10/1 → −$35 (10/2) → −$33 (10/9) → −$25 (10/24)) + $10 call-in → net spot −$15.", t:ELEM_SHEET_DATE},
+    {key:"elemetal_pamp",    name:"Elemetal · Pamp",    offset:-10,  note:"Verified 11/14 price sheet (GB1PAMPF Bid = spot −$10) + $10 call-in (working relationship) → net spot −$0. Must be Veriscan + green foot, else any-brand. Bid history: −$20 → −$30 (8/25) → −$35 (8/27, held 29 sheets) → −$25 (10/2) → −$20 (10/24) → −$15 (10/31) → −$10 (11/3).", t:ELEM_SHEET_DATE},
+    {key:"elemetal_generic", name:"Elemetal · Generic", offset:-25,  note:"Verified 11/14 price sheet (GB1C any-brand = spot −$25; bid history: −$40 8/25→10/1 → −$35 (10/2) → −$33 (10/9) → −$25 (10/24)) + $10 call-in → net spot −$15.", t:ELEM_SHEET_DATE},
     {key:"upstate",          name:"Upstate",            offset:7,    note:"Pays over spot; ship-in or drive.", t:"2026-07-24"},
     {key:"amark",            name:"AMARK",              offset:null, note:"Las Vegas; no price-pull yet.", t:null},
     {key:"collectpure",      name:"CollectPure",        offset:null, note:"Online marketplace; ship-in.", t:null},
@@ -6102,7 +6102,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-11-12T20:24:59-08:00",
+    at: "2026-11-13T11:01:48-08:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
     price: 4169.90,
@@ -6111,15 +6111,15 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     inStock: [],
     // 40 of the 45. Stores whose rail rows were truncated were opened and
     // read from their own page this run, not carried forward.
-    soldOut: {antioch:"8d", brentwood:"7d", concord:"11d", danville:"7d",
-              fairfield:"7d", fostercity:"8d", fremont:"8d", hayward:"10d",
-              livermore:"8d", lodi:"7d", manteca:"7d", modesto:"7d", mountainview:"7d",
+    soldOut: {antioch:"8d", brentwood:"8d", concord:"11d", danville:"8d",
+              fairfield:"8d", fostercity:"8d", fremont:"8d", hayward:"11d",
+              livermore:"8d", lodi:"8d", manteca:"8d", modesto:"8d", mountainview:"8d",
               newark:"8d", novato:"8d", pleasanton:"8d", ranchocordova:"1m",
-              redwoodcity:"8d", richmond:"7d", riverbank:"7d", saccalexpo:"1m",
-              sacnatomas:"8d", sacstockton:"8d", sanleandro:"7d", santaclara:"8d",
-              santacruz:"19d", santarosa:"9d", sf:"8d", sjalmaden:"8d",
-              sjgreatoaks:"8d", sjne:"8d", sjsenter:"8d", ssf:"7d", ssfairport:"7d",
-              stockton:"7d", sunnyvale:"7d", tracy:"14d", vacaville:"1m", vallejo:"8d",
+              redwoodcity:"8d", richmond:"8d", riverbank:"7d", saccalexpo:"1m",
+              sacnatomas:"8d", sacstockton:"8d", sanleandro:"8d", santaclara:"8d",
+              santacruz:"20d", santarosa:"9d", sf:"8d", sjalmaden:"8d",
+              sjgreatoaks:"8d", sjne:"8d", sjsenter:"8d", ssf:"8d", ssfairport:"8d",
+              stockton:"8d", sunnyvale:"8d", tracy:"15d", vacaville:"1m", vallejo:"8d",
               woodland:"8d"}
   };
 
@@ -8875,7 +8875,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "89f6ad5 2026-11-13 15:53 UTC".indexOf("STAMP") >= 0 ? "dev" : "89f6ad5 2026-11-13 15:53 UTC";
+  var GFH_BUILD = "2d0f33d 2026-11-13 23:53 UTC".indexOf("STAMP") >= 0 ? "dev" : "2d0f33d 2026-11-13 23:53 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window
