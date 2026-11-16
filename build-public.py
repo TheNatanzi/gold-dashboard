@@ -103,6 +103,34 @@ if STAMP_MARKER not in live:
 live = live.replace(STAMP_MARKER, "%s %s" % (_commit, _built))
 
 out = head + pin + dash_patched + live
+
+# ---------------------------------------------------------------------------
+# BROKEN-SCRIPT GUARD (2026-11-16). The 7:53 sheet edit wrote a stray control
+# byte (chr 1, a regex backreference gone wrong) after ELEM_SHEET_DATE. That one
+# byte was a syntax error that killed the whole price engine: BUY froze at a
+# stale $4,649.99 and the data-guard bar fired all day. Refuse to publish a page
+# with control bytes, or with an inline <script> that does not parse.
+# ---------------------------------------------------------------------------
+import re as _re, tempfile as _tf, shutil as _sh
+_CTL = "[" + chr(0) + "-" + chr(8) + chr(11) + chr(12) + chr(14) + "-" + chr(31) + chr(127) + "]"
+_ctl = [(out[:m.start()].count("\n") + 1, ord(m.group())) for m in _re.finditer(_CTL, out)]
+if _ctl:
+    raise SystemExit("REFUSING TO PUBLISH - control bytes in the page (line, byte code): %s" % _ctl[:5])
+_node = _sh.which("node")
+if _node:
+    _scripts = _re.finditer(r'<script(?![^>]*\bsrc=)(?![^>]*type="(?:application/json|text/template|application/ld\+json)")[^>]*>(.*?)</script>', out, _re.S)
+    for _i, _m in enumerate(_scripts):
+        with _tf.NamedTemporaryFile("w", suffix=".js", delete=False, encoding="utf-8") as _f:
+            _f.write(_m.group(1))
+        _r = subprocess.run([_node, "--check", _f.name], capture_output=True, text=True)
+        os.unlink(_f.name)
+        if _r.returncode:
+            raise SystemExit("REFUSING TO PUBLISH - inline script #%d (page line %d) does not parse:\n%s"
+                             % (_i, out[:_m.start(1)].count("\n") + 1, _r.stderr[:600]))
+    print("script guard: every inline script parses, no control bytes")
+else:
+    print("script guard: node not found - syntax check skipped")
+
 with io.open(os.path.join(BASE, "index.html"), "w", encoding="utf-8", newline="\n") as f:
     f.write(out)
 
