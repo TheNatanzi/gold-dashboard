@@ -3236,7 +3236,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     <!-- Which build am I looking at? The builder replaces the marker below with the source
          commit + build time. If you can still read the words "dev copy", you are NOT on a
          published build — you are on the raw source file. -->
-    <span id="verStamp" class="tnum">version: afcfffa · built 2026-11-17 15:53 UTC</span>
+    <span id="verStamp" class="tnum">version: 7d28e80 · built 2026-11-24 07:47 UTC</span>
     <span id="builtStamp">—</span>
     <span id="dataSrc">data: seed values (connect Drive to go live)</span>
     <span>Rates · Card Database v2 · also watching: X Pay 3% · Robinhood 3%</span>
@@ -6102,7 +6102,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
 
      DELETE THIS the moment 007 lands and the live feed takes over. */
   const WI_SNAP = {
-    at: "2026-11-16T11:01:49-08:00",
+    at: "2026-11-20T11:01:50-08:00",
     src: "costcogoldinventory.com",
     sku: "1943308",
     price: 4169.90,
@@ -6111,16 +6111,16 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
     inStock: [],
     // 40 of the 45. Stores whose rail rows were truncated were opened and
     // read from their own page this run, not carried forward.
-    soldOut: {antioch:"11d", brentwood:"11d", concord:"14d", danville:"11d",
-              fairfield:"11d", fostercity:"11d", fremont:"11d", hayward:"14d",
-              livermore:"11d", lodi:"11d", manteca:"11d", modesto:"11d",
-              mountainview:"11d", newark:"11d", novato:"11d", pleasanton:"11d",
-              ranchocordova:"1m", redwoodcity:"11d", richmond:"11d", riverbank:"10d",
-              saccalexpo:"1m", sacnatomas:"11d", sacstockton:"11d", sanleandro:"11d",
-              santaclara:"11d", santacruz:"23d", santarosa:"12d", sf:"11d",
-              sjalmaden:"11d", sjgreatoaks:"11d", sjne:"11d", sjsenter:"11d",
-              ssf:"11d", ssfairport:"11d", stockton:"11d", sunnyvale:"11d",
-              tracy:"18d", vacaville:"1m", vallejo:"11d", woodland:"11d"}
+    soldOut: {antioch:"15d", brentwood:"15d", concord:"18d", danville:"15d",
+              fairfield:"15d", fostercity:"15d", fremont:"15d", hayward:"18d",
+              livermore:"15d", lodi:"15d", manteca:"15d", modesto:"15d",
+              mountainview:"15d", newark:"15d", novato:"15d", pleasanton:"15d",
+              ranchocordova:"1m", redwoodcity:"15d", richmond:"15d", riverbank:"14d",
+              saccalexpo:"2m", sacnatomas:"15d", sacstockton:"15d", sanleandro:"15d",
+              santaclara:"15d", santacruz:"27d", santarosa:"16d", sf:"15d",
+              sjalmaden:"15d", sjgreatoaks:"15d", sjne:"15d", sjsenter:"15d",
+              ssf:"15d", ssfairport:"15d", stockton:"15d", sunnyvale:"15d",
+              tracy:"22d", vacaville:"2m", vallejo:"15d", woodland:"15d"}
   };
 
   // Turn the snapshot into the same row shape wiRenderNow/wiRenderTable already
@@ -7418,6 +7418,8 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   pullBarHist();
   pullOnlinePrev();
   setInterval(function(){ pullBarNow(); pullBarHist(); pullOnlinePrev(); }, 300000);  // recorder writes every ~8 min
+
+  window.__gfhIngest = applySheet;   // public-page ingest hook (build-injected; unused in the artifact)
 })();
 </script>
 
@@ -7558,13 +7560,15 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   }
   function autoReload(){
     var t0 = Date.now();
-    (function tryIt(){
+    // A named function, NOT the paren IIFE form: build-public.py hunts for that closer
+    // (see the comment above the sheet-age block). Using it here hid the live hook
+    // inside this block and froze every price on the page 11/16 -> 11/23.
+    function tryIt(){
       if(document.hidden || !busy()) return goNow();
       if(Date.now() - t0 > 600000) bar().classList.add("on");      // fallback after 10 min
       setTimeout(tryIt, 10000);
-    
-  window.__gfhIngest = applySheet;   // public-page ingest hook (build-injected; unused in the artifact)
-})();
+    }
+    tryIt();
   }
   // restore scroll after an auto reload
   try{
@@ -8875,7 +8879,7 @@ h1{font-size:clamp(26px,5vw,36px);letter-spacing:-.02em}
   var _gfhGeom = null;                                  // last drawn geometry, for the crosshair
   // Stamped by build-public.py at publish time (falls back to "dev" when the placeholder
   // survives, e.g. opening this fragment raw). Sent with every buyzone_history write.
-  var GFH_BUILD = "afcfffa 2026-11-17 15:53 UTC".indexOf("STAMP") >= 0 ? "dev" : "afcfffa 2026-11-17 15:53 UTC";
+  var GFH_BUILD = "7d28e80 2026-11-24 07:47 UTC".indexOf("STAMP") >= 0 ? "dev" : "7d28e80 2026-11-24 07:47 UTC";
   var _gfhOnline = null;                                // last gold_prices `online` row (Costco)
   var _gfhLast = null;                                  // last drawn {pts, capped}, so a price tick can redraw
   var _gfhOnlineHist = [];                              // online_history rows in the current window

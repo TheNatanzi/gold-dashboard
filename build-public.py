@@ -61,11 +61,19 @@ if _a != -1:
     head += dash[_a:_b] + "\n"
     dash = dash[:_a] + dash[_b:].lstrip("\n")
 
-# Inject the hook right before the LAST `})();` (the main IIFE close) in the dashboard only.
-marker = "})();"
+# Inject the hook right before the main IIFE close in the dashboard only.
+# The main IIFE closes at COLUMN 0 ("\n})();"). Nested ones are indented. On 11/16 a
+# nested, indented `})();` added later in the file caught the plain rfind, the hook landed
+# in a closure with no applySheet, and live prices never reached the math for a week.
+marker = "\n})();"
 idx = dash.rfind(marker)
 if idx == -1:
-    raise SystemExit("ERROR: could not find the IIFE close `})();` in the dashboard.")
+    raise SystemExit("ERROR: could not find the main IIFE close (a line that is exactly `})();`).")
+idx += 1
+# The hook must sit in the SAME <script> as `function applySheet(`, after it.
+_as = dash.rfind("function applySheet(", 0, idx)
+if _as == -1 or dash.rfind("<script", _as, idx) != -1 or dash.rfind("</script>", _as, idx) != -1:
+    raise SystemExit("ERROR: the hook spot is not inside the script that defines applySheet - refusing to publish a page whose live prices would never reach the math.")
 hook = "\n  window.__gfhIngest = applySheet;   // public-page ingest hook (build-injected; unused in the artifact)\n"
 dash_patched = dash[:idx] + hook + dash[idx:]
 
